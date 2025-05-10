@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Advice Request Form</title>
+    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -17,14 +18,20 @@
             <!-- New/Existing Client Selector -->
             <div class="form-group">
                 <label>Client Status:</label>
-                <div class="client-status-selector">
-                    <div class="status-option" data-status="new">
-                        <i class="fas fa-plus-circle"></i>
-                        <div>New Client</div>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" id="newClient" name="clientStatus" value="new">
+                        <label for="newClient">
+                            <i class="fas fa-plus-circle"></i>
+                            New Client
+                        </label>
                     </div>
-                    <div class="status-option" data-status="existing">
-                        <i class="fas fa-user-check"></i>
-                        <div>Existing Client</div>
+                    <div class="radio-item">
+                        <input type="radio" id="existingClient" name="clientStatus" value="existing">
+                        <label for="existingClient">
+                            <i class="fas fa-user-check"></i>
+                            Existing Client
+                        </label>
                     </div>
                 </div>
             </div>
@@ -32,33 +39,33 @@
             <!-- Client Type Selector -->
             <div class="form-group">
                 <label>Select Client Type (multiple selections allowed):</label>
-                <div class="type-selector">
-                    <div class="type-option checkbox-style" data-type="single">
+                <div class="checkbox-group client-types">
+                    <div class="checkbox-item">
                         <input type="checkbox" id="singleClient" name="clientType" value="single">
                         <label for="singleClient">
                             <i class="fas fa-user"></i>
-                            <div>Single Client</div>
+                            Single Client
                         </label>
                     </div>
-                    <div class="type-option checkbox-style" data-type="couple">
+                    <div class="checkbox-item">
                         <input type="checkbox" id="coupleClient" name="clientType" value="couple">
                         <label for="coupleClient">
                             <i class="fas fa-users"></i>
-                            <div>Couple</div>
+                            Couple
                         </label>
                     </div>
-                    <div class="type-option checkbox-style" data-type="dependants">
+                    <div class="checkbox-item">
                         <input type="checkbox" id="dependantsClient" name="clientType" value="dependants">
                         <label for="dependantsClient">
                             <i class="fas fa-child"></i>
-                            <div>Dependants</div>
+                            Dependants
                         </label>
                     </div>
-                    <div class="type-option checkbox-style" data-type="entity">
+                    <div class="checkbox-item">
                         <input type="checkbox" id="entityClient" name="clientType" value="entity">
                         <label for="entityClient">
                             <i class="fas fa-building"></i>
-                            <div>Entity</div>
+                            Entity
                         </label>
                     </div>
                 </div>
@@ -66,7 +73,7 @@
                 <!-- Entity Type Selector (shows only when entity is selected) -->
                 <div class="entity-selector" id="entitySelector">
                     <label>Select Entity Type:</label>
-                    <div class="checkbox-group">
+                    <div class="checkbox-group entity-types">
                         <div class="checkbox-item">
                             <input type="checkbox" id="entitySMSF" name="entityType" value="SMSF">
                             <label for="entitySMSF">SMSF</label>
@@ -462,5 +469,7 @@
             <button type="button" class="btn btn-danger" id="resetBtn">Reset Form</button>
         </div>
     </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
