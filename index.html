@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Advice Request Form</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Financial Advice Request Form</h1>
+        
+        <!-- Strategy Details Section -->
+        <section class="section" id="strategyDetailsSection">
+            <h2><i class="fas fa-info-circle"></i> Strategy Details</h2>
+            
+            <!-- Client Type Selector -->
+            <div class="form-group">
+                <label>Select Client Type:</label>
+                <div class="type-selector">
+                    <div class="type-option" data-type="single">
+                        <i class="fas fa-user"></i>
+                        <div>Single Client</div>
+                    </div>
+                    <div class="type-option" data-type="couple">
+                        <i class="fas fa-users"></i>
+                        <div>Couple</div>
+                    </div>
+                    <div class="type-option" data-type="entity">
+                        <i class="fas fa-building"></i>
+                        <div>Entity</div>
+                    </div>
+                </div>
+                
+                <!-- Entity Type Selector (shows only when entity is selected) -->
+                <div class="entity-selector" id="entitySelector">
+                    <label>Select Entity Type:</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="entitySMSF" name="entityType" value="SMSF">
+                            <label for="entitySMSF">SMSF</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="entityTrust" name="entityType" value="Trust">
+                            <label for="entityTrust">Trust</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="entityCompany" name="entityType" value="Company">
+                            <label for="entityCompany">Company</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group" id="clientNameGroup">
+                    <label for="clientName">Client Name:</label>
+                    <input type="text" id="clientName" name="clientName" placeholder="Enter client name">
+                </div>
+                
+                <div class="form-group" id="partnerNameGroup" style="display: none;">
+                    <label for="partnerName">Partner Name:</label>
+                    <input type="text" id="partnerName" name="partnerName" placeholder="Enter partner name">
+                </div>
+            </div>
+            
+            <div class="form-group" id="entityNameGroup" style="display: none;">
+                <label for="entityName">Entity Name:</label>
+                <input type="text" id="entityName" name="entityName" placeholder="Enter entity name">
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="xplanId">Xplan ID (if applicable):</label>
+                    <input type="text" id="xplanId" name="xplanId" placeholder="Enter Xplan ID">
+                </div>
+                
+                <div class="form-group">
+                    <label for="adviserName">Adviser Name:</label>
+                    <input type="text" id="adviserName" name="adviserName" placeholder="Enter adviser name">
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="clientMeetingDate">Client Meeting Date:</label>
+                    <input type="date" id="clientMeetingDate" name="clientMeetingDate">
+                </div>
+                
+                <div class="form-group">
+                    <label for="formCompletedBy">Form Completed by:</label>
+                    <input type="text" id="formCompletedBy" name="formCompletedBy" placeholder="Enter your name">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Strategy Recommendations Section -->
+        <section class="section" id="strategyRecommendationsSection">
+            <h2><i class="fas fa-lightbulb"></i> Strategy Recommendations</h2>
+            
+            <div class="form-group" id="clientRecommendationsGroup">
+                <label for="clientRecommendations">Client Recommendations:</label>
+                <textarea id="clientRecommendations" name="clientRecommendations" placeholder="Enter recommendations for the client"></textarea>
+            </div>
+            
+            <div class="form-group" id="partnerRecommendationsGroup" style="display: none;">
+                <label for="partnerRecommendations">Partner Recommendations:</label>
+                <textarea id="partnerRecommendations" name="partnerRecommendations" placeholder="Enter recommendations for the partner"></textarea>
+            </div>
+            
+            <div class="form-group" id="jointRecommendationsGroup" style="display: none;">
+                <label for="jointRecommendations">Joint Recommendations:</label>
+                <textarea id="jointRecommendations" name="jointRecommendations" placeholder="Enter joint recommendations"></textarea>
+            </div>
+            
+            <div class="form-group" id="entityRecommendationsGroup" style="display: none;">
+                <label for="entityRecommendations">Entity Recommendations:</label>
+                <textarea id="entityRecommendations" name="entityRecommendations" placeholder="Enter recommendations for the entity"></textarea>
+            </div>
+            
+            <div class="form-group" id="dependantsRecommendationsGroup">
+                <label for="dependantsRecommendations">Dependants Recommendations:</label>
+                <textarea id="dependantsRecommendations" name="dependantsRecommendations" placeholder="Enter recommendations for dependants"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="goalAlignment">How strategy aligns to goals and objectives?</label>
+                <textarea id="goalAlignment" name="goalAlignment" placeholder="Explain how the strategy aligns with client goals and objectives"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="mdaDetails">MDA - discretionary vs collaborative:</label>
+                <textarea id="mdaDetails" name="mdaDetails" placeholder="Enter MDA details"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="tmdDetails">TMD:</label>
+                <textarea id="tmdDetails" name="tmdDetails" placeholder="Enter TMD details"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="inaccurateInfo">Any potentially inaccurate or incomplete information:</label>
+                <textarea id="inaccurateInfo" name="inaccurateInfo" placeholder="Include reasons why information may be inaccurate or was not provided"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="alternativeStrategies">Alternatives - strategies:</label>
+                <textarea id="alternativeStrategies" name="alternativeStrategies" placeholder="Enter alternative strategies"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="alternativePlatforms">Alternatives - platforms:</label>
+                <textarea id="alternativePlatforms" name="alternativePlatforms" placeholder="Enter alternative platforms"></textarea>
+            </div>
+        </section>
+        
+        <!-- Flowchart Section -->
+        <section class="section" id="flowchartSection">
+            <h2><i class="fas fa-project-diagram"></i> Flowchart</h2>
+            
+            <div class="form-group">
+                <div class="yes-no-label">
+                    <label for="flowchartRequired">Flowchart required?</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="flowchartRequired" name="flowchartRequired">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="flowchartStatus">No</span>
+                </div>
+            </div>
+        </section>
+        
+        <!-- SOA Projections Section -->
+        <section class="section" id="soaProjectionsSection">
+            <h2><i class="fas fa-chart-line"></i> SOA Projections</h2>
+            
+            <div class="form-group">
+                <label for="projectionDateLength">Projection date length:</label>
+                <select id="projectionDateLength" name="projectionDateLength">
+                    <option value="5">5 years (default for Aged Care SOAs)</option>
+                    <option value="10">10 years</option>
+                    <option value="15">15 years</option>
+                    <option value="20">20 years</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="otherProjectionLength" style="display: none;">
+                <label for="otherProjectionLengthValue">Specify other projection length:</label>
+                <input type="number" id="otherProjectionLengthValue" name="otherProjectionLengthValue" placeholder="Enter number of years">
+            </div>
+            
+            <div class="form-group">
+                <div class="checklist-item">
+                    <input type="checkbox" id="calmChart" name="projectionOptions" value="CALM">
+                    <label for="calmChart">CALM to chart, cashflow consolidated table, asset summary chart and table</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="contributionsTable" name="projectionOptions" value="Contributions">
+                    <label for="contributionsTable">If contributions advice is relevant, we need a before and after tax table Year 1</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="pensionTable" name="projectionOptions" value="Pension">
+                    <label for="pensionTable">If aged pension advice is relevant we need a before and after aged pension table Year 1</label>
+                </div>
+            </div>
+        </section>
+        
+        <!-- SOA/ROA Fees Section -->
+        <section class="section" id="soaFeesSection">
+            <h2><i class="fas fa-dollar-sign"></i> SOA/ROA Fees</h2>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="upfrontFee">Upfront Fee (including GST):</label>
+                    <input type="text" id="upfrontFee" name="upfrontFee" placeholder="e.g., $3,850">
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMethod">Method of payment:</label>
+                    <input type="text" id="paymentMethod" name="paymentMethod" placeholder="Enter payment method">
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="implementationFee">Implementation fee:</label>
+                    <input type="text" id="implementationFee" name="implementationFee" placeholder="Enter implementation fee">
+                </div>
+                
+                <div class="form-group">
+                    <label for="ongoingFee">Ongoing Fee (including GST):</label>
+                    <input type="text" id="ongoingFee" name="ongoingFee" placeholder="e.g., Refer to pricing calculator">
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="smsfFees">SMSF fees:</label>
+                    <input type="text" id="smsfFees" name="smsfFees" placeholder="Enter SMSF fees">
+                </div>
+                
+                <div class="form-group">
+                    <label for="referralFee">Referral Fee Applicable:</label>
+                    <input type="text" id="referralFee" name="referralFee" placeholder="e.g., N/A">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Additional Comments Section -->
+        <section class="section" id="additionalCommentsSection">
+            <h2><i class="fas fa-comment-alt"></i> Additional Comments/Notes</h2>
+            
+            <div class="form-group">
+                <textarea id="additionalComments" name="additionalComments" placeholder="Enter any additional comments or notes"></textarea>
+            </div>
+        </section>
+        
+        <!-- Advice Request Checklist Section -->
+        <section class="section" id="checklistSection">
+            <h2><i class="fas fa-tasks"></i> Advice Request Checklist</h2>
+            
+            <div class="note">
+                <p>Please ensure the required documents and approvals are obtained and uploaded prior to submitting your request to the paraplanning team.</p>
+            </div>
+            
+            <h3>All Advice documents</h3>
+            <div class="form-group">
+                <div class="checklist-item">
+                    <input type="checkbox" id="factFind" name="requiredDocs" value="FactFind">
+                    <label for="factFind">Fact Find (dated within 12 months)</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="filenote" name="requiredDocs" value="Filenote">
+                    <label for="filenote">Filenote</label>
+                </div>
+                
+                <div class="checklist-item">
+                    <input type="checkbox" id="pricingCalculator" name="requiredDocs" value="PricingCalculator">
+                    <label for="pricingCalculator">Pricing Calculator</label>
+                </div>
+            </div>
+            
+            <div id="roaRequirements" style="display: none;">
+                <h3>Record of Advice</h3>
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="soaOnFile" name="roaDocs" value="SOAonFile">
+                        <label for="soaOnFile">SOA on file dated post 1/07/2013 and on current AFSL</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="noChangeAdvice" name="roaDocs" value="NoChange">
+                        <label for="noChangeAdvice">No change to basis of advice</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="noChangeCircumstances" name="roaDocs" value="NoChangeCircumstances">
+                        <label for="noChangeCircumstances">No significant change to client circumstances</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="rosiaRequirements" style="display: none;">
+                <h3>ROSIA</h3>
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="under15k" name="rosiaDocs" value="Under15k">
+                        <label for="under15k">Advice relates to amounts under $15,000</label>
+                    </div>
+                </div>
+            </div>
+            
+            <h3>Tasks</h3>
+            <div class="grid-2">
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="clientIdUploaded" name="tasks" value="ClientID">
+                        <label for="clientIdUploaded">Upload copy of ID to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="smsfDocs" name="tasks" value="SMSFDocs">
+                        <label for="smsfDocs">SMSF trust deed, financials, investment strategy, costs</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="superResearch" name="tasks" value="SuperResearch">
+                        <label for="superResearch">Super research confirmation</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="taskXGreenID" name="tasks" value="GreenID">
+                        <label for="taskXGreenID">TaskX - Green ID to be completed</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="amlCompletion" name="tasks" value="AML">
+                        <label for="amlCompletion">AML to be completed per entity/individual save to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="initialFN" name="tasks" value="InitialFN">
+                        <label for="initialFN">Initial FN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="strategicFN" name="tasks" value="StrategicFN">
+                        <label for="strategicFN">Strategic FN / Other relevant FN</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="clientFFQ" name="tasks" value="ClientFFQ">
+                        <label for="clientFFQ">Completed FFQ to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="scopeOfAdvice" name="tasks" value="ScopeOfAdvice">
+                        <label for="scopeOfAdvice">Scope of Advice to XPLAN</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="finametricaSigned" name="tasks" value="FinametricaDoc">
+                        <label for="finametricaSigned">Signed Finametrica Document to be uploaded to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="finametricaReport" name="tasks" value="FinametricaReport">
+                        <label for="finametricaReport">Finametrica Report to be uploaded to XPLAN</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="uploadPricingCalc" name="tasks" value="UploadPricing">
+                        <label for="uploadPricingCalc">Upload Pricing Calculator</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="wantCompare" name="tasks" value="WantCompare">
+                        <label for="wantCompare">Do you want COMPARE?</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="workingsResearch" name="tasks" value="WorkingsResearch">
+                        <label for="workingsResearch">Workings / Research etc to be uploaded</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="submitJira" name="tasks" value="SubmitJira">
+                        <label for="submitJira">Submit JIRA for pricing/or PCR (if applicable)</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="checklist-item">
+                    <input type="checkbox" id="taskXNewAdvice" name="tasks" value="TaskXNewAdvice">
+                    <label for="taskXNewAdvice">TaskX - New Advice Request</label>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Button Group -->
+        <div class="btn-group">
+            <button type="button" class="btn" id="saveBtn">Save as Draft</button>
+            <button type="button" class="btn btn-success" id="exportWordBtn">Export to Word</button>
+            <button type="button" class="btn btn-success" id="exportPdfBtn">Export to PDF</button>
+            <button type="button" class="btn btn-danger" id="resetBtn">Reset Form</button>
+        </div>
+    </div>
+</body>
+</html>
