@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Client Status Selector
-    const statusOptions = document.querySelectorAll('.status-option');
+    // Client Status Radio Buttons
+    const newClientRadio = document.getElementById('newClient');
+    const existingClientRadio = document.getElementById('existingClient');
     
     // Client Type Checkboxes
     const singleClientCheckbox = document.getElementById('singleClient');
@@ -36,53 +37,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportPdfBtn = document.getElementById('exportPdfBtn');
     const resetBtn = document.getElementById('resetBtn');
     
-    // Handle Client Status Selection
-    statusOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            // Remove selected class from all options
-            statusOptions.forEach(opt => opt.classList.remove('selected'));
-            
-            // Add selected class to clicked option
-            this.classList.add('selected');
-        });
-    });
-    
-    // Setup checkboxes to toggle their parent's selected class
-    function setupTypeOptionCheckbox(checkbox) {
-        const typeOption = checkbox.closest('.type-option');
+    // Set up checkbox visual selection effect
+    document.querySelectorAll('.checkbox-item').forEach(item => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
         
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                typeOption.classList.add('selected');
-            } else {
-                typeOption.classList.remove('selected');
-            }
-            updateFormBasedOnSelections();
-        });
-        
-        // Also allow clicking the entire div to toggle checkbox
-        typeOption.addEventListener('click', function(e) {
-            if (e.target !== checkbox) { // Prevent double-toggle when clicking the checkbox directly
-                checkbox.checked = !checkbox.checked;
-                if (checkbox.checked) {
-                    typeOption.classList.add('selected');
+        if (checkbox) {
+            // Update visual selection on checkbox change
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    item.classList.add('selected');
                 } else {
-                    typeOption.classList.remove('selected');
+                    item.classList.remove('selected');
                 }
                 updateFormBasedOnSelections();
-            }
-        });
-    }
+            });
+            
+            // Also make the label and checkbox item interactive
+            item.addEventListener('click', function(e) {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+    });
     
-    // Setup all type option checkboxes
-    setupTypeOptionCheckbox(singleClientCheckbox);
-    setupTypeOptionCheckbox(coupleClientCheckbox);
-    setupTypeOptionCheckbox(dependantsClientCheckbox);
-    setupTypeOptionCheckbox(entityClientCheckbox);
-    
-    // Handle entity type checkboxes
+    // Handle entity checkbox to show entity selector
     entityClientCheckbox.addEventListener('change', function() {
-        entitySelector.classList.toggle('show', this.checked);
+        if (this.checked) {
+            entitySelector.style.display = 'block';
+        } else {
+            entitySelector.style.display = 'none';
+            // Uncheck entity type checkboxes when entity is unchecked
+            entitySMSFCheckbox.checked = false;
+            entityTrustCheckbox.checked = false;
+            entityCompanyCheckbox.checked = false;
+            
+            document.querySelectorAll('.checkbox-item.entity-types').forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
         updateFormBasedOnSelections();
     });
     
@@ -207,11 +201,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 checkbox.checked = false;
             });
             
-            // Reset client status selection
-            statusOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
             
             // Reset client type selection
-            document.querySelectorAll('.type-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelectorAll('.checkbox-item').forEach(item => {
+                item.classList.remove('selected');
+            });
             
             // Hide conditional sections
             partnerNameGroup.style.display = 'none';
@@ -219,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
             partnerRecommendationsGroup.style.display = 'none';
             jointRecommendationsGroup.style.display = 'none';
             dependantsRecommendationsGroup.style.display = 'none';
-            entitySelector.classList.remove('show');
+            entitySelector.style.display = 'none';
             document.getElementById('roaRequirements').style.display = 'none';
             document.getElementById('rosiaRequirements').style.display = 'none';
             entityRecommendationsContainer.innerHTML = '';
