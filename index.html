@@ -10,25 +10,56 @@
     <div class="container">
         <h1>Financial Advice Request Form</h1>
         
-        <!-- Strategy Details Section -->
-        <section class="section" id="strategyDetailsSection">
-            <h2><i class="fas fa-info-circle"></i> Strategy Details</h2>
+        <!-- Client Type Section -->
+        <section class="section" id="clientTypeSection">
+            <h2><i class="fas fa-user-circle"></i> Client Details</h2>
+            
+            <!-- New/Existing Client Selector -->
+            <div class="form-group">
+                <label>Client Status:</label>
+                <div class="client-status-selector">
+                    <div class="status-option" data-status="new">
+                        <i class="fas fa-plus-circle"></i>
+                        <div>New Client</div>
+                    </div>
+                    <div class="status-option" data-status="existing">
+                        <i class="fas fa-user-check"></i>
+                        <div>Existing Client</div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Client Type Selector -->
             <div class="form-group">
-                <label>Select Client Type:</label>
+                <label>Select Client Type (multiple selections allowed):</label>
                 <div class="type-selector">
-                    <div class="type-option" data-type="single">
-                        <i class="fas fa-user"></i>
-                        <div>Single Client</div>
+                    <div class="type-option checkbox-style" data-type="single">
+                        <input type="checkbox" id="singleClient" name="clientType" value="single">
+                        <label for="singleClient">
+                            <i class="fas fa-user"></i>
+                            <div>Single Client</div>
+                        </label>
                     </div>
-                    <div class="type-option" data-type="couple">
-                        <i class="fas fa-users"></i>
-                        <div>Couple</div>
+                    <div class="type-option checkbox-style" data-type="couple">
+                        <input type="checkbox" id="coupleClient" name="clientType" value="couple">
+                        <label for="coupleClient">
+                            <i class="fas fa-users"></i>
+                            <div>Couple</div>
+                        </label>
                     </div>
-                    <div class="type-option" data-type="entity">
-                        <i class="fas fa-building"></i>
-                        <div>Entity</div>
+                    <div class="type-option checkbox-style" data-type="dependants">
+                        <input type="checkbox" id="dependantsClient" name="clientType" value="dependants">
+                        <label for="dependantsClient">
+                            <i class="fas fa-child"></i>
+                            <div>Dependants</div>
+                        </label>
+                    </div>
+                    <div class="type-option checkbox-style" data-type="entity">
+                        <input type="checkbox" id="entityClient" name="clientType" value="entity">
+                        <label for="entityClient">
+                            <i class="fas fa-building"></i>
+                            <div>Entity</div>
+                        </label>
                     </div>
                 </div>
                 
@@ -51,6 +82,11 @@
                     </div>
                 </div>
             </div>
+        </section>
+        
+        <!-- Strategy Details Section -->
+        <section class="section" id="strategyDetailsSection">
+            <h2><i class="fas fa-info-circle"></i> Strategy Details</h2>
             
             <div class="grid-2">
                 <div class="form-group" id="clientNameGroup">
@@ -113,12 +149,11 @@
                 <textarea id="jointRecommendations" name="jointRecommendations" placeholder="Enter joint recommendations"></textarea>
             </div>
             
-            <div class="form-group" id="entityRecommendationsGroup" style="display: none;">
-                <label for="entityRecommendations">Entity Recommendations:</label>
-                <textarea id="entityRecommendations" name="entityRecommendations" placeholder="Enter recommendations for the entity"></textarea>
+            <div id="entityRecommendationsContainer">
+                <!-- Entity recommendation sections will be dynamically added here -->
             </div>
             
-            <div class="form-group" id="dependantsRecommendationsGroup">
+            <div class="form-group" id="dependantsRecommendationsGroup" style="display: none;">
                 <label for="dependantsRecommendations">Dependants Recommendations:</label>
                 <textarea id="dependantsRecommendations" name="dependantsRecommendations" placeholder="Enter recommendations for dependants"></textarea>
             </div>
@@ -177,7 +212,10 @@
             <div class="form-group">
                 <label for="projectionDateLength">Projection date length:</label>
                 <select id="projectionDateLength" name="projectionDateLength">
-                    <option value="5">5 years (default for Aged Care SOAs)</option>
+                    <option value="lifeExpectancy">Life Expectancy (default)</option>
+                    <option value="lifeExpectancy5">Life Expectancy + 5 years</option>
+                    <option value="lifeExpectancy10">Life Expectancy + 10 years</option>
+                    <option value="5">5 years</option>
                     <option value="10">10 years</option>
                     <option value="15">15 years</option>
                     <option value="20">20 years</option>
