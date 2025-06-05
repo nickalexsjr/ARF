@@ -2563,7 +2563,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Email client opened successfully.');
     });
     
-    // Export to Word functionality - IMPROVED TO MATCH CURRENT VIEW
+    // Export to Word functionality - MATCH VISIBLE CONTENT EXACTLY
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
@@ -2580,9 +2580,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                     wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">${h2.textContent}</h2>`;
                 }
                 
-                // Process form groups
+                // Process form groups (excluding dynamic recommendations container)
                 section.querySelectorAll('.form-group').forEach(group => {
-                    if (group.style.display !== 'none') {
+                    if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
                         const label = group.querySelector('label');
                         
                         // Process radio groups
@@ -2618,7 +2618,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                         
                         // Process regular inputs (avoid duplicates)
                         group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item')) {
+                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
                                 const inputLabel = input.closest('.form-group').querySelector('label');
                                 if (inputLabel && input.value) {
                                     let value = input.value;
@@ -2656,7 +2656,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                     }
                 });
                 
-                // Process dynamic content (recommendations sections) - IMPROVED
+                // Process dynamic content (recommendations sections) - ONLY VISIBLE CONTENT
                 const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
                 if (dynamicContainer) {
                     // Process recommendation sections with new layout
@@ -2673,12 +2673,12 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                 if (label && textarea && textarea.value) {
                                     wordContent += `<p><strong>${label.textContent}</strong></p>`;
                                     wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
-                                    
-                                    if (productCheckbox) {
-                                        const productLabel = productCheckbox.nextElementSibling;
-                                        if (productLabel) {
-                                            wordContent += `<p style="margin-left: 20px;">${productCheckbox.checked ? '☑' : '☐'} ${productLabel.textContent}</p>`;
-                                        }
+                                }
+                                
+                                if (productCheckbox) {
+                                    const productLabel = productCheckbox.nextElementSibling;
+                                    if (productLabel) {
+                                        wordContent += `<p style="margin-left: 20px;">${productCheckbox.checked ? '☑' : '☐'} ${productLabel.textContent}</p>`;
                                     }
                                 }
                             }
@@ -2697,9 +2697,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                         }
                     });
                     
-                    // Process product recommendations sections that are visible
+                    // Process product recommendations sections - ONLY IF VISIBLE AND CHECKBOX IS CHECKED
                     dynamicContainer.querySelectorAll('.product-recommendations').forEach(productSection => {
-                        if (productSection.style.display !== 'none') {
+                        if (productSection.style.display === 'block') {  // Only visible sections
                             const sectionTitle = productSection.querySelector('h4');
                             if (sectionTitle) {
                                 wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${sectionTitle.textContent}</h3>`;
@@ -2730,7 +2730,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                                     const statusSpan = input.parentElement.nextElementSibling;
                                                     value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
                                                 }
-                                                if (value && value !== 'Select investment option') {
+                                                if (value && value !== 'Select investment option' && value !== '') {
                                                     wordContent += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
                                                 }
                                             }
@@ -2782,10 +2782,8 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - DIRECT DOWNLOAD
+    // Export to PDF functionality - SAVE AS PDF
     exportPdfBtn.addEventListener('click', function() {
-        const clientName = document.getElementById('clientName').value || 'Client';
-        
         // Hide elements that shouldn't be in PDF
         const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
         const originalDisplays = [];
@@ -2795,45 +2793,51 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             el.style.display = 'none';
         });
         
-        // Configure PDF options
-        const pdfOptions = {
-            margin: [10, 10, 10, 10],
-            filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 1.5,
-                useCORS: true,
-                letterRendering: true,
-                allowTaint: false
-            },
-            jsPDF: { 
-                unit: 'mm', 
-                format: 'a4', 
-                orientation: 'portrait',
-                compress: true
-            },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        // Add PDF-specific styles
+        const pdfStyle = document.createElement('style');
+        pdfStyle.id = 'pdf-export-style';
+        pdfStyle.textContent = `
+            @media print {
+                body { background: white !important; padding: 0 !important; }
+                .container { box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
+                .section { page-break-inside: avoid !important; }
+                * { print-color-adjust: exact !important; }
+            }
+        `;
+        document.head.appendChild(pdfStyle);
+        
+        // Set document title for PDF filename
+        const originalTitle = document.title;
+        const clientName = document.getElementById('clientName').value || 'Client';
+        document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        
+        // Trigger print dialog
+        setTimeout(() => {
+            window.print();
+        }, 100);
+        
+        // Clean up after print
+        const cleanupAfterPrint = () => {
+            // Remove PDF styles
+            const pdfStyleElement = document.getElementById('pdf-export-style');
+            if (pdfStyleElement) {
+                pdfStyleElement.remove();
+            }
+            
+            // Restore original title
+            document.title = originalTitle;
+            
+            // Restore hidden elements
+            elementsToHide.forEach((el, index) => {
+                el.style.display = originalDisplays[index];
+            });
         };
         
-        // Generate PDF and trigger download
-        html2pdf()
-            .from(document.querySelector('.container'))
-            .set(pdfOptions)
-            .save()
-            .then(() => {
-                // Restore hidden elements
-                elementsToHide.forEach((el, index) => {
-                    el.style.display = originalDisplays[index];
-                });
-                showAutoSaveIndicator('PDF downloaded successfully!');
-            })
-            .catch(() => {
-                // Restore hidden elements even if there's an error
-                elementsToHide.forEach((el, index) => {
-                    el.style.display = originalDisplays[index];
-                });
-                showAutoSaveIndicator('Error generating PDF. Please try again.');
-            });
+        // Listen for print events
+        window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
+        
+        // Fallback cleanup after 10 seconds
+        setTimeout(cleanupAfterPrint, 10000);
     });
     
     // Reset Form functionality
