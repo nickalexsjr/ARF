@@ -1764,7 +1764,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!checkbox.hasAttribute('data-initialized')) {
                 checkbox.setAttribute('data-initialized', 'true');
                 checkbox.addEventListener('change', function() {
-                    const sectionId = this.id.replace('Checkbox', 'Section');
+                    // Map checkbox IDs to section IDs
+                    const checkboxToSectionMap = {
+                        'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                        'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                        'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                        'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                        'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                        'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                        'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                    };
+                    
+                    const sectionId = checkboxToSectionMap[this.id];
                     const section = document.getElementById(sectionId);
                     if (section) {
                         section.style.display = this.checked ? 'block' : 'none';
@@ -2422,6 +2433,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (item) {
                             item.classList.toggle('selected', element.checked);
                         }
+                        
+                        // Handle product recommendation checkboxes
+                        if (key.endsWith('ProductRecsCheckbox')) {
+                            const checkboxToSectionMap = {
+                                'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                                'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                                'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                                'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                                'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                                'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                                'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                            };
+                            
+                            const sectionId = checkboxToSectionMap[key];
+                            const section = document.getElementById(sectionId);
+                            if (section) {
+                                section.style.display = element.checked ? 'block' : 'none';
+                            }
+                        }
                     }
                 } else {
                     element.value = formData[key];
@@ -2839,6 +2869,11 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             partnerNameGroup.style.display = 'none';
             entityNameGroup.style.display = 'none';
             entitySelector.style.display = 'none';
+            
+            // Hide all product recommendation sections
+            document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
+                section.style.display = 'none';
+            });
             
             // Clear dynamic content
             document.getElementById('recommendationsSectionsContainer').innerHTML = '';
