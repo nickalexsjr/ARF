@@ -38,6 +38,48 @@ body {
     padding: 20px;
 }
 
+.header-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.save-status {
+    background: var(--success);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    display: none;
+}
+
+.save-status.saving {
+    background: var(--secondary);
+    display: block;
+}
+
+.save-status.saved {
+    background: var(--success);
+    display: block;
+}
+
+.saved-arfs-dropdown {
+    position: relative;
+}
+
+.saved-arfs-dropdown select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    background: white;
+    font-size: 14px;
+    min-width: 200px;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -46,6 +88,7 @@ body {
     box-shadow: var(--box-shadow);
     padding: 30px;
     position: relative;
+    margin-top: 60px; /* Account for fixed header */
 }
 
 h1 {
@@ -258,7 +301,8 @@ textarea {
 }
 
 .checkbox-group.client-types {
-    justify-content: space-between;
+    justify-content: flex-start;
+    max-width: 600px; /* Limit width to bring buttons closer */
 }
 
 .checkbox-group.entity-types {
@@ -274,6 +318,7 @@ textarea {
     cursor: pointer;
     transition: var(--transition);
     border: 2px solid transparent;
+    flex: 0 0 auto; /* Don't grow/shrink */
 }
 
 .checkbox-item:hover {
@@ -376,7 +421,7 @@ textarea {
         padding: 20px;
     }
     
-    .btn-group, .no-print {
+    .btn-group, .no-print, .header-controls {
         display: none !important;
     }
     
@@ -404,10 +449,23 @@ textarea {
     
     .checkbox-group.client-types {
         flex-direction: column;
+        max-width: none;
     }
     
     .radio-group {
         flex-direction: column;
+    }
+    
+    .header-controls {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin-bottom: 20px;
+        justify-content: center;
+    }
+    
+    .container {
+        margin-top: 20px;
     }
 }
 
@@ -596,6 +654,45 @@ input:checked + .slider:before {
     margin-top: 0;
 }
 
+/* Save Dialog */
+.save-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.save-dialog-content {
+    background: white;
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    max-width: 400px;
+    width: 90%;
+}
+
+.save-dialog h3 {
+    margin-bottom: 20px;
+    color: var(--primary);
+}
+
+.save-dialog input {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.save-dialog-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
 /* For Word export styling */
 .word-export {
     font-family: 'Calibri', 'Arial', sans-serif;
@@ -627,6 +724,28 @@ input:checked + .slider:before {
     </style>
 </head>
 <body>
+    <!-- Header Controls -->
+    <div class="header-controls">
+        <div class="save-status" id="saveStatus">Saving...</div>
+        <div class="saved-arfs-dropdown">
+            <select id="savedArfsSelect">
+                <option value="">Load Saved ARF...</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Save Dialog -->
+    <div class="save-dialog" id="saveDialog">
+        <div class="save-dialog-content">
+            <h3>Save ARF</h3>
+            <input type="text" id="saveNameInput" placeholder="Enter ARF name..." maxlength="50">
+            <div class="save-dialog-buttons">
+                <button class="btn" id="cancelSaveBtn">Cancel</button>
+                <button class="btn btn-success" id="confirmSaveBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <h1>Statement of Advice Request Form</h1>
         
@@ -949,7 +1068,7 @@ input:checked + .slider:before {
         
         <!-- Button Group -->
         <div class="btn-group">
-            <button type="button" class="btn" id="saveBtn">Save as Draft</button>
+            <button type="button" class="btn" id="saveBtn">Save As</button>
             <button type="button" class="btn btn-success" id="exportWordBtn">Export to Word</button>
             <button type="button" class="btn btn-success" id="exportPdfBtn">Export to PDF</button>
             <button type="button" class="btn btn-primary" id="saveToXplanBtnBottom">
@@ -964,6 +1083,25 @@ input:checked + .slider:before {
 
     <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Global variables
+    let hasUnsavedChanges = false;
+    let autoSaveInterval;
+    let currentSaveName = '';
+    
+    // Initialize auto-save
+    startAutoSave();
+    
+    // Load saved ARFs dropdown
+    loadSavedArfsDropdown();
+    
+    // Warn before leaving if unsaved changes
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    
     // Client Status Radio Buttons
     const newClientRadio = document.getElementById('newClient');
     const existingClientRadio = document.getElementById('existingClient');
@@ -1000,6 +1138,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveToXplanBtnBottom = document.getElementById('saveToXplanBtnBottom');
     const emailDocumentBtnBottom = document.getElementById('emailDocumentBtnBottom');
     
+    // Save system elements
+    const saveDialog = document.getElementById('saveDialog');
+    const saveNameInput = document.getElementById('saveNameInput');
+    const confirmSaveBtn = document.getElementById('confirmSaveBtn');
+    const cancelSaveBtn = document.getElementById('cancelSaveBtn');
+    const savedArfsSelect = document.getElementById('savedArfsSelect');
+    const saveStatus = document.getElementById('saveStatus');
+    
     // Alternative platforms checkbox
     const paraplannerCompareCheckbox = document.getElementById('paraplannerCompare');
     const alternativePlatformsTextarea = document.getElementById('alternativePlatforms');
@@ -1026,11 +1172,151 @@ document.addEventListener('DOMContentLoaded', function() {
         'Custom'
     ];
     
-    // Risk profile options - updated order
+    // Risk profile options
     const riskProfiles = ['Conservative', 'Defensive', 'Moderate', 'Balanced', 'Growth', 'High Growth', 'Growth Plus', 'Custom'];
     
     // Product counter for unique IDs
     let productCounter = 0;
+    
+    // Auto-save functionality
+    function startAutoSave() {
+        // Save every 30 seconds
+        autoSaveInterval = setInterval(() => {
+            if (hasUnsavedChanges) {
+                autoSave();
+            }
+        }, 30000);
+        
+        // Add change listeners to all form inputs
+        document.addEventListener('change', markAsChanged);
+        document.addEventListener('input', markAsChanged);
+    }
+    
+    function markAsChanged() {
+        hasUnsavedChanges = true;
+        showSaveStatus('saving');
+    }
+    
+    function autoSave() {
+        if (currentSaveName) {
+            saveFormData(currentSaveName, true);
+        } else {
+            // Save as draft if no name set
+            saveFormData('Auto-save Draft', true);
+        }
+    }
+    
+    function showSaveStatus(status) {
+        saveStatus.className = `save-status ${status}`;
+        if (status === 'saved') {
+            setTimeout(() => {
+                saveStatus.className = 'save-status';
+            }, 2000);
+        }
+    }
+    
+    function saveFormData(name, isAutoSave = false) {
+        const formData = {};
+        document.querySelectorAll('input, textarea, select').forEach(element => {
+            if (element.type === 'checkbox' || element.type === 'radio') {
+                formData[element.id] = element.checked;
+            } else {
+                formData[element.id] = element.value;
+            }
+        });
+        
+        const savedArfs = JSON.parse(localStorage.getItem('savedArfs') || '{}');
+        savedArfs[name] = {
+            data: formData,
+            timestamp: new Date().toISOString(),
+            isAutoSave: isAutoSave
+        };
+        
+        localStorage.setItem('savedArfs', JSON.stringify(savedArfs));
+        
+        if (!isAutoSave) {
+            currentSaveName = name;
+            hasUnsavedChanges = false;
+            loadSavedArfsDropdown();
+            showSaveStatus('saved');
+        } else {
+            showSaveStatus('saved');
+        }
+    }
+    
+    function loadSavedArfsDropdown() {
+        const savedArfs = JSON.parse(localStorage.getItem('savedArfs') || '{}');
+        savedArfsSelect.innerHTML = '<option value="">Load Saved ARF...</option>';
+        
+        Object.keys(savedArfs).forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = `${name} (${new Date(savedArfs[name].timestamp).toLocaleDateString()})`;
+            savedArfsSelect.appendChild(option);
+        });
+    }
+    
+    function loadFormData(name) {
+        const savedArfs = JSON.parse(localStorage.getItem('savedArfs') || '{}');
+        if (savedArfs[name]) {
+            const formData = savedArfs[name].data;
+            Object.keys(formData).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.type === 'checkbox' || element.type === 'radio') {
+                        element.checked = formData[key];
+                        if (element.type === 'checkbox') {
+                            const item = element.closest('.checkbox-item');
+                            if (item) {
+                                item.classList.toggle('selected', element.checked);
+                            }
+                        }
+                    } else {
+                        element.value = formData[key];
+                    }
+                }
+            });
+            currentSaveName = name;
+            hasUnsavedChanges = false;
+            updateFormBasedOnSelections();
+            showSaveStatus('saved');
+        }
+    }
+    
+    // Save dialog event listeners
+    saveBtn.addEventListener('click', function() {
+        saveDialog.style.display = 'flex';
+        saveNameInput.value = currentSaveName || '';
+        saveNameInput.focus();
+    });
+    
+    confirmSaveBtn.addEventListener('click', function() {
+        const name = saveNameInput.value.trim();
+        if (name) {
+            saveFormData(name);
+            saveDialog.style.display = 'none';
+        } else {
+            alert('Please enter a name for the ARF');
+        }
+    });
+    
+    cancelSaveBtn.addEventListener('click', function() {
+        saveDialog.style.display = 'none';
+    });
+    
+    savedArfsSelect.addEventListener('change', function() {
+        if (this.value) {
+            if (hasUnsavedChanges) {
+                if (confirm('You have unsaved changes. Do you want to continue loading the saved ARF?')) {
+                    loadFormData(this.value);
+                } else {
+                    this.value = '';
+                }
+            } else {
+                loadFormData(this.value);
+            }
+        }
+    });
     
     // Set up checkbox visual selection effect
     document.querySelectorAll('.checkbox-item').forEach(item => {
@@ -1780,65 +2066,78 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Save to Xplan functionality
-    function saveToXplan() {
-        alert('This functionality is coming soon.');
-    }
-    
-    saveToXplanBtnBottom.addEventListener('click', saveToXplan);
-    
-    // Email Document functionality
-    function emailDocument() {
-        // Collect form data
-        const formData = new FormData(document.querySelector('form') || document.body);
-        const subject = 'Financial Advice Request Form - SOA';
-        const body = 'Please find attached the Financial Advice Request Form.';
-        
-        // Create mailto link
-        const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        // Note: Actual PDF attachment would require server-side processing
-        alert('Opening email client. Note: PDF attachment requires server-side implementation.');
-        window.location.href = mailtoLink;
-    }
-    
-    emailDocumentBtnBottom.addEventListener('click', emailDocument);
-    
-    // Export to Word functionality
-    exportWordBtn.addEventListener('click', function() {
-        // Get clean HTML content
+    // Get current form content for export
+    function getCurrentFormContent() {
         const container = document.querySelector('.container').cloneNode(true);
         
-        // Remove buttons
-        const buttons = container.querySelector('.btn-group');
-        if (buttons) buttons.remove();
+        // Remove buttons and controls
+        const btnGroup = container.querySelector('.btn-group');
+        if (btnGroup) btnGroup.remove();
+        
+        // Remove hidden sections
+        const hiddenSections = container.querySelectorAll('.section.hidden, [style*="display: none"]');
+        hiddenSections.forEach(section => section.remove());
+        
+        // Remove empty sections that aren't relevant
+        const sections = container.querySelectorAll('.section');
+        sections.forEach(section => {
+            const inputs = section.querySelectorAll('input, textarea, select');
+            let hasContent = false;
+            
+            inputs.forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    if (input.checked) hasContent = true;
+                } else if (input.value.trim()) {
+                    hasContent = true;
+                }
+            });
+            
+            // Always keep certain essential sections
+            const essentialSections = ['clientTypeSection', 'strategyDetailsSection'];
+            const sectionId = section.id;
+            
+            if (!hasContent && !essentialSections.includes(sectionId)) {
+                section.remove();
+            }
+        });
+        
+        return container;
+    }
+    
+    // Export to Word functionality - improved
+    exportWordBtn.addEventListener('click', function() {
+        const content = getCurrentFormContent();
         
         // Clean up styling for Word
         const html = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head>
                 <meta charset="utf-8">
-                <title>Financial Advice Request Form</title>
+                <title>Financial Advice Request Form - ${document.getElementById('clientName').value || 'Client'}</title>
                 <style>
                     body { font-family: Calibri, Arial, sans-serif; line-height: 1.5; color: #000; margin: 20px; }
                     h1 { font-size: 24pt; text-align: center; color: #2c3e50; margin-bottom: 20pt; }
                     h2 { font-size: 18pt; color: #3498db; margin-top: 20pt; margin-bottom: 10pt; border-bottom: 2px solid #ecf0f1; padding-bottom: 5pt; }
                     h3 { font-size: 14pt; color: #34495e; margin-top: 15pt; margin-bottom: 10pt; }
                     h4 { font-size: 12pt; color: #34495e; margin-top: 10pt; margin-bottom: 8pt; }
-                    .section { margin-bottom: 20pt; padding: 15pt; border-left: 4px solid #1abc9c; background-color: #f9f9f9; }
+                    .section { margin-bottom: 20pt; padding: 15pt; border-left: 4px solid #1abc9c; background-color: #f9f9f9; page-break-inside: avoid; }
                     .form-group { margin-bottom: 15pt; }
                     label { font-weight: bold; display: block; margin-bottom: 5pt; }
-                    input, textarea, select { border: 1px solid #ddd; padding: 8pt; width: 100%; margin-bottom: 10pt; font-family: Calibri, Arial, sans-serif; }
-                    textarea { min-height: 60px; }
+                    input, textarea, select { border: 1px solid #ddd; padding: 8pt; width: 100%; margin-bottom: 10pt; font-family: Calibri, Arial, sans-serif; background: white; }
+                    textarea { min-height: 60px; vertical-align: top; }
                     .checklist-item { margin-bottom: 8pt; padding: 5pt; background-color: #ecf0f1; }
                     .note { background-color: #e3f2fd; padding: 10pt; margin: 15pt 0; border-left: 4px solid #3498db; }
-                    .product-item { border: 1px solid #ddd; padding: 10pt; margin-bottom: 10pt; background-color: #fff; }
-                    .grid-2, .grid-3 { display: table; width: 100%; }
-                    .grid-2 > div, .grid-3 > div { display: table-cell; padding: 5pt; }
+                    .product-item { border: 1px solid #ddd; padding: 10pt; margin-bottom: 10pt; background-color: #fff; page-break-inside: avoid; }
+                    .grid-2 { display: table; width: 100%; }
+                    .grid-2 > div { display: table-cell; padding: 5pt; width: 50%; }
+                    .checkbox-item { display: inline-block; margin: 5pt; padding: 5pt; background: #f0f0f0; }
+                    .radio-item { display: inline-block; margin: 5pt; padding: 5pt; background: #f0f0f0; }
+                    .hidden { display: none; }
+                    i { display: none; }
                 </style>
             </head>
             <body>
-                ${container.innerHTML}
+                ${content.innerHTML}
             </body>
             </html>
         `;
@@ -1847,89 +2146,120 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'Financial_Advice_Request_Form.doc';
+        const clientName = document.getElementById('clientName').value || 'Client';
+        a.download = `Findex_ARF_${clientName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.doc`;
         a.click();
         URL.revokeObjectURL(url);
     });
     
-    // Export to PDF functionality - improved version
-    exportPdfBtn.addEventListener('click', function() {
-        const element = document.querySelector('.container');
-        
-        // Configure html2pdf options
-        const opt = {
-            margin:       [10, 10, 10, 10],
-            filename:     'Financial_Advice_Request_Form.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { 
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                letterRendering: true
-            },
-            jsPDF:        { 
-                unit: 'mm', 
-                format: 'a4', 
-                orientation: 'portrait',
-                compress: true
-            },
-            pagebreak:    { 
-                mode: ['avoid-all', 'css', 'legacy'],
-                before: '.section',
-                avoid: ['.product-item', '.checklist-item', '.form-group']
-            }
-        };
-        
-        // Generate PDF
-        html2pdf().set(opt).from(element).save();
-    });
-    
-    // Save Draft functionality
-    saveBtn.addEventListener('click', function() {
-        // Collect all form data
-        const formData = {};
-        document.querySelectorAll('input, textarea, select').forEach(element => {
-            if (element.type === 'checkbox' || element.type === 'radio') {
-                formData[element.id] = element.checked;
-            } else {
-                formData[element.id] = element.value;
-            }
-        });
-        
-        // Save to localStorage
-        localStorage.setItem('financialAdviceFormDraft', JSON.stringify(formData));
-        alert('Form data has been saved as a draft!');
-    });
-    
-    // Load draft on page load
-    const savedDraft = localStorage.getItem('financialAdviceFormDraft');
-    if (savedDraft) {
-        const formData = JSON.parse(savedDraft);
-        Object.keys(formData).forEach(key => {
-            const element = document.getElementById(key);
-            if (element) {
-                if (element.type === 'checkbox' || element.type === 'radio') {
-                    element.checked = formData[key];
-                    if (element.type === 'checkbox') {
-                        const item = element.closest('.checkbox-item');
-                        if (item) {
-                            item.classList.toggle('selected', element.checked);
-                        }
-                    }
-                } else {
-                    element.value = formData[key];
+    // Export to PDF functionality - improved
+    function generatePDF(forEmail = false) {
+        return new Promise((resolve, reject) => {
+            const content = getCurrentFormContent();
+            
+            // Configure html2pdf options
+            const opt = {
+                margin: [15, 15, 15, 15],
+                filename: `Findex_ARF_${(document.getElementById('clientName').value || 'Client').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    letterRendering: true
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    compress: true
+                },
+                pagebreak: { 
+                    mode: ['avoid-all', 'css', 'legacy'],
+                    before: '.section',
+                    avoid: ['.product-item', '.checklist-item', '.form-group']
                 }
+            };
+            
+            if (forEmail) {
+                // For email, return the PDF blob
+                html2pdf().set(opt).from(content).outputPdf('blob').then(resolve).catch(reject);
+            } else {
+                // For download
+                html2pdf().set(opt).from(content).save().then(resolve).catch(reject);
             }
         });
-        updateFormBasedOnSelections();
     }
+    
+    exportPdfBtn.addEventListener('click', function() {
+        generatePDF(false);
+    });
+    
+    // Save to Xplan functionality
+    function saveToXplan() {
+        alert('This functionality is coming soon.');
+    }
+    
+    saveToXplanBtnBottom.addEventListener('click', saveToXplan);
+    
+    // Email Document functionality - improved
+    emailDocumentBtnBottom.addEventListener('click', async function() {
+        try {
+            // Generate PDF first
+            const pdfBlob = await generatePDF(true);
+            
+            // Get client name for email
+            const clientName = document.getElementById('clientName').value || 'Client';
+            
+            // Create email subject and body
+            const subject = `Findex ARF for ${clientName}`;
+            const body = `Hi,
+
+Please find attached the draft Advice Request Form (ARF) for ${clientName} for your review and approval.
+
+This document contains the strategy recommendations and compliance requirements for the client's financial advice needs. Please review the details and let me know if you have any questions or require any modifications.
+
+Thank you for your attention to this matter.
+
+Best regards`;
+            
+            // Create mailto link
+            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Try to open Outlook if available, otherwise default email client
+            try {
+                // For Windows with Outlook installed
+                if (navigator.userAgent.includes('Windows')) {
+                    window.location.href = `outlook:${mailtoLink.replace('mailto:', '')}`;
+                } else {
+                    window.location.href = mailtoLink;
+                }
+            } catch (e) {
+                window.location.href = mailtoLink;
+            }
+            
+            // Note about PDF attachment
+            alert(`Email client opened with draft email.\n\nNote: The PDF has been generated but automatic attachment is not supported by web browsers for security reasons. Please manually attach the PDF file that will be downloaded separately.`);
+            
+            // Download the PDF separately for manual attachment
+            setTimeout(() => {
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Findex_ARF_${clientName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error generating PDF for email:', error);
+            alert('There was an error generating the PDF. Please try the Export to PDF button instead.');
+        }
+    });
     
     // Reset Form functionality
     resetBtn.addEventListener('click', function() {
         if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
-            // Clear localStorage
-            localStorage.removeItem('financialAdviceFormDraft');
-            
             // Reset form fields
             document.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea').forEach(field => {
                 field.value = '';
@@ -1975,6 +2305,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset paraplanner compare checkbox
             paraplannerCompareCheckbox.checked = false;
             alternativePlatformsTextarea.value = '';
+            
+            // Reset save state
+            currentSaveName = '';
+            hasUnsavedChanges = false;
+            showSaveStatus('');
             
             alert('Form has been reset!');
         }
