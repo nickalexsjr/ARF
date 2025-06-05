@@ -2093,7 +2093,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function saveDraft(draftName) {
+    function saveDraft(draftName, isAutoSave = false) {
         const formData = collectFormData();
         const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
         drafts[draftName] = {
@@ -2101,7 +2101,11 @@ document.addEventListener('DOMContentLoaded', function() {
             timestamp: new Date().toISOString()
         };
         localStorage.setItem('financialAdviceFormDrafts', JSON.stringify(drafts));
-        loadDraftList();
+        
+        // Only refresh dropdown if it's not an auto-save
+        if (!isAutoSave) {
+            loadDraftList();
+        }
     }
     
     function loadDraft(draftName) {
@@ -2153,8 +2157,8 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(autoSaveTimeout);
         autoSaveTimeout = setTimeout(() => {
             const clientName = document.getElementById('clientName').value || 'Auto-Save';
-            saveDraft(`${clientName} - Auto Save`);
-            // Silent auto-save - no notification
+            saveDraft(`${clientName} - Auto Save`, true); // Pass true for silent auto-save
+            // Completely silent - no notifications, no dropdown updates
         }, 2000); // Auto-save after 2 seconds of inactivity
     }
     
@@ -2300,88 +2304,165 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Email client opened successfully.');
     });
     
-    // Export to Word functionality - FIXED TO MATCH CURRENT VIEW
+    // Export to Word functionality - CLEAN VERSION THAT MATCHES VIEW
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Get the current state of the container as displayed
-        const container = document.querySelector('.container');
+        // Build clean Word document content
+        let wordContent = `
+        <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
+        `;
         
-        // Create a comprehensive HTML capture of current state
-        let htmlContent = '';
-        
-        // Capture all visible content by traversing the DOM
-        function captureElement(element) {
-            if (element.style.display === 'none' || element.classList.contains('btn-group') || 
-                element.classList.contains('draft-selector') || element.classList.contains('auto-save-indicator') ||
-                element.classList.contains('modal')) {
-                return '';
-            }
-            
-            let html = '';
-            const tagName = element.tagName.toLowerCase();
-            
-            if (tagName === 'input') {
-                if (element.type === 'checkbox' || element.type === 'radio') {
-                    html = `<span style="display: inline-block; width: 15px; height: 15px; border: 1px solid #000; margin-right: 5px; text-align: center;">${element.checked ? '✓' : ''}</span>`;
-                } else {
-                    html = `<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 200px; padding: 2px;">${element.value}</span>`;
+        // Process each visible section
+        document.querySelectorAll('.section').forEach(section => {
+            if (section.style.display !== 'none') {
+                const h2 = section.querySelector('h2');
+                if (h2) {
+                    wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">${h2.textContent}</h2>`;
                 }
-            } else if (tagName === 'textarea') {
-                html = `<div style="border: 1px solid #000; padding: 5px; min-height: 40px; white-space: pre-wrap;">${element.value}</div>`;
-            } else if (tagName === 'select') {
-                const selectedOption = element.options[element.selectedIndex];
-                html = `<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 150px; padding: 2px;">${selectedOption ? selectedOption.text : ''}</span>`;
-            } else {
-                // For other elements, capture their content
-                const attrs = [];
-                if (element.className) attrs.push(`class="${element.className}"`);
-                if (element.id) attrs.push(`id="${element.id}"`);
                 
-                html = `<${tagName}${attrs.length ? ' ' + attrs.join(' ') : ''}>`;
-                
-                // Process child nodes
-                for (let child of element.childNodes) {
-                    if (child.nodeType === Node.TEXT_NODE) {
-                        html += child.textContent;
-                    } else if (child.nodeType === Node.ELEMENT_NODE) {
-                        html += captureElement(child);
+                // Process form groups
+                section.querySelectorAll('.form-group').forEach(group => {
+                    if (group.style.display !== 'none') {
+                        const label = group.querySelector('label');
+                        
+                        // Process radio groups
+                        const radioGroup = group.querySelector('.radio-group');
+                        if (radioGroup) {
+                            if (label) {
+                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                            }
+                            radioGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
+                                if (radio.checked) {
+                                    const radioLabel = radio.nextElementSibling;
+                                    if (radioLabel) {
+                                        wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Process checkbox groups
+                        const checkboxGroup = group.querySelector('.checkbox-group');
+                        if (checkboxGroup) {
+                            if (label) {
+                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                            }
+                            checkboxGroup.querySelectorAll('.checkbox-item').forEach(item => {
+                                const checkbox = item.querySelector('input[type="checkbox"]');
+                                const checkboxLabel = item.querySelector('label');
+                                if (checkbox && checkboxLabel) {
+                                    wordContent += `<p style="margin-left: 20px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
+                                }
+                            });
+                        }
+                        
+                        // Process regular inputs
+                        group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
+                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group')) {
+                                const inputLabel = input.closest('.form-group').querySelector('label');
+                                if (inputLabel && input.value) {
+                                    let value = input.value;
+                                    if (input.tagName === 'SELECT') {
+                                        const selected = input.options[input.selectedIndex];
+                                        value = selected ? selected.text : '';
+                                    }
+                                    if (value) {
+                                        wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
+                                        wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px;">${value}</p>`;
+                                    }
+                                }
+                            }
+                        });
+                        
+                        // Process checklist items
+                        group.querySelectorAll('.checklist-item').forEach(item => {
+                            if (item.style.display !== 'none') {
+                                const checkbox = item.querySelector('input[type="checkbox"]');
+                                const checkboxLabel = item.querySelector('label');
+                                if (checkbox && checkboxLabel) {
+                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
+                                }
+                            }
+                        });
+                        
+                        // Process toggle switches
+                        group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
+                            const toggleLabel = toggleGroup.querySelector('label');
+                            const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
+                            if (toggleLabel && toggleInput) {
+                                wordContent += `<p><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
+                            }
+                        });
                     }
-                }
+                });
                 
-                html += `</${tagName}>`;
+                // Process dynamic content (recommendations sections)
+                const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
+                if (dynamicContainer) {
+                    dynamicContainer.querySelectorAll('.form-group').forEach(group => {
+                        if (group.style.display !== 'none') {
+                            const label = group.querySelector('label');
+                            const textarea = group.querySelector('textarea');
+                            if (label && textarea && textarea.value) {
+                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
+                            }
+                        }
+                    });
+                    
+                    // Process product recommendations
+                    dynamicContainer.querySelectorAll('.product-item').forEach(product => {
+                        if (product.style.display !== 'none') {
+                            const productHeader = product.querySelector('h5');
+                            if (productHeader) {
+                                wordContent += `<h4 style="color: #34495e; margin-top: 15px;">${productHeader.textContent}</h4>`;
+                            }
+                            
+                            product.querySelectorAll('input, textarea, select').forEach(input => {
+                                if (input.value && input.style.display !== 'none') {
+                                    const inputLabel = input.closest('.form-group')?.querySelector('label');
+                                    if (inputLabel) {
+                                        let value = input.value;
+                                        if (input.tagName === 'SELECT') {
+                                            const selected = input.options[input.selectedIndex];
+                                            value = selected ? selected.text : '';
+                                        }
+                                        if (value) {
+                                            wordContent += `<p><strong>${inputLabel.textContent}</strong> ${value}</p>`;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
             }
-            
-            return html;
-        }
+        });
         
-        htmlContent = captureElement(container);
-        
-        // Clean up styling for Word with current content preserved
+        // Create complete Word document
         const html = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head>
                 <meta charset="utf-8">
                 <title>Financial Advice Request Form - ${clientName}</title>
                 <style>
-                    body { font-family: Calibri, Arial, sans-serif; line-height: 1.5; color: #000; margin: 20px; }
-                    h1 { font-size: 24pt; text-align: center; color: #2c3e50; margin-bottom: 20pt; page-break-after: avoid; }
-                    h2 { font-size: 18pt; color: #3498db; margin-top: 20pt; margin-bottom: 10pt; border-bottom: 2px solid #ecf0f1; padding-bottom: 5pt; page-break-after: avoid; }
-                    h3 { font-size: 14pt; color: #34495e; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
-                    h4 { font-size: 12pt; color: #34495e; margin-top: 10pt; margin-bottom: 8pt; page-break-after: avoid; }
-                    .section { margin-bottom: 20pt; padding: 15pt; border-left: 4px solid #1abc9c; background-color: #f9f9f9; page-break-inside: avoid; }
-                    .form-group { margin-bottom: 15pt; }
-                    label { font-weight: bold; display: block; margin-bottom: 5pt; }
-                    .checklist-item { margin-bottom: 8pt; padding: 5pt; background-color: #ecf0f1; page-break-inside: avoid; }
-                    .note { background-color: #e3f2fd; padding: 10pt; margin: 15pt 0; border-left: 4px solid #3498db; }
-                    .product-item { border: 1px solid #ddd; padding: 10pt; margin-bottom: 10pt; background-color: #fff; page-break-inside: avoid; }
-                    .product-recommendations, .risk-profile-section { margin: 15pt 0; padding: 10pt; background-color: #f0f8ff; border: 1px solid #ddd; }
-                    .btn-group, .draft-selector, .auto-save-indicator, .modal { display: none !important; }
+                    body { 
+                        font-family: Calibri, Arial, sans-serif; 
+                        line-height: 1.5; 
+                        color: #000; 
+                        margin: 20px; 
+                        background: white;
+                    }
+                    h1 { font-size: 24pt; margin-bottom: 20pt; }
+                    h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; }
+                    h3, h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; }
+                    p { margin-bottom: 10pt; }
                     @page { margin: 1in; }
                 </style>
             </head>
             <body>
-                ${htmlContent}
+                ${wordContent}
             </body>
             </html>
         `;
@@ -2394,71 +2475,157 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         a.click();
         URL.revokeObjectURL(url);
         
-        showAutoSaveIndicator('Word document exported successfully!');
+        showAutoSaveIndicator('Clean Word document exported successfully!');
     });
     
-    // Export to PDF functionality - COMPLETELY FIXED VERSION
+    // Export to PDF functionality - CLEAN VERSION THAT MATCHES VIEW
     exportPdfBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Hide elements that shouldn't be in PDF temporarily
-        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal');
-        const buttonGroup = document.querySelector('.btn-group');
+        // Create a clean version of the form content
+        const cleanContent = document.createElement('div');
+        cleanContent.style.padding = '20px';
+        cleanContent.style.fontFamily = 'Arial, sans-serif';
+        cleanContent.style.fontSize = '12px';
+        cleanContent.style.lineHeight = '1.4';
+        cleanContent.style.color = '#000';
+        cleanContent.style.backgroundColor = '#fff';
         
-        // Store original display values
-        const originalDisplays = [];
-        elementsToHide.forEach(el => {
-            originalDisplays.push(el.style.display);
-            el.style.display = 'none';
+        // Add title
+        cleanContent.innerHTML = `<h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>`;
+        
+        // Process each visible section
+        document.querySelectorAll('.section').forEach(section => {
+            if (section.style.display !== 'none') {
+                const sectionClone = document.createElement('div');
+                sectionClone.style.marginBottom = '25px';
+                sectionClone.style.pageBreakInside = 'avoid';
+                sectionClone.style.border = '1px solid #ddd';
+                sectionClone.style.padding = '15px';
+                
+                // Add section title
+                const h2 = section.querySelector('h2');
+                if (h2) {
+                    const title = document.createElement('h2');
+                    title.textContent = h2.textContent;
+                    title.style.color = '#3498db';
+                    title.style.fontSize = '16px';
+                    title.style.marginBottom = '15px';
+                    title.style.borderBottom = '2px solid #ecf0f1';
+                    title.style.paddingBottom = '5px';
+                    sectionClone.appendChild(title);
+                }
+                
+                // Process form groups in this section
+                section.querySelectorAll('.form-group').forEach(group => {
+                    if (group.style.display !== 'none') {
+                        const groupClone = document.createElement('div');
+                        groupClone.style.marginBottom = '15px';
+                        
+                        // Process labels and inputs
+                        const label = group.querySelector('label');
+                        if (label) {
+                            const labelClone = document.createElement('div');
+                            labelClone.style.fontWeight = 'bold';
+                            labelClone.style.marginBottom = '5px';
+                            labelClone.textContent = label.textContent;
+                            groupClone.appendChild(labelClone);
+                        }
+                        
+                        // Process inputs, textareas, selects
+                        group.querySelectorAll('input, textarea, select').forEach(input => {
+                            if (input.style.display !== 'none' && !input.closest('.btn-group')) {
+                                const valueDiv = document.createElement('div');
+                                valueDiv.style.border = '1px solid #ccc';
+                                valueDiv.style.padding = '8px';
+                                valueDiv.style.marginBottom = '10px';
+                                valueDiv.style.minHeight = '20px';
+                                valueDiv.style.backgroundColor = '#f9f9f9';
+                                
+                                let value = '';
+                                if (input.type === 'checkbox') {
+                                    value = input.checked ? '☑ ' + (input.nextElementSibling?.textContent || 'Checked') : '☐ ' + (input.nextElementSibling?.textContent || 'Unchecked');
+                                } else if (input.type === 'radio') {
+                                    if (input.checked) {
+                                        value = '● ' + (input.nextElementSibling?.textContent || input.value);
+                                    }
+                                } else if (input.tagName === 'SELECT') {
+                                    const selected = input.options[input.selectedIndex];
+                                    value = selected ? selected.text : '';
+                                } else {
+                                    value = input.value;
+                                }
+                                
+                                if (value) {
+                                    valueDiv.textContent = value;
+                                    groupClone.appendChild(valueDiv);
+                                }
+                            }
+                        });
+                        
+                        // Process checklist items
+                        group.querySelectorAll('.checklist-item').forEach(item => {
+                            if (item.style.display !== 'none') {
+                                const checkbox = item.querySelector('input[type="checkbox"]');
+                                const label = item.querySelector('label');
+                                if (checkbox && label) {
+                                    const itemDiv = document.createElement('div');
+                                    itemDiv.style.marginBottom = '5px';
+                                    itemDiv.style.padding = '5px';
+                                    itemDiv.style.backgroundColor = '#f0f0f0';
+                                    itemDiv.textContent = (checkbox.checked ? '☑ ' : '☐ ') + label.textContent;
+                                    groupClone.appendChild(itemDiv);
+                                }
+                            }
+                        });
+                        
+                        if (groupClone.children.length > 0) {
+                            sectionClone.appendChild(groupClone);
+                        }
+                    }
+                });
+                
+                if (sectionClone.children.length > 1) { // More than just the title
+                    cleanContent.appendChild(sectionClone);
+                }
+            }
         });
-        const originalButtonDisplay = buttonGroup.style.display;
-        buttonGroup.style.display = 'none';
         
-        // Configure html2pdf options for the actual visible container
+        // Create temporary container
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.width = '210mm';
+        tempDiv.style.backgroundColor = 'white';
+        tempDiv.appendChild(cleanContent);
+        document.body.appendChild(tempDiv);
+        
+        // Generate PDF
         const opt = {
             margin: [10, 10, 10, 10],
             filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-            image: { 
-                type: 'jpeg', 
-                quality: 1.0
-            },
+            image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { 
                 scale: 2,
                 useCORS: true,
-                allowTaint: true,
                 backgroundColor: '#ffffff',
-                logging: false,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: window.innerWidth,
-                windowHeight: window.innerHeight
+                removeContainer: true
             },
             jsPDF: { 
                 unit: 'mm', 
                 format: 'a4', 
                 orientation: 'portrait'
-            },
-            pagebreak: { 
-                mode: ['avoid-all'],
-                before: '.section'
             }
         };
         
-        // Generate PDF from the actual container as currently displayed
-        html2pdf().set(opt).from(document.querySelector('.container')).save().then(() => {
-            // Restore original display values
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
-            buttonGroup.style.display = originalButtonDisplay;
-            showAutoSaveIndicator('PDF exported successfully!');
+        html2pdf().set(opt).from(tempDiv).save().then(() => {
+            document.body.removeChild(tempDiv);
+            showAutoSaveIndicator('Clean PDF exported successfully!');
         }).catch(error => {
             console.error('PDF generation failed:', error);
-            // Restore original display values on error
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
-            buttonGroup.style.display = originalButtonDisplay;
+            if (document.body.contains(tempDiv)) {
+                document.body.removeChild(tempDiv);
+            }
             showAutoSaveIndicator('PDF export failed. Please try again.');
         });
     });
