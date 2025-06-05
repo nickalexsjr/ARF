@@ -695,6 +695,50 @@ input:checked + .slider:before {
     padding: 15pt;
 }
 
+/* New styles for recommendation sections with checkboxes */
+.recommendation-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.recommendation-header label {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.recommendation-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.na-button {
+    background: #6c757d;
+    margin-left: 10px;
+}
+
+.recommendation-section {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.recommendation-textarea {
+    flex: 2;
+}
+
+.risk-profile-inline {
+    flex: 1;
+    min-width: 250px;
+}
+
+.risk-profile-inline .form-group {
+    margin-bottom: 0;
+}
+
 @media print {
     body {
         background: white;
@@ -774,6 +818,14 @@ input:checked + .slider:before {
     .modal-content {
         width: 95%;
         margin: 10% auto;
+    }
+    
+    .recommendation-section {
+        flex-direction: column;
+    }
+    
+    .risk-profile-inline {
+        min-width: auto;
     }
 }
     </style>
@@ -1441,16 +1493,13 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     window.fillJointProductNA = function() {
-        // Clear existing joint products and add N/A product
-        const jointProductsContainer = document.getElementById('joint_products');
-        if (jointProductsContainer) {
-            jointProductsContainer.innerHTML = '';
-            const naProductHTML = `
-                <div class="product-item" style="text-align: center; padding: 20px; background-color: #f8f9fa;">
-                    <h5>N/A - No joint products required</h5>
-                </div>
-            `;
-            jointProductsContainer.innerHTML = naProductHTML;
+        // Hide the joint product section and mark as N/A
+        const jointProductCheckbox = document.getElementById('jointProductRecsCheckbox');
+        const jointProductSection = document.getElementById('jointProductRecommendationsSection');
+        
+        if (jointProductCheckbox && jointProductSection) {
+            jointProductCheckbox.checked = false;
+            jointProductSection.style.display = 'none';
             triggerAutoSave();
         }
     };
@@ -1461,6 +1510,22 @@ document.addEventListener('DOMContentLoaded', function() {
             jointRiskProfile.value = 'na';
             triggerAutoSave();
         }
+    };
+    
+    // Function to add product
+    window.addProduct = function(clientId, clientName) {
+        const container = document.getElementById(`${clientId}_products`);
+        const productCount = container.querySelectorAll('.product-item').length;
+        
+        const newProductHTML = createProductRecommendation(clientId, clientName, productCount);
+        container.insertAdjacentHTML('beforeend', newProductHTML);
+        
+        // Initialize features for the new product
+        setTimeout(() => {
+            initializeProductFeatures();
+            setupAutoSaveForNewElements();
+            triggerAutoSave();
+        }, 100);
     };
     
     // Function to update recommendation sections based on selections
@@ -1475,13 +1540,37 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add client recommendations if single or couple is selected
         if (singleClientCheckbox.checked || coupleClientCheckbox.checked) {
             const clientRecommendationHTML = `
-                <div class="form-group">
-                    <label for="clientRecommendations">${clientName} Recommendations:</label>
-                    <textarea id="clientRecommendations" name="clientRecommendations" 
-                        placeholder="Enter recommendations for ${clientName}"></textarea>
+                <div class="recommendation-section">
+                    <div class="recommendation-textarea">
+                        <div class="recommendation-header">
+                            <label for="clientRecommendations">${clientName} Recommendations:</label>
+                            <div class="recommendation-checkbox">
+                                <input type="checkbox" id="client1ProductRecsCheckbox" name="client1ProductRecsCheckbox">
+                                <label for="client1ProductRecsCheckbox">Product Recommendations?</label>
+                            </div>
+                        </div>
+                        <textarea id="clientRecommendations" name="clientRecommendations" 
+                            placeholder="Enter recommendations for ${clientName}"></textarea>
+                    </div>
+                    <div class="risk-profile-inline">
+                        <div class="form-group">
+                            <label for="riskProfile1">Risk Profile - ${clientName}:</label>
+                            <select id="riskProfile1" name="riskProfile1">
+                                <option value="">Select Risk Profile</option>
+                                <option value="conservative">Conservative</option>
+                                <option value="defensive">Defensive</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="balanced">Balanced</option>
+                                <option value="growth">Growth</option>
+                                <option value="highGrowth">High Growth</option>
+                                <option value="growthPlus">Growth Plus</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="product-recommendations">
+                <div class="product-recommendations" id="client1ProductRecommendationsSection" style="display: none;">
                     <h4>Product Recommendations - ${clientName}</h4>
                     <div id="client1_products">
                         ${createProductRecommendation('client1', clientName, 0)}
@@ -1489,24 +1578,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client1', '${clientName}')">
                         <i class="fas fa-plus"></i> Add Product
                     </button>
-                </div>
-                
-                <div class="risk-profile-section">
-                    <h4>Risk Profile - ${clientName}</h4>
-                    <div class="form-group">
-                        <label for="riskProfile1">Risk Profile:</label>
-                        <select id="riskProfile1" name="riskProfile1">
-                            <option value="">Select Risk Profile</option>
-                            <option value="conservative">Conservative</option>
-                            <option value="defensive">Defensive</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="balanced">Balanced</option>
-                            <option value="growth">Growth</option>
-                            <option value="highGrowth">High Growth</option>
-                            <option value="growthPlus">Growth Plus</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                    </div>
                 </div>
             `;
             
@@ -1516,13 +1587,37 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add partner recommendations if couple is selected
         if (coupleClientCheckbox.checked) {
             const partnerRecommendationHTML = `
-                <div class="form-group">
-                    <label for="partnerRecommendations">${partnerName} Recommendations:</label>
-                    <textarea id="partnerRecommendations" name="partnerRecommendations" 
-                        placeholder="Enter recommendations for ${partnerName}"></textarea>
+                <div class="recommendation-section">
+                    <div class="recommendation-textarea">
+                        <div class="recommendation-header">
+                            <label for="partnerRecommendations">${partnerName} Recommendations:</label>
+                            <div class="recommendation-checkbox">
+                                <input type="checkbox" id="client2ProductRecsCheckbox" name="client2ProductRecsCheckbox">
+                                <label for="client2ProductRecsCheckbox">Product Recommendations?</label>
+                            </div>
+                        </div>
+                        <textarea id="partnerRecommendations" name="partnerRecommendations" 
+                            placeholder="Enter recommendations for ${partnerName}"></textarea>
+                    </div>
+                    <div class="risk-profile-inline">
+                        <div class="form-group">
+                            <label for="riskProfile2">Risk Profile - ${partnerName}:</label>
+                            <select id="riskProfile2" name="riskProfile2">
+                                <option value="">Select Risk Profile</option>
+                                <option value="conservative">Conservative</option>
+                                <option value="defensive">Defensive</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="balanced">Balanced</option>
+                                <option value="growth">Growth</option>
+                                <option value="highGrowth">High Growth</option>
+                                <option value="growthPlus">Growth Plus</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="product-recommendations">
+                <div class="product-recommendations" id="client2ProductRecommendationsSection" style="display: none;">
                     <h4>Product Recommendations - ${partnerName}</h4>
                     <div id="client2_products">
                         ${createProductRecommendation('client2', partnerName, 0)}
@@ -1532,28 +1627,54 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                 </div>
                 
-                <div class="risk-profile-section">
-                    <h4>Risk Profile - ${partnerName}</h4>
-                    <div class="form-group">
-                        <label for="riskProfile2">Risk Profile:</label>
-                        <select id="riskProfile2" name="riskProfile2">
-                            <option value="">Select Risk Profile</option>
-                            <option value="conservative">Conservative</option>
-                            <option value="defensive">Defensive</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="balanced">Balanced</option>
-                            <option value="growth">Growth</option>
-                            <option value="highGrowth">High Growth</option>
-                            <option value="growthPlus">Growth Plus</option>
-                            <option value="custom">Custom</option>
-                        </select>
+                <div class="recommendation-section">
+                    <div class="recommendation-textarea">
+                        <div class="recommendation-header">
+                            <label for="jointRecommendations">Joint Recommendations:</label>
+                            <div class="recommendation-checkbox">
+                                <input type="checkbox" id="jointProductRecsCheckbox" name="jointProductRecsCheckbox">
+                                <label for="jointProductRecsCheckbox">Product Recommendations?</label>
+                            </div>
+                        </div>
+                        <textarea id="jointRecommendations" name="jointRecommendations" 
+                            placeholder="Enter joint recommendations"></textarea>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointNA()">
+                            N/A
+                        </button>
+                    </div>
+                    <div class="risk-profile-inline">
+                        <div class="form-group">
+                            <label for="riskProfileJoint">Risk Profile - Joint:</label>
+                            <select id="riskProfileJoint" name="riskProfileJoint">
+                                <option value="">Select Risk Profile</option>
+                                <option value="conservative">Conservative</option>
+                                <option value="defensive">Defensive</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="balanced">Balanced</option>
+                                <option value="growth">Growth</option>
+                                <option value="highGrowth">High Growth</option>
+                                <option value="growthPlus">Growth Plus</option>
+                                <option value="na">N/A</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointRiskNA()">
+                                N/A
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="jointRecommendations">Joint Recommendations:</label>
-                    <textarea id="jointRecommendations" name="jointRecommendations" 
-                        placeholder="Enter joint recommendations"></textarea>
+                <div class="product-recommendations" id="jointProductRecommendationsSection" style="display: none;">
+                    <h4>Product Recommendations - Joint</h4>
+                    <div id="joint_products">
+                        ${createProductRecommendation('joint', 'Joint', 0)}
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('joint', 'Joint')">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointProductNA()">
+                        N/A
+                    </button>
                 </div>
             `;
             
@@ -1584,10 +1705,44 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add dependants recommendations if selected
         if (dependantsClientCheckbox.checked) {
             const dependantsRecommendationHTML = `
-                <div class="form-group">
-                    <label for="dependantsRecommendations">Dependants Recommendations:</label>
-                    <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
-                        placeholder="Enter recommendations for dependants"></textarea>
+                <div class="recommendation-section">
+                    <div class="recommendation-textarea">
+                        <div class="recommendation-header">
+                            <label for="dependantsRecommendations">Dependants Recommendations:</label>
+                            <div class="recommendation-checkbox">
+                                <input type="checkbox" id="dependantsProductRecsCheckbox" name="dependantsProductRecsCheckbox">
+                                <label for="dependantsProductRecsCheckbox">Product Recommendations?</label>
+                            </div>
+                        </div>
+                        <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
+                            placeholder="Enter recommendations for dependants"></textarea>
+                    </div>
+                    <div class="risk-profile-inline">
+                        <div class="form-group">
+                            <label for="riskProfileDependants">Risk Profile - Dependants:</label>
+                            <select id="riskProfileDependants" name="riskProfileDependants">
+                                <option value="">Select Risk Profile</option>
+                                <option value="conservative">Conservative</option>
+                                <option value="defensive">Defensive</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="balanced">Balanced</option>
+                                <option value="growth">Growth</option>
+                                <option value="highGrowth">High Growth</option>
+                                <option value="growthPlus">Growth Plus</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="product-recommendations" id="dependantsProductRecommendationsSection" style="display: none;">
+                    <h4>Product Recommendations - Dependants</h4>
+                    <div id="dependants_products">
+                        ${createProductRecommendation('dependants', 'Dependants', 0)}
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('dependants', 'Dependants')">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
                 </div>
             `;
             
@@ -1597,8 +1752,27 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize all product dropdowns and event listeners
         setTimeout(() => {
             initializeProductFeatures();
+            setupProductRecommendationToggles();
             setupAutoSaveForNewElements();
         }, 100);
+    }
+    
+    // Function to setup product recommendation toggles
+    function setupProductRecommendationToggles() {
+        // Setup toggles for all product recommendation checkboxes
+        document.querySelectorAll('[id$="ProductRecsCheckbox"]').forEach(checkbox => {
+            if (!checkbox.hasAttribute('data-initialized')) {
+                checkbox.setAttribute('data-initialized', 'true');
+                checkbox.addEventListener('change', function() {
+                    const sectionId = this.id.replace('Checkbox', 'Section');
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.style.display = this.checked ? 'block' : 'none';
+                    }
+                    triggerAutoSave();
+                });
+            }
+        });
     }
     
     // Helper function to add entity recommendation sections
@@ -1607,13 +1781,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const entityId = entityType.toLowerCase();
         
         const entityRecommendationHTML = `
-            <div class="form-group">
-                <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations:</label>
-                <textarea id="${entityId}Recommendations" name="${entityId}Recommendations" 
-                    placeholder="Enter recommendations for ${entityType}"></textarea>
+            <div class="recommendation-section">
+                <div class="recommendation-textarea">
+                    <div class="recommendation-header">
+                        <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations:</label>
+                        <div class="recommendation-checkbox">
+                            <input type="checkbox" id="${entityId}ProductRecsCheckbox" name="${entityId}ProductRecsCheckbox">
+                            <label for="${entityId}ProductRecsCheckbox">Product Recommendations?</label>
+                        </div>
+                    </div>
+                    <textarea id="${entityId}Recommendations" name="${entityId}Recommendations" 
+                        placeholder="Enter recommendations for ${entityType}"></textarea>
+                </div>
+                <div class="risk-profile-inline">
+                    <div class="form-group">
+                        <label for="riskProfile${entityId}">Risk Profile - ${entityType}:</label>
+                        <select id="riskProfile${entityId}" name="riskProfile${entityId}">
+                            <option value="">Select Risk Profile</option>
+                            <option value="conservative">Conservative</option>
+                            <option value="defensive">Defensive</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="balanced">Balanced</option>
+                            <option value="growth">Growth</option>
+                            <option value="highGrowth">High Growth</option>
+                            <option value="growthPlus">Growth Plus</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             
-            <div class="product-recommendations">
+            <div class="product-recommendations" id="${entityId}ProductRecommendationsSection" style="display: none;">
                 <h4>Product Recommendations - ${entityType} - ${entityName}</h4>
                 <div id="${entityId}_products">
                     ${createProductRecommendation(entityId, entityName, 0)}
@@ -1622,44 +1820,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <i class="fas fa-plus"></i> Add Product
                 </button>
             </div>
-            
-            <div class="risk-profile-section">
-                <h4>Risk Profile - ${entityType} - ${entityName}</h4>
-                <div class="form-group">
-                    <label for="riskProfile${entityId}">Risk Profile:</label>
-                    <select id="riskProfile${entityId}" name="riskProfile${entityId}">
-                        <option value="">Select Risk Profile</option>
-                        <option value="conservative">Conservative</option>
-                        <option value="defensive">Defensive</option>
-                        <option value="moderate">Moderate</option>
-                        <option value="balanced">Balanced</option>
-                        <option value="growth">Growth</option>
-                        <option value="highGrowth">High Growth</option>
-                        <option value="growthPlus">Growth Plus</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                </div>
-            </div>
         `;
         
         container.insertAdjacentHTML('beforeend', entityRecommendationHTML);
     }
-    
-    // Function to add product
-    window.addProduct = function(clientId, clientName) {
-        const container = document.getElementById(`${clientId}_products`);
-        const productCount = container.querySelectorAll('.product-item').length;
-        
-        const newProductHTML = createProductRecommendation(clientId, clientName, productCount);
-        container.insertAdjacentHTML('beforeend', newProductHTML);
-        
-        // Initialize features for the new product
-        setTimeout(() => {
-            initializeProductFeatures();
-            setupAutoSaveForNewElements();
-            triggerAutoSave();
-        }, 100);
-    };
     
     // Function to initialize product features
     function initializeProductFeatures() {
@@ -2465,19 +2629,45 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                 // Process dynamic content (recommendations sections) - IMPROVED
                 const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
                 if (dynamicContainer) {
-                    // Process recommendation textareas
-                    dynamicContainer.querySelectorAll('.form-group').forEach(group => {
-                        if (group.style.display !== 'none' && !group.closest('.product-recommendations') && !group.closest('.risk-profile-section')) {
-                            const label = group.querySelector('label');
-                            const textarea = group.querySelector('textarea');
-                            if (label && textarea && textarea.value) {
-                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
+                    // Process recommendation sections with new layout
+                    dynamicContainer.querySelectorAll('.recommendation-section').forEach(recSection => {
+                        if (recSection.style.display !== 'none') {
+                            const textareaDiv = recSection.querySelector('.recommendation-textarea');
+                            const riskDiv = recSection.querySelector('.risk-profile-inline');
+                            
+                            if (textareaDiv) {
+                                const label = textareaDiv.querySelector('label');
+                                const textarea = textareaDiv.querySelector('textarea');
+                                const productCheckbox = textareaDiv.querySelector('input[type="checkbox"]');
+                                
+                                if (label && textarea && textarea.value) {
+                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                    wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
+                                    
+                                    if (productCheckbox) {
+                                        const productLabel = productCheckbox.nextElementSibling;
+                                        if (productLabel) {
+                                            wordContent += `<p style="margin-left: 20px;">${productCheckbox.checked ? '☑' : '☐'} ${productLabel.textContent}</p>`;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (riskDiv) {
+                                const riskLabel = riskDiv.querySelector('label');
+                                const riskSelect = riskDiv.querySelector('select');
+                                
+                                if (riskLabel && riskSelect && riskSelect.value) {
+                                    const selected = riskSelect.options[riskSelect.selectedIndex];
+                                    if (selected && selected.text) {
+                                        wordContent += `<p><strong>${riskLabel.textContent}</strong> ${selected.text}</p>`;
+                                    }
+                                }
                             }
                         }
                     });
                     
-                    // Process product recommendations sections
+                    // Process product recommendations sections that are visible
                     dynamicContainer.querySelectorAll('.product-recommendations').forEach(productSection => {
                         if (productSection.style.display !== 'none') {
                             const sectionTitle = productSection.querySelector('h4');
@@ -2518,24 +2708,6 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                     });
                                 }
                             });
-                        }
-                    });
-                    
-                    // Process risk profile sections
-                    dynamicContainer.querySelectorAll('.risk-profile-section').forEach(riskSection => {
-                        if (riskSection.style.display !== 'none') {
-                            const sectionTitle = riskSection.querySelector('h4');
-                            if (sectionTitle) {
-                                wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${sectionTitle.textContent}</h4>`;
-                            }
-                            
-                            const riskSelect = riskSection.querySelector('select');
-                            if (riskSelect && riskSelect.value) {
-                                const selected = riskSelect.options[riskSelect.selectedIndex];
-                                if (selected && selected.text) {
-                                    wordContent += `<p style="margin-left: 20px;"><strong>Risk Profile:</strong> ${selected.text}</p>`;
-                                }
-                            }
                         }
                     });
                 }
@@ -2580,8 +2752,10 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - PROPER PRINT TO PDF
+    // Export to PDF functionality - DIRECT DOWNLOAD
     exportPdfBtn.addEventListener('click', function() {
+        const clientName = document.getElementById('clientName').value || 'Client';
+        
         // Hide elements that shouldn't be in PDF
         const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
         const originalDisplays = [];
@@ -2591,47 +2765,45 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             el.style.display = 'none';
         });
         
-        // Add a temporary message to guide user
-        const printMessage = document.createElement('div');
-        printMessage.id = 'printMessage';
-        printMessage.style.position = 'fixed';
-        printMessage.style.top = '20px';
-        printMessage.style.left = '50%';
-        printMessage.style.transform = 'translateX(-50%)';
-        printMessage.style.backgroundColor = '#2ecc71';
-        printMessage.style.color = 'white';
-        printMessage.style.padding = '15px 30px';
-        printMessage.style.borderRadius = '8px';
-        printMessage.style.zIndex = '10000';
-        printMessage.style.fontSize = '16px';
-        printMessage.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-        printMessage.innerHTML = '📄 Print dialog opening - Select "Save as PDF" as your destination';
-        document.body.appendChild(printMessage);
-        
-        // Trigger browser print dialog
-        setTimeout(() => {
-            window.print();
-        }, 500);
-        
-        // Clean up after print dialog
-        const cleanupAfterPrint = () => {
-            // Remove the message
-            const messageEl = document.getElementById('printMessage');
-            if (messageEl) {
-                messageEl.remove();
-            }
-            
-            // Restore hidden elements
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
+        // Configure PDF options
+        const pdfOptions = {
+            margin: [10, 10, 10, 10],
+            filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 1.5,
+                useCORS: true,
+                letterRendering: true,
+                allowTaint: false
+            },
+            jsPDF: { 
+                unit: 'mm', 
+                format: 'a4', 
+                orientation: 'portrait',
+                compress: true
+            },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
         
-        // Listen for print events
-        window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
-        
-        // Fallback cleanup after 10 seconds
-        setTimeout(cleanupAfterPrint, 10000);
+        // Generate PDF and trigger download
+        html2pdf()
+            .from(document.querySelector('.container'))
+            .set(pdfOptions)
+            .save()
+            .then(() => {
+                // Restore hidden elements
+                elementsToHide.forEach((el, index) => {
+                    el.style.display = originalDisplays[index];
+                });
+                showAutoSaveIndicator('PDF downloaded successfully!');
+            })
+            .catch(() => {
+                // Restore hidden elements even if there's an error
+                elementsToHide.forEach((el, index) => {
+                    el.style.display = originalDisplays[index];
+                });
+                showAutoSaveIndicator('Error generating PDF. Please try again.');
+            });
     });
     
     // Reset Form functionality
