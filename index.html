@@ -983,6 +983,7 @@ input:checked + .slider:before {
                 <label for="projectionDateLength">Projection date length:</label>
                 <select id="projectionDateLength" name="projectionDateLength">
                     <option value="lifeExpectancy">Life Expectancy (default)</option>
+                    <option value="noProjections">No projections needed</option>
                     <option value="lifeExpectancy5">Life Expectancy + 5 years</option>
                     <option value="lifeExpectancy10">Life Expectancy + 10 years</option>
                     <option value="5">5 years</option>
@@ -1456,6 +1457,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <option value="balanced">Balanced</option>
                             <option value="growth">Growth</option>
                             <option value="highGrowth">High Growth</option>
+                            <option value="growthPlus">Growth Plus</option>
                             <option value="custom">Custom</option>
                         </select>
                     </div>
@@ -1496,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <option value="balanced">Balanced</option>
                             <option value="growth">Growth</option>
                             <option value="highGrowth">High Growth</option>
+                            <option value="growthPlus">Growth Plus</option>
                             <option value="custom">Custom</option>
                         </select>
                     </div>
@@ -1586,6 +1589,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="balanced">Balanced</option>
                         <option value="growth">Growth</option>
                         <option value="highGrowth">High Growth</option>
+                        <option value="growthPlus">Growth Plus</option>
                         <option value="custom">Custom</option>
                     </select>
                 </div>
@@ -2150,7 +2154,7 @@ document.addEventListener('DOMContentLoaded', function() {
         autoSaveTimeout = setTimeout(() => {
             const clientName = document.getElementById('clientName').value || 'Auto-Save';
             saveDraft(`${clientName} - Auto Save`);
-            showAutoSaveIndicator();
+            // Silent auto-save - no notification
         }, 2000); // Auto-save after 2 seconds of inactivity
     }
     
@@ -2221,7 +2225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(modal);
     });
     
-    // Email Document functionality
+    // Email Document functionality - IMPROVED OUTLOOK DETECTION
     emailDocumentBtnBottom.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         const subject = `Findex ARF for ${clientName}`;
@@ -2242,37 +2246,118 @@ If you have any questions or require additional information, please don't hesita
 Best regards,
 ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         
-        // Create mailto link with Outlook-specific parameters
-        const outlookUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        // Try different methods to open email
+        const tryOutlookDesktop = () => {
+            try {
+                // Try Outlook desktop protocol first
+                const outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.location.href = outlookDesktopUrl;
+                return true;
+            } catch (error) {
+                return false;
+            }
+        };
         
-        // Try to open Outlook web app first, fall back to mailto
-        try {
-            window.open(outlookUrl, '_blank');
-        } catch (error) {
-            // Fallback to regular mailto
-            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.location.href = mailtoLink;
+        const tryOutlookWeb = () => {
+            try {
+                // Try Outlook web app
+                const outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.open(outlookWebUrl, '_blank');
+                return true;
+            } catch (error) {
+                return false;
+            }
+        };
+        
+        const tryMailto = () => {
+            try {
+                // Fallback to mailto
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.location.href = mailtoLink;
+                return true;
+            } catch (error) {
+                return false;
+            }
+        };
+        
+        // Check if we're on Windows and try Outlook desktop first
+        const isWindows = navigator.platform.indexOf('Win') > -1;
+        
+        if (isWindows) {
+            // Try Outlook desktop first on Windows
+            setTimeout(() => tryOutlookWeb(), 1000); // Fallback after 1 second
+            if (!tryOutlookDesktop()) {
+                tryMailto();
+            }
+        } else {
+            // Try web Outlook first on other platforms
+            if (!tryOutlookWeb()) {
+                tryMailto();
+            }
         }
         
         // Show success message
-        showAutoSaveIndicator('Email client opened. Note: Attachment requires manual addition.');
+        showAutoSaveIndicator('Email client opened successfully.');
     });
     
-    // Export to Word functionality
+    // Export to Word functionality - FIXED TO MATCH CURRENT VIEW
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Get clean HTML content
-        const container = document.querySelector('.container').cloneNode(true);
+        // Get the current state of the container as displayed
+        const container = document.querySelector('.container');
         
-        // Remove buttons and draft selector
-        const buttons = container.querySelector('.btn-group');
-        if (buttons) buttons.remove();
+        // Create a comprehensive HTML capture of current state
+        let htmlContent = '';
         
-        // Remove hidden elements
-        container.querySelectorAll('.draft-selector, .auto-save-indicator, .modal').forEach(el => el.remove());
+        // Capture all visible content by traversing the DOM
+        function captureElement(element) {
+            if (element.style.display === 'none' || element.classList.contains('btn-group') || 
+                element.classList.contains('draft-selector') || element.classList.contains('auto-save-indicator') ||
+                element.classList.contains('modal')) {
+                return '';
+            }
+            
+            let html = '';
+            const tagName = element.tagName.toLowerCase();
+            
+            if (tagName === 'input') {
+                if (element.type === 'checkbox' || element.type === 'radio') {
+                    html = `<span style="display: inline-block; width: 15px; height: 15px; border: 1px solid #000; margin-right: 5px; text-align: center;">${element.checked ? '✓' : ''}</span>`;
+                } else {
+                    html = `<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 200px; padding: 2px;">${element.value}</span>`;
+                }
+            } else if (tagName === 'textarea') {
+                html = `<div style="border: 1px solid #000; padding: 5px; min-height: 40px; white-space: pre-wrap;">${element.value}</div>`;
+            } else if (tagName === 'select') {
+                const selectedOption = element.options[element.selectedIndex];
+                html = `<span style="border-bottom: 1px solid #000; display: inline-block; min-width: 150px; padding: 2px;">${selectedOption ? selectedOption.text : ''}</span>`;
+            } else {
+                // For other elements, capture their content
+                const attrs = [];
+                if (element.className) attrs.push(`class="${element.className}"`);
+                if (element.id) attrs.push(`id="${element.id}"`);
+                
+                html = `<${tagName}${attrs.length ? ' ' + attrs.join(' ') : ''}>`;
+                
+                // Process child nodes
+                for (let child of element.childNodes) {
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        html += child.textContent;
+                    } else if (child.nodeType === Node.ELEMENT_NODE) {
+                        html += captureElement(child);
+                    }
+                }
+                
+                html += `</${tagName}>`;
+            }
+            
+            return html;
+        }
         
-        // Clean up styling for Word
+        htmlContent = captureElement(container);
+        
+        // Clean up styling for Word with current content preserved
         const html = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head>
@@ -2287,19 +2372,16 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                     .section { margin-bottom: 20pt; padding: 15pt; border-left: 4px solid #1abc9c; background-color: #f9f9f9; page-break-inside: avoid; }
                     .form-group { margin-bottom: 15pt; }
                     label { font-weight: bold; display: block; margin-bottom: 5pt; }
-                    input, textarea, select { border: 1px solid #ddd; padding: 8pt; width: 100%; margin-bottom: 10pt; font-family: Calibri, Arial, sans-serif; background-color: white; }
-                    textarea { min-height: 40pt; }
                     .checklist-item { margin-bottom: 8pt; padding: 5pt; background-color: #ecf0f1; page-break-inside: avoid; }
                     .note { background-color: #e3f2fd; padding: 10pt; margin: 15pt 0; border-left: 4px solid #3498db; }
                     .product-item { border: 1px solid #ddd; padding: 10pt; margin-bottom: 10pt; background-color: #fff; page-break-inside: avoid; }
-                    .grid-2 { display: block; }
-                    .grid-2 > div { margin-bottom: 10pt; }
                     .product-recommendations, .risk-profile-section { margin: 15pt 0; padding: 10pt; background-color: #f0f8ff; border: 1px solid #ddd; }
+                    .btn-group, .draft-selector, .auto-save-indicator, .modal { display: none !important; }
                     @page { margin: 1in; }
                 </style>
             </head>
             <body>
-                ${container.innerHTML}
+                ${htmlContent}
             </body>
             </html>
         `;
@@ -2315,45 +2397,41 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - FIXED VERSION
+    // Export to PDF functionality - COMPLETELY FIXED VERSION
     exportPdfBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Create a clean clone of the container for PDF
-        const element = document.querySelector('.container').cloneNode(true);
+        // Hide elements that shouldn't be in PDF temporarily
+        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal');
+        const buttonGroup = document.querySelector('.btn-group');
         
-        // Remove all buttons and unwanted elements from the clone
-        element.querySelectorAll('.btn-group, .draft-selector, .auto-save-indicator, .modal, .no-print').forEach(el => el.remove());
+        // Store original display values
+        const originalDisplays = [];
+        elementsToHide.forEach(el => {
+            originalDisplays.push(el.style.display);
+            el.style.display = 'none';
+        });
+        const originalButtonDisplay = buttonGroup.style.display;
+        buttonGroup.style.display = 'none';
         
-        // Create a temporary container for PDF generation
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.top = '0';
-        tempContainer.style.width = '210mm'; // A4 width
-        tempContainer.style.background = 'white';
-        tempContainer.style.fontFamily = 'Arial, sans-serif';
-        tempContainer.style.fontSize = '12px';
-        tempContainer.style.lineHeight = '1.4';
-        tempContainer.style.color = '#000';
-        tempContainer.appendChild(element);
-        
-        // Add to body temporarily
-        document.body.appendChild(tempContainer);
-        
-        // Configure html2pdf options for better quality
+        // Configure html2pdf options for the actual visible container
         const opt = {
-            margin: [15, 15, 15, 15],
+            margin: [10, 10, 10, 10],
             filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-            image: { type: 'jpeg', quality: 0.95 },
+            image: { 
+                type: 'jpeg', 
+                quality: 1.0
+            },
             html2canvas: { 
-                scale: 1.5,
+                scale: 2,
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: '#ffffff',
                 logging: false,
-                width: tempContainer.scrollWidth,
-                height: tempContainer.scrollHeight
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight
             },
             jsPDF: { 
                 unit: 'mm', 
@@ -2361,20 +2439,26 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                 orientation: 'portrait'
             },
             pagebreak: { 
-                mode: ['avoid-all', 'css'],
-                before: '.section',
-                avoid: ['.product-item', '.checklist-item', '.form-group', '.product-recommendations', '.risk-profile-section']
+                mode: ['avoid-all'],
+                before: '.section'
             }
         };
         
-        // Generate PDF
-        html2pdf().set(opt).from(tempContainer).save().then(() => {
-            // Remove temporary container
-            document.body.removeChild(tempContainer);
+        // Generate PDF from the actual container as currently displayed
+        html2pdf().set(opt).from(document.querySelector('.container')).save().then(() => {
+            // Restore original display values
+            elementsToHide.forEach((el, index) => {
+                el.style.display = originalDisplays[index];
+            });
+            buttonGroup.style.display = originalButtonDisplay;
             showAutoSaveIndicator('PDF exported successfully!');
         }).catch(error => {
             console.error('PDF generation failed:', error);
-            document.body.removeChild(tempContainer);
+            // Restore original display values on error
+            elementsToHide.forEach((el, index) => {
+                el.style.display = originalDisplays[index];
+            });
+            buttonGroup.style.display = originalButtonDisplay;
             showAutoSaveIndicator('PDF export failed. Please try again.');
         });
     });
