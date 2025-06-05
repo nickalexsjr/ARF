@@ -224,6 +224,10 @@ textarea {
     background: var(--primary);
 }
 
+.btn-secondary {
+    background: #6c757d;
+}
+
 .btn-sm {
     padding: 6px 12px;
     font-size: 14px;
@@ -291,7 +295,7 @@ textarea {
 }
 
 .checkbox-group.client-types {
-    justify-content: space-between;
+    justify-content: flex-start;
 }
 
 .checkbox-group.entity-types {
@@ -999,7 +1003,12 @@ input:checked + .slider:before {
                 <input type="number" id="otherProjectionLengthValue" name="otherProjectionLengthValue" placeholder="Enter number of years">
             </div>
             
-            <div class="form-group">
+            <div class="form-group" id="customProjectionInstructions">
+                <label for="customInstructions">Custom Instructions:</label>
+                <textarea id="customInstructions" name="customInstructions" placeholder="Enter any custom projection instructions"></textarea>
+            </div>
+            
+            <div class="form-group" id="projectionOptionsGroup">
                 <div class="checklist-item">
                     <input type="checkbox" id="calmChart" name="projectionOptions" value="CALM">
                     <label for="calmChart">CALM to chart, cashflow consolidated table, asset summary chart and table</label>
@@ -1418,6 +1427,38 @@ document.addEventListener('DOMContentLoaded', function() {
         const element = document.getElementById(productId);
         if (element) {
             element.remove();
+            triggerAutoSave();
+        }
+    };
+    
+    // Function to fill Joint sections with N/A
+    window.fillJointNA = function() {
+        const jointRecommendations = document.getElementById('jointRecommendations');
+        if (jointRecommendations) {
+            jointRecommendations.value = 'N/A - No joint recommendations required';
+            triggerAutoSave();
+        }
+    };
+    
+    window.fillJointProductNA = function() {
+        // Clear existing joint products and add N/A product
+        const jointProductsContainer = document.getElementById('joint_products');
+        if (jointProductsContainer) {
+            jointProductsContainer.innerHTML = '';
+            const naProductHTML = `
+                <div class="product-item" style="text-align: center; padding: 20px; background-color: #f8f9fa;">
+                    <h5>N/A - No joint products required</h5>
+                </div>
+            `;
+            jointProductsContainer.innerHTML = naProductHTML;
+            triggerAutoSave();
+        }
+    };
+    
+    window.fillJointRiskNA = function() {
+        const jointRiskProfile = document.getElementById('riskProfileJoint');
+        if (jointRiskProfile) {
+            jointRiskProfile.value = 'na';
             triggerAutoSave();
         }
     };
@@ -2013,7 +2054,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle Projection Length Dropdown
     projectionDateLength.addEventListener('change', function() {
-        otherProjectionLength.style.display = this.value === 'other' ? 'block' : 'none';
+        const otherProjectionLength = document.getElementById('otherProjectionLength');
+        const customProjectionInstructions = document.getElementById('customProjectionInstructions');
+        const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
+        
+        if (this.value === 'other') {
+            otherProjectionLength.style.display = 'block';
+        } else {
+            otherProjectionLength.style.display = 'none';
+        }
+        
+        if (this.value === 'noProjections') {
+            // Hide projection options and custom instructions if no projections needed
+            projectionOptionsGroup.style.display = 'none';
+            customProjectionInstructions.style.display = 'none';
+        } else {
+            // Show projection options and custom instructions for all other selections
+            projectionOptionsGroup.style.display = 'block';
+            customProjectionInstructions.style.display = 'block';
+        }
+        
         triggerAutoSave();
     });
     
@@ -2309,7 +2369,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Email client opened successfully.');
     });
     
-    // Export to Word functionality - CLEAN VERSION THAT MATCHES VIEW
+    // Export to Word functionality - IMPROVED TO MATCH CURRENT VIEW
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
@@ -2362,9 +2422,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                             });
                         }
                         
-                        // Process regular inputs
+                        // Process regular inputs (avoid duplicates)
                         group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group')) {
+                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item')) {
                                 const inputLabel = input.closest('.form-group').querySelector('label');
                                 if (inputLabel && input.value) {
                                     let value = input.value;
@@ -2374,7 +2434,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                     }
                                     if (value) {
                                         wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
-                                        wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px;">${value}</p>`;
+                                        wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
                                     }
                                 }
                             }
@@ -2402,11 +2462,12 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                     }
                 });
                 
-                // Process dynamic content (recommendations sections)
+                // Process dynamic content (recommendations sections) - IMPROVED
                 const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
                 if (dynamicContainer) {
+                    // Process recommendation textareas
                     dynamicContainer.querySelectorAll('.form-group').forEach(group => {
-                        if (group.style.display !== 'none') {
+                        if (group.style.display !== 'none' && !group.closest('.product-recommendations') && !group.closest('.risk-profile-section')) {
                             const label = group.querySelector('label');
                             const textarea = group.querySelector('textarea');
                             if (label && textarea && textarea.value) {
@@ -2416,29 +2477,65 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                         }
                     });
                     
-                    // Process product recommendations
-                    dynamicContainer.querySelectorAll('.product-item').forEach(product => {
-                        if (product.style.display !== 'none') {
-                            const productHeader = product.querySelector('h5');
-                            if (productHeader) {
-                                wordContent += `<h4 style="color: #34495e; margin-top: 15px;">${productHeader.textContent}</h4>`;
+                    // Process product recommendations sections
+                    dynamicContainer.querySelectorAll('.product-recommendations').forEach(productSection => {
+                        if (productSection.style.display !== 'none') {
+                            const sectionTitle = productSection.querySelector('h4');
+                            if (sectionTitle) {
+                                wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${sectionTitle.textContent}</h3>`;
                             }
                             
-                            product.querySelectorAll('input, textarea, select').forEach(input => {
-                                if (input.value && input.style.display !== 'none') {
-                                    const inputLabel = input.closest('.form-group')?.querySelector('label');
-                                    if (inputLabel) {
-                                        let value = input.value;
-                                        if (input.tagName === 'SELECT') {
-                                            const selected = input.options[input.selectedIndex];
-                                            value = selected ? selected.text : '';
-                                        }
-                                        if (value) {
-                                            wordContent += `<p><strong>${inputLabel.textContent}</strong> ${value}</p>`;
-                                        }
+                            // Process each product item
+                            productSection.querySelectorAll('.product-item').forEach(product => {
+                                if (product.style.display !== 'none') {
+                                    const productHeader = product.querySelector('h5');
+                                    if (productHeader) {
+                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
                                     }
+                                    
+                                    // Process product fields with values
+                                    product.querySelectorAll('input, textarea, select').forEach(input => {
+                                        if (input.value && input.style.display !== 'none') {
+                                            const inputGroup = input.closest('.form-group');
+                                            const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
+                                            
+                                            if (inputLabel) {
+                                                let value = input.value;
+                                                if (input.tagName === 'SELECT') {
+                                                    const selected = input.options[input.selectedIndex];
+                                                    value = selected ? selected.text : '';
+                                                }
+                                                if (input.type === 'checkbox') {
+                                                    // Handle toggle switches in products
+                                                    const statusSpan = input.parentElement.nextElementSibling;
+                                                    value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
+                                                }
+                                                if (value && value !== 'Select investment option') {
+                                                    wordContent += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
+                                                }
+                                            }
+                                        }
+                                    });
                                 }
                             });
+                        }
+                    });
+                    
+                    // Process risk profile sections
+                    dynamicContainer.querySelectorAll('.risk-profile-section').forEach(riskSection => {
+                        if (riskSection.style.display !== 'none') {
+                            const sectionTitle = riskSection.querySelector('h4');
+                            if (sectionTitle) {
+                                wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${sectionTitle.textContent}</h4>`;
+                            }
+                            
+                            const riskSelect = riskSection.querySelector('select');
+                            if (riskSelect && riskSelect.value) {
+                                const selected = riskSelect.options[riskSelect.selectedIndex];
+                                if (selected && selected.text) {
+                                    wordContent += `<p style="margin-left: 20px;"><strong>Risk Profile:</strong> ${selected.text}</p>`;
+                                }
+                            }
                         }
                     });
                 }
@@ -2480,10 +2577,10 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         a.click();
         URL.revokeObjectURL(url);
         
-        showAutoSaveIndicator('Clean Word document exported successfully!');
+        showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - SIMPLE PRINT VERSION
+    // Export to PDF functionality - PROPER PRINT TO PDF
     exportPdfBtn.addEventListener('click', function() {
         // Hide elements that shouldn't be in PDF
         const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
@@ -2494,17 +2591,47 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             el.style.display = 'none';
         });
         
+        // Add a temporary message to guide user
+        const printMessage = document.createElement('div');
+        printMessage.id = 'printMessage';
+        printMessage.style.position = 'fixed';
+        printMessage.style.top = '20px';
+        printMessage.style.left = '50%';
+        printMessage.style.transform = 'translateX(-50%)';
+        printMessage.style.backgroundColor = '#2ecc71';
+        printMessage.style.color = 'white';
+        printMessage.style.padding = '15px 30px';
+        printMessage.style.borderRadius = '8px';
+        printMessage.style.zIndex = '10000';
+        printMessage.style.fontSize = '16px';
+        printMessage.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+        printMessage.innerHTML = '📄 Print dialog opening - Select "Save as PDF" as your destination';
+        document.body.appendChild(printMessage);
+        
         // Trigger browser print dialog
         setTimeout(() => {
             window.print();
+        }, 500);
+        
+        // Clean up after print dialog
+        const cleanupAfterPrint = () => {
+            // Remove the message
+            const messageEl = document.getElementById('printMessage');
+            if (messageEl) {
+                messageEl.remove();
+            }
             
-            // Restore elements after print dialog
-            setTimeout(() => {
-                elementsToHide.forEach((el, index) => {
-                    el.style.display = originalDisplays[index];
-                });
-            }, 1000);
-        }, 100);
+            // Restore hidden elements
+            elementsToHide.forEach((el, index) => {
+                el.style.display = originalDisplays[index];
+            });
+        };
+        
+        // Listen for print events
+        window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
+        
+        // Fallback cleanup after 10 seconds
+        setTimeout(cleanupAfterPrint, 10000);
     });
     
     // Reset Form functionality
@@ -2551,6 +2678,12 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             flowchartStatus.textContent = 'No';
             projectionDateLength.value = 'lifeExpectancy';
             otherProjectionLength.style.display = 'none';
+            
+            // Reset projection visibility
+            const customProjectionInstructions = document.getElementById('customProjectionInstructions');
+            const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
+            if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
+            if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
             
             // Reset paraplanner compare checkbox
             paraplannerCompareCheckbox.checked = false;
