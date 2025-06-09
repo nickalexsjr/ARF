@@ -51,13 +51,14 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    max-width: 500px;
+    max-width: 550px;
 }
 
 .draft-selector .btn {
     flex: 1;
-    min-width: 80px;
+    min-width: 90px;
     text-align: center;
+    white-space: nowrap;
 }
 
 .draft-selector label {
@@ -804,8 +805,9 @@ input:checked + .slider:before {
         width: 100%;
     }
     
-    .draft-selector button {
+    .draft-selector .btn {
         width: 100%;
+        flex: none;
     }
     
     .grid-2 {
@@ -2603,90 +2605,52 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFormBasedOnSelections();
     }
     
-    // Enhanced Email Document functionality - matches PDF export approach
+    // Email Document functionality - simplified approach
     emailDocumentBtnBottom.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         const xplanId = document.getElementById('xplanId').value;
         
-        // Hide elements that shouldn't be in PDF (same as PDF export)
-        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
-        const originalDisplays = [];
+        // Show popup reminder about PDF attachment
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3><i class="fas fa-info-circle"></i> Email Document Reminder</h3>
+                <p><strong>Before sending the email:</strong></p>
+                <ul style="margin: 15px 0; padding-left: 20px; text-align: left;">
+                    <li>Please ensure you have downloaded the ARF PDF using "Export to PDF"</li>
+                    <li>You will need to manually attach the PDF file to your email</li>
+                    ${xplanId ? `<li>The email will automatically CC: <strong>${xplanId.trim()}@findex.xplan.iress.com.au</strong></li>` : '<li>No Xplan ID entered - no CC will be added</li>'}
+                </ul>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-success" id="proceedWithEmail">
+                        <i class="fas fa-check"></i> OK - Open Email Client
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancelEmail">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
         
-        elementsToHide.forEach(el => {
-            originalDisplays.push(el.style.display);
-            el.style.display = 'none';
+        // Handle proceed button
+        modal.querySelector('#proceedWithEmail').addEventListener('click', function() {
+            modal.remove();
+            openEmailClient(clientName, xplanId);
         });
         
-        // Add PDF-specific styles (same as PDF export)
-        const pdfStyle = document.createElement('style');
-        pdfStyle.id = 'pdf-export-style-email';
-        pdfStyle.textContent = `
-            @media print {
-                body { background: white !important; padding: 0 !important; }
-                .container { box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
-                .section { page-break-inside: avoid !important; }
-                * { print-color-adjust: exact !important; }
-            }
-        `;
-        document.head.appendChild(pdfStyle);
+        // Handle cancel button
+        modal.querySelector('#cancelEmail').addEventListener('click', function() {
+            modal.remove();
+        });
         
-        // Configure html2pdf options (same as PDF export)
-        const opt = {
-            margin: [10, 10, 10, 10],
-            filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                letterRendering: true
-            },
-            jsPDF: { 
-                unit: 'mm', 
-                format: 'a4', 
-                orientation: 'portrait',
-                compress: true
-            },
-            pagebreak: { 
-                mode: ['avoid-all', 'css', 'legacy'],
-                before: '.section',
-                avoid: ['.product-item', '.checklist-item', '.form-group']
+        // Handle clicking outside modal
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
             }
-        };
-        
-        // Generate PDF first
-        const element = document.querySelector('.container');
-        html2pdf().set(opt).from(element).save().then(() => {
-            // Clean up PDF styles
-            const pdfStyleElement = document.getElementById('pdf-export-style-email');
-            if (pdfStyleElement) {
-                pdfStyleElement.remove();
-            }
-            
-            // Restore hidden elements
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
-            
-            // Now open email client with proper CC
-            setTimeout(() => {
-                openEmailClient(clientName, xplanId);
-            }, 1000); // Small delay to ensure PDF download started
-            
-        }).catch(error => {
-            console.error('Error generating PDF:', error);
-            
-            // Clean up on error
-            const pdfStyleElement = document.getElementById('pdf-export-style-email');
-            if (pdfStyleElement) {
-                pdfStyleElement.remove();
-            }
-            
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
-            
-            showAutoSaveIndicator('Error generating PDF. Please try export to PDF first.');
         });
     });
     
@@ -2716,7 +2680,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
         }
         
-        // Try different email client approaches with improved CC handling
+        // Try different email client approaches with proper CC handling
         const tryOutlookDesktop = () => {
             try {
                 let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -2768,12 +2732,12 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             // Try Outlook desktop first on Windows
             emailOpened = tryOutlookDesktop();
             if (!emailOpened) {
-                // Fallback to web Outlook
+                // Fallback to web Outlook after a delay
                 setTimeout(() => {
                     if (!tryOutlookWeb()) {
                         tryMailto();
                     }
-                }, 1000);
+                }, 500);
             }
         } else {
             // Try web Outlook first on other platforms
@@ -2784,7 +2748,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         }
         
         // Show success message with CC info
-        let message = 'PDF downloaded and email client opened.';
+        let message = 'Email client opened successfully.';
         if (ccEmail) {
             message += ` CC: ${ccEmail}`;
         } else {
