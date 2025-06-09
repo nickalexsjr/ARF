@@ -51,7 +51,13 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    max-width: 400px;
+    max-width: 500px;
+}
+
+.draft-selector .btn {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
 }
 
 .draft-selector label {
@@ -998,7 +1004,13 @@ input:checked + .slider:before {
             </div>
             
             <div class="form-group">
-                <label for="tmdDetails">TMD:</label>
+                <label for="tmdDetails">
+                    TMD:
+                    <span class="inline-checkbox">
+                        <input type="checkbox" id="tmdInFilenote" name="tmdInFilenote">
+                        <label for="tmdInFilenote">TMD in filenote?</label>
+                    </span>
+                </label>
                 <textarea id="tmdDetails" name="tmdDetails" placeholder="Enter TMD details"></textarea>
             </div>
             
@@ -1208,7 +1220,7 @@ input:checked + .slider:before {
             <button type="button" class="btn btn-success" id="exportPdfBtn">
                 <i class="fas fa-file-pdf"></i> Export to PDF
             </button>
-            <button type="button" class="btn btn-primary" id="emailDocumentBtnBottom">
+            <button type="button" class="btn btn-success" id="emailDocumentBtnBottom">
                 <i class="fas fa-envelope"></i> Email Document
             </button>
             <button type="button" class="btn btn-danger" id="resetBtn">
@@ -1274,6 +1286,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Alternative platforms checkbox
     const paraplannerCompareCheckbox = document.getElementById('paraplannerCompare');
     const alternativePlatformsTextarea = document.getElementById('alternativePlatforms');
+    
+    // TMD checkbox
+    const tmdInFilenoteCheckbox = document.getElementById('tmdInFilenote');
+    const tmdDetailsTextarea = document.getElementById('tmdDetails');
     
     // Product options
     const productOptions = [
@@ -2271,6 +2287,16 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     
+    // Handle TMD in filenote checkbox
+    tmdInFilenoteCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            tmdDetailsTextarea.value = 'TMD in filenote\n' + tmdDetailsTextarea.value;
+        } else {
+            tmdDetailsTextarea.value = tmdDetailsTextarea.value.replace('TMD in filenote\n', '');
+        }
+        triggerAutoSave();
+    });
+    
     // Draft Functionality
     function initializeDraftFunctionality() {
         loadDraftList();
@@ -2577,17 +2603,95 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFormBasedOnSelections();
     }
     
-    // Enhanced Email Document functionality with PDF attachment and CC
+    // Enhanced Email Document functionality - matches PDF export approach
     emailDocumentBtnBottom.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         const xplanId = document.getElementById('xplanId').value;
         
-        // Build CC email if Xplan ID is provided
-        let ccEmail = '';
-        if (xplanId && xplanId.trim()) {
-            ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
-        }
+        // Hide elements that shouldn't be in PDF (same as PDF export)
+        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
+        const originalDisplays = [];
         
+        elementsToHide.forEach(el => {
+            originalDisplays.push(el.style.display);
+            el.style.display = 'none';
+        });
+        
+        // Add PDF-specific styles (same as PDF export)
+        const pdfStyle = document.createElement('style');
+        pdfStyle.id = 'pdf-export-style-email';
+        pdfStyle.textContent = `
+            @media print {
+                body { background: white !important; padding: 0 !important; }
+                .container { box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
+                .section { page-break-inside: avoid !important; }
+                * { print-color-adjust: exact !important; }
+            }
+        `;
+        document.head.appendChild(pdfStyle);
+        
+        // Configure html2pdf options (same as PDF export)
+        const opt = {
+            margin: [10, 10, 10, 10],
+            filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                letterRendering: true
+            },
+            jsPDF: { 
+                unit: 'mm', 
+                format: 'a4', 
+                orientation: 'portrait',
+                compress: true
+            },
+            pagebreak: { 
+                mode: ['avoid-all', 'css', 'legacy'],
+                before: '.section',
+                avoid: ['.product-item', '.checklist-item', '.form-group']
+            }
+        };
+        
+        // Generate PDF first
+        const element = document.querySelector('.container');
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Clean up PDF styles
+            const pdfStyleElement = document.getElementById('pdf-export-style-email');
+            if (pdfStyleElement) {
+                pdfStyleElement.remove();
+            }
+            
+            // Restore hidden elements
+            elementsToHide.forEach((el, index) => {
+                el.style.display = originalDisplays[index];
+            });
+            
+            // Now open email client with proper CC
+            setTimeout(() => {
+                openEmailClient(clientName, xplanId);
+            }, 1000); // Small delay to ensure PDF download started
+            
+        }).catch(error => {
+            console.error('Error generating PDF:', error);
+            
+            // Clean up on error
+            const pdfStyleElement = document.getElementById('pdf-export-style-email');
+            if (pdfStyleElement) {
+                pdfStyleElement.remove();
+            }
+            
+            elementsToHide.forEach((el, index) => {
+                el.style.display = originalDisplays[index];
+            });
+            
+            showAutoSaveIndicator('Error generating PDF. Please try export to PDF first.');
+        });
+    });
+    
+    // Function to open email client with proper CC
+    function openEmailClient(clientName, xplanId) {
         const subject = `Findex ARF for ${clientName}`;
         const body = `Dear Team,
 
@@ -2606,142 +2710,87 @@ If you have any questions or require additional information, please don't hesita
 Best regards,
 ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         
-        // First generate PDF
-        generatePDFForEmail().then(pdfBlob => {
-            // Create mailto link with CC
-            let mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            if (ccEmail) {
-                mailtoUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+        // Build CC email if Xplan ID is provided
+        let ccEmail = '';
+        if (xplanId && xplanId.trim()) {
+            ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
+        }
+        
+        // Try different email client approaches with improved CC handling
+        const tryOutlookDesktop = () => {
+            try {
+                let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                if (ccEmail) {
+                    outlookDesktopUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+                }
+                window.location.href = outlookDesktopUrl;
+                return true;
+            } catch (error) {
+                console.error('Outlook desktop failed:', error);
+                return false;
             }
-            
-            // Try different email client approaches
-            const tryOutlookDesktop = () => {
-                try {
-                    // Try Outlook desktop protocol first
-                    let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                    if (ccEmail) {
-                        outlookDesktopUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+        };
+        
+        const tryOutlookWeb = () => {
+            try {
+                let outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                if (ccEmail) {
+                    outlookWebUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+                }
+                window.open(outlookWebUrl, '_blank');
+                return true;
+            } catch (error) {
+                console.error('Outlook web failed:', error);
+                return false;
+            }
+        };
+        
+        const tryMailto = () => {
+            try {
+                let mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                if (ccEmail) {
+                    mailtoUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+                }
+                window.location.href = mailtoUrl;
+                return true;
+            } catch (error) {
+                console.error('Mailto failed:', error);
+                return false;
+            }
+        };
+        
+        // Check if we're on Windows and try Outlook desktop first
+        const isWindows = navigator.platform.indexOf('Win') > -1;
+        
+        let emailOpened = false;
+        
+        if (isWindows) {
+            // Try Outlook desktop first on Windows
+            emailOpened = tryOutlookDesktop();
+            if (!emailOpened) {
+                // Fallback to web Outlook
+                setTimeout(() => {
+                    if (!tryOutlookWeb()) {
+                        tryMailto();
                     }
-                    window.location.href = outlookDesktopUrl;
-                    return true;
-                } catch (error) {
-                    return false;
-                }
-            };
-            
-            const tryOutlookWeb = () => {
-                try {
-                    // Try Outlook web app
-                    let outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                    if (ccEmail) {
-                        outlookWebUrl += `&cc=${encodeURIComponent(ccEmail)}`;
-                    }
-                    window.open(outlookWebUrl, '_blank');
-                    return true;
-                } catch (error) {
-                    return false;
-                }
-            };
-            
-            const tryMailto = () => {
-                try {
-                    window.location.href = mailtoUrl;
-                    return true;
-                } catch (error) {
-                    return false;
-                }
-            };
-            
-            // Check if we're on Windows and try Outlook desktop first
-            const isWindows = navigator.platform.indexOf('Win') > -1;
-            
-            if (isWindows) {
-                // Try Outlook desktop first on Windows
-                setTimeout(() => tryOutlookWeb(), 1000); // Fallback after 1 second
-                if (!tryOutlookDesktop()) {
-                    tryMailto();
-                }
-            } else {
-                // Try web Outlook first on other platforms
-                if (!tryOutlookWeb()) {
-                    tryMailto();
-                }
+                }, 1000);
             }
-            
-            // Download PDF for manual attachment
-            const url = URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            // Show success message with instructions
-            let message = 'Email client opened and PDF downloaded. Please attach the PDF file manually.';
-            if (ccEmail) {
-                message += ` CC: ${ccEmail}`;
+        } else {
+            // Try web Outlook first on other platforms
+            emailOpened = tryOutlookWeb();
+            if (!emailOpened) {
+                tryMailto();
             }
-            showAutoSaveIndicator(message);
-        }).catch(error => {
-            console.error('Error generating PDF:', error);
-            showAutoSaveIndicator('Error generating PDF. Please try export to PDF first.');
-        });
-    });
-    
-    // Function to generate PDF specifically for email attachment
-    function generatePDFForEmail() {
-        return new Promise((resolve, reject) => {
-            const clientName = document.getElementById('clientName').value || 'Client';
-            const element = document.querySelector('.container');
-            
-            // Hide elements that shouldn't be in PDF
-            const elementsToHide = document.querySelectorAll('.btn-group, .draft-selector, .auto-save-indicator, .modal');
-            const originalDisplays = [];
-            
-            elementsToHide.forEach(el => {
-                originalDisplays.push(el.style.display);
-                el.style.display = 'none';
-            });
-            
-            // Configure html2pdf options
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2,
-                    logging: false,
-                    useCORS: true,
-                    letterRendering: true
-                },
-                jsPDF: { 
-                    unit: 'mm', 
-                    format: 'a4', 
-                    orientation: 'portrait',
-                    compress: true
-                },
-                pagebreak: { 
-                    mode: ['avoid-all', 'css', 'legacy'],
-                    before: '.section',
-                    avoid: ['.product-item', '.checklist-item', '.form-group']
-                }
-            };
-            
-            // Generate PDF as blob
-            html2pdf().set(opt).from(element).output('blob').then(blob => {
-                // Restore hidden elements
-                elementsToHide.forEach((el, index) => {
-                    el.style.display = originalDisplays[index];
-                });
-                resolve(blob);
-            }).catch(error => {
-                // Restore hidden elements on error
-                elementsToHide.forEach((el, index) => {
-                    el.style.display = originalDisplays[index];
-                });
-                reject(error);
-            });
-        });
+        }
+        
+        // Show success message with CC info
+        let message = 'PDF downloaded and email client opened.';
+        if (ccEmail) {
+            message += ` CC: ${ccEmail}`;
+        } else {
+            message += ' (No Xplan ID - no CC added)';
+        }
+        showAutoSaveIndicator(message);
     }
     
     // Export to Word functionality - FIXED to match visible content exactly
