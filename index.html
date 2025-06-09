@@ -962,6 +962,22 @@ input:checked + .slider:before {
                 <input type="text" id="entityName" name="entityName" placeholder="Enter entity name">
             </div>
             
+            <!-- Separate entity name fields -->
+            <div class="form-group" id="smsfNameGroup" style="display: none;">
+                <label for="smsfName">SMSF Name:</label>
+                <input type="text" id="smsfName" name="smsfName" placeholder="Enter SMSF name">
+            </div>
+            
+            <div class="form-group" id="trustNameGroup" style="display: none;">
+                <label for="trustName">Trust Name:</label>
+                <input type="text" id="trustName" name="trustName" placeholder="Enter Trust name">
+            </div>
+            
+            <div class="form-group" id="companyNameGroup" style="display: none;">
+                <label for="companyName">Company Name:</label>
+                <input type="text" id="companyName" name="companyName" placeholder="Enter Company name">
+            </div>
+            
             <div class="grid-2">
                 <div class="form-group">
                     <label for="xplanId">Xplan ID (if applicable):</label>
@@ -1257,6 +1273,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form Groups that are conditionally shown
     const partnerNameGroup = document.getElementById('partnerNameGroup');
     const entityNameGroup = document.getElementById('entityNameGroup');
+    const smsfNameGroup = document.getElementById('smsfNameGroup');
+    const trustNameGroup = document.getElementById('trustNameGroup');
+    const companyNameGroup = document.getElementById('companyNameGroup');
     
     // Yes/No Toggle
     const flowchartRequiredToggle = document.getElementById('flowchartRequired');
@@ -1710,22 +1729,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add entity recommendations
         if (entityClientCheckbox.checked) {
-            const entityName = document.getElementById('entityName').value || 'Entity';
-            
             if (entitySMSFCheckbox.checked) {
-                addEntityRecommendation('SMSF', entityName);
+                const smsfName = document.getElementById('smsfName').value || 'SMSF';
+                addEntityRecommendation('SMSF', smsfName);
             }
             
             if (entityTrustCheckbox.checked) {
-                addEntityRecommendation('Trust', entityName);
+                const trustName = document.getElementById('trustName').value || 'Trust';
+                addEntityRecommendation('Trust', trustName);
             }
             
             if (entityCompanyCheckbox.checked) {
-                addEntityRecommendation('Company', entityName);
-            }
-            
-            if (!entitySMSFCheckbox.checked && !entityTrustCheckbox.checked && !entityCompanyCheckbox.checked) {
-                addEntityRecommendation('Entity', entityName);
+                const companyName = document.getElementById('companyName').value || 'Company';
+                addEntityRecommendation('Company', companyName);
             }
         }
         
@@ -2200,8 +2216,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update partner-related fields based on couple selection
         partnerNameGroup.style.display = coupleClientCheckbox.checked ? 'block' : 'none';
         
-        // Update entity name field
-        entityNameGroup.style.display = entityClientCheckbox.checked ? 'block' : 'none';
+        // Update entity name fields based on entity selections
+        if (entityClientCheckbox.checked) {
+            // Show specific entity name fields based on what's selected
+            smsfNameGroup.style.display = entitySMSFCheckbox.checked ? 'block' : 'none';
+            trustNameGroup.style.display = entityTrustCheckbox.checked ? 'block' : 'none';
+            companyNameGroup.style.display = entityCompanyCheckbox.checked ? 'block' : 'none';
+            
+            // Hide generic entity name field since we have specific ones now
+            entityNameGroup.style.display = 'none';
+        } else {
+            // Hide all entity name fields when entity is not selected
+            entityNameGroup.style.display = 'none';
+            smsfNameGroup.style.display = 'none';
+            trustNameGroup.style.display = 'none';
+            companyNameGroup.style.display = 'none';
+        }
         
         // Update recommendation sections
         updateRecommendationSections();
@@ -2223,6 +2253,20 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     document.getElementById('entityName').addEventListener('input', function() {
+        updateRecommendationSections();
+        triggerAutoSave();
+    });
+    
+    // Add event listeners for specific entity name changes
+    document.getElementById('smsfName').addEventListener('input', function() {
+        updateRecommendationSections();
+        triggerAutoSave();
+    });
+    document.getElementById('trustName').addEventListener('input', function() {
+        updateRecommendationSections();
+        triggerAutoSave();
+    });
+    document.getElementById('companyName').addEventListener('input', function() {
         updateRecommendationSections();
         triggerAutoSave();
     });
@@ -2654,7 +2698,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Function to open email client with proper CC
+    // Function to open email client with proper CC - FIXED VERSION
     function openEmailClient(clientName, xplanId) {
         const subject = `Findex ARF for ${clientName}`;
         const body = `Dear Team,
@@ -2680,81 +2724,66 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
         }
         
-        // Try different email client approaches with proper CC handling
-        const tryOutlookDesktop = () => {
-            try {
-                let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                if (ccEmail) {
-                    outlookDesktopUrl += `&cc=${encodeURIComponent(ccEmail)}`;
-                }
-                window.location.href = outlookDesktopUrl;
-                return true;
-            } catch (error) {
-                console.error('Outlook desktop failed:', error);
-                return false;
-            }
-        };
+        // Create mailto link with proper encoding
+        let mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        if (ccEmail) {
+            mailtoLink += `&cc=${encodeURIComponent(ccEmail)}`;
+        }
         
-        const tryOutlookWeb = () => {
-            try {
-                let outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                if (ccEmail) {
-                    outlookWebUrl += `&cc=${encodeURIComponent(ccEmail)}`;
-                }
-                window.open(outlookWebUrl, '_blank');
-                return true;
-            } catch (error) {
-                console.error('Outlook web failed:', error);
-                return false;
-            }
-        };
-        
-        const tryMailto = () => {
-            try {
-                let mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                if (ccEmail) {
-                    mailtoUrl += `&cc=${encodeURIComponent(ccEmail)}`;
-                }
-                window.location.href = mailtoUrl;
-                return true;
-            } catch (error) {
-                console.error('Mailto failed:', error);
-                return false;
-            }
-        };
-        
-        // Check if we're on Windows and try Outlook desktop first
-        const isWindows = navigator.platform.indexOf('Win') > -1;
-        
+        // Try multiple approaches to open email client
         let emailOpened = false;
         
-        if (isWindows) {
-            // Try Outlook desktop first on Windows
-            emailOpened = tryOutlookDesktop();
-            if (!emailOpened) {
-                // Fallback to web Outlook after a delay
-                setTimeout(() => {
-                    if (!tryOutlookWeb()) {
-                        tryMailto();
+        // Method 1: Direct mailto (most reliable)
+        try {
+            window.location.href = mailtoLink;
+            emailOpened = true;
+        } catch (error) {
+            console.error('Mailto failed:', error);
+        }
+        
+        // Method 2: Try Outlook Web if on Windows (as backup)
+        if (!emailOpened || navigator.platform.indexOf('Win') > -1) {
+            setTimeout(() => {
+                try {
+                    let outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    if (ccEmail) {
+                        outlookWebUrl += `&cc=${encodeURIComponent(ccEmail)}`;
                     }
-                }, 500);
-            }
-        } else {
-            // Try web Outlook first on other platforms
-            emailOpened = tryOutlookWeb();
-            if (!emailOpened) {
-                tryMailto();
-            }
+                    window.open(outlookWebUrl, '_blank');
+                } catch (error) {
+                    console.error('Outlook web failed:', error);
+                }
+            }, 1000);
+        }
+        
+        // Method 3: Try Outlook desktop protocol (Windows only)
+        if (navigator.platform.indexOf('Win') > -1) {
+            setTimeout(() => {
+                try {
+                    let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    if (ccEmail) {
+                        outlookDesktopUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+                    }
+                    window.location.href = outlookDesktopUrl;
+                } catch (error) {
+                    console.error('Outlook desktop failed:', error);
+                }
+            }, 2000);
         }
         
         // Show success message with CC info
-        let message = 'Email client opened successfully.';
+        let message = 'Email client opening...';
         if (ccEmail) {
             message += ` CC: ${ccEmail}`;
         } else {
             message += ' (No Xplan ID - no CC added)';
         }
         showAutoSaveIndicator(message);
+        
+        // Follow-up message
+        setTimeout(() => {
+            showAutoSaveIndicator('If email client didn\'t open, please check your default email app settings.');
+        }, 3000);
     }
     
     // Export to Word functionality - FIXED to match visible content exactly
