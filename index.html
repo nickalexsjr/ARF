@@ -2665,7 +2665,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <ul style="margin: 15px 0; padding-left: 20px; text-align: left;">
                     <li>Please ensure you have downloaded the ARF PDF using "Export to PDF"</li>
                     <li>You will need to manually attach the PDF file to your email</li>
-                    ${xplanId ? `<li>The email will automatically CC: <strong>${xplanId.trim()}@findex.xplan.iress.com.au</strong></li>` : '<li>No Xplan ID entered - no CC will be added</li>'}
+                    ${xplanId ? `<li style="background-color: yellow; padding: 5px; margin: 5px 0; border-radius: 3px;"><strong>IF YOU WANT TO SAVE TO XPLAN CC: ${xplanId.trim()}@findex.xplan.iress.com.au</strong></li>` : '<li>No Xplan ID entered - manually CC if saving to Xplan</li>'}
                 </ul>
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-success" id="proceedWithEmail">
@@ -2701,15 +2701,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to open email client with proper CC - FIXED VERSION
     function openEmailClient(clientName, xplanId) {
         const subject = `Findex ARF for ${clientName}`;
-        const body = `Dear Team,
+        
+        // Build CC email if Xplan ID is provided
+        let ccEmail = '';
+        let ccNote = '';
+        if (xplanId && xplanId.trim()) {
+            ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
+            ccNote = `**IF YOU WANT TO SAVE TO XPLAN CC ${ccEmail}**\n\n`;
+        }
+        
+        const body = `${ccNote}Dear Team,
 
 Please find attached the Financial Advice Request Form (ARF) for ${clientName}.
-
-This ARF contains:
-- Client details and strategy recommendations
-- Product recommendations and risk profiling
-- Fee structure and compliance requirements
-- All necessary documentation requirements
 
 This document has been prepared for your acknowledgment and further processing.
 
@@ -2718,17 +2721,8 @@ If you have any questions or require additional information, please don't hesita
 Best regards,
 ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         
-        // Build CC email if Xplan ID is provided
-        let ccEmail = '';
-        if (xplanId && xplanId.trim()) {
-            ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
-        }
-        
         // Create mailto link with proper encoding
         let mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        if (ccEmail) {
-            mailtoLink += `&cc=${encodeURIComponent(ccEmail)}`;
-        }
         
         // Try multiple approaches to open email client
         let emailOpened = false;
@@ -2746,9 +2740,6 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             setTimeout(() => {
                 try {
                     let outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                    if (ccEmail) {
-                        outlookWebUrl += `&cc=${encodeURIComponent(ccEmail)}`;
-                    }
                     window.open(outlookWebUrl, '_blank');
                 } catch (error) {
                     console.error('Outlook web failed:', error);
@@ -2761,9 +2752,6 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             setTimeout(() => {
                 try {
                     let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                    if (ccEmail) {
-                        outlookDesktopUrl += `&cc=${encodeURIComponent(ccEmail)}`;
-                    }
                     window.location.href = outlookDesktopUrl;
                 } catch (error) {
                     console.error('Outlook desktop failed:', error);
@@ -2774,9 +2762,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         // Show success message with CC info
         let message = 'Email client opening...';
         if (ccEmail) {
-            message += ` CC: ${ccEmail}`;
+            message += ` Remember to CC: ${ccEmail}`;
         } else {
-            message += ' (No Xplan ID - no CC added)';
+            message += ' (No Xplan ID - manual CC required if saving to Xplan)';
         }
         showAutoSaveIndicator(message);
         
