@@ -216,6 +216,10 @@ textarea {
     background: var(--success);
 }
 
+.btn-success:hover {
+    background: #27ae60;
+}
+
 .btn-danger {
     background: var(--danger);
 }
@@ -794,6 +798,10 @@ input:checked + .slider:before {
         width: 100%;
     }
     
+    .draft-selector button {
+        width: 100%;
+    }
+    
     .grid-2 {
         grid-template-columns: 1fr;
     }
@@ -838,6 +846,7 @@ input:checked + .slider:before {
             <option value="">Select a saved draft...</option>
         </select>
         <button type="button" class="btn btn-sm" id="loadDraftBtn">Load</button>
+        <button type="button" class="btn btn-success btn-sm" id="shareAsLinkBtn">Share as Link</button>
         <button type="button" class="btn btn-danger btn-sm" id="deleteDraftBtn">Delete</button>
     </div>
 
@@ -1199,9 +1208,6 @@ input:checked + .slider:before {
             <button type="button" class="btn btn-success" id="exportPdfBtn">
                 <i class="fas fa-file-pdf"></i> Export to PDF
             </button>
-            <button type="button" class="btn btn-primary" id="saveToXplanBtnBottom">
-                <i class="fas fa-cloud-upload-alt"></i> Save to Xplan
-            </button>
             <button type="button" class="btn btn-primary" id="emailDocumentBtnBottom">
                 <i class="fas fa-envelope"></i> Email Document
             </button>
@@ -1251,12 +1257,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportWordBtn = document.getElementById('exportWordBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const saveToXplanBtnBottom = document.getElementById('saveToXplanBtnBottom');
     const emailDocumentBtnBottom = document.getElementById('emailDocumentBtnBottom');
     
     // Draft functionality
     const draftSelector = document.getElementById('draftSelector');
     const loadDraftBtn = document.getElementById('loadDraftBtn');
+    const shareAsLinkBtn = document.getElementById('shareAsLinkBtn');
     const deleteDraftBtn = document.getElementById('deleteDraftBtn');
     const saveDraftModal = document.getElementById('saveDraftModal');
     const draftNameInput = document.getElementById('draftName');
@@ -1300,6 +1306,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize draft functionality
     initializeDraftFunctionality();
+    
+    // Check for shared form data in URL
+    checkForSharedData();
     
     // Set up auto-save
     setupAutoSave();
@@ -2319,6 +2328,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Please select a draft to delete.');
             }
         });
+        
+        // Share as Link functionality
+        shareAsLinkBtn.addEventListener('click', function() {
+            shareAsLink();
+        });
     }
     
     function loadDraftList() {
@@ -2363,6 +2377,108 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDraftList();
         draftSelector.value = '';
         showAutoSaveIndicator('Draft deleted successfully!');
+    }
+    
+    // Share as Link functionality
+    function shareAsLink() {
+        const formData = collectFormData();
+        const clientName = document.getElementById('clientName').value || 'Shared Form';
+        
+        try {
+            // Encode form data as base64 to make it URL-safe
+            const encodedData = btoa(JSON.stringify(formData));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(encodedData)}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showAutoSaveIndicator('Share link copied to clipboard!');
+                
+                // Also show a modal with the link for manual copying if needed
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
+                        <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
+                            ${shareUrl}
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
+                                <i class="fas fa-copy"></i> Copy Again
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                <i class="fas fa-check"></i> Done
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }).catch(() => {
+                // Fallback if clipboard API fails
+                showAutoSaveIndicator('Share link ready - check the modal');
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
+                        <p>Copy this link to share the form:</p>
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
+                            ${shareUrl}
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
+                                <i class="fas fa-copy"></i> Copy Link
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                <i class="fas fa-check"></i> Done
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            });
+        } catch (error) {
+            console.error('Error creating share link:', error);
+            showAutoSaveIndicator('Error creating share link - form too large');
+        }
+    }
+    
+    // Check for shared data in URL
+    function checkForSharedData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedData = urlParams.get('shared');
+        
+        if (sharedData) {
+            try {
+                // Decode the shared data
+                const decodedData = JSON.parse(atob(decodeURIComponent(sharedData)));
+                
+                // Show notification about shared form
+                const clientName = decodedData.clientName || 'Unknown Client';
+                showAutoSaveIndicator(`Loading shared form: ${clientName}`);
+                
+                // Populate the form with shared data
+                setTimeout(() => {
+                    populateFormData(decodedData);
+                    
+                    // Clean URL after loading (optional)
+                    const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                    
+                    showAutoSaveIndicator('Shared form loaded successfully!');
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error loading shared data:', error);
+                showAutoSaveIndicator('Error loading shared form data');
+            }
+        }
     }
     
     // Auto-save functionality
@@ -2461,36 +2577,17 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFormBasedOnSelections();
     }
     
-    // Save to Xplan functionality
-    saveToXplanBtnBottom.addEventListener('click', function() {
-        // Show coming soon modal
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.style.display = 'block';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                <h3><i class="fas fa-info-circle"></i> Feature Coming Soon</h3>
-                <p>The "Save to Xplan" functionality is currently under development and will be available in a future update.</p>
-                <p>In the meantime, you can:</p>
-                <ul style="margin: 15px 0; padding-left: 20px;">
-                    <li>Save your work as a draft</li>
-                    <li>Export to Word or PDF</li>
-                    <li>Email the document to relevant parties</li>
-                </ul>
-                <div class="modal-buttons">
-                    <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                        <i class="fas fa-check"></i> Got it
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    });
-    
-    // Email Document functionality - IMPROVED OUTLOOK DETECTION
+    // Enhanced Email Document functionality with PDF attachment and CC
     emailDocumentBtnBottom.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
+        const xplanId = document.getElementById('xplanId').value;
+        
+        // Build CC email if Xplan ID is provided
+        let ccEmail = '';
+        if (xplanId && xplanId.trim()) {
+            ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
+        }
+        
         const subject = `Findex ARF for ${clientName}`;
         const body = `Dear Team,
 
@@ -2509,65 +2606,149 @@ If you have any questions or require additional information, please don't hesita
 Best regards,
 ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         
-        // Try different methods to open email
-        const tryOutlookDesktop = () => {
-            try {
-                // Try Outlook desktop protocol first
-                const outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.location.href = outlookDesktopUrl;
-                return true;
-            } catch (error) {
-                return false;
+        // First generate PDF
+        generatePDFForEmail().then(pdfBlob => {
+            // Create mailto link with CC
+            let mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            if (ccEmail) {
+                mailtoUrl += `&cc=${encodeURIComponent(ccEmail)}`;
             }
-        };
-        
-        const tryOutlookWeb = () => {
-            try {
-                // Try Outlook web app
-                const outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.open(outlookWebUrl, '_blank');
-                return true;
-            } catch (error) {
-                return false;
+            
+            // Try different email client approaches
+            const tryOutlookDesktop = () => {
+                try {
+                    // Try Outlook desktop protocol first
+                    let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    if (ccEmail) {
+                        outlookDesktopUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+                    }
+                    window.location.href = outlookDesktopUrl;
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            };
+            
+            const tryOutlookWeb = () => {
+                try {
+                    // Try Outlook web app
+                    let outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    if (ccEmail) {
+                        outlookWebUrl += `&cc=${encodeURIComponent(ccEmail)}`;
+                    }
+                    window.open(outlookWebUrl, '_blank');
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            };
+            
+            const tryMailto = () => {
+                try {
+                    window.location.href = mailtoUrl;
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            };
+            
+            // Check if we're on Windows and try Outlook desktop first
+            const isWindows = navigator.platform.indexOf('Win') > -1;
+            
+            if (isWindows) {
+                // Try Outlook desktop first on Windows
+                setTimeout(() => tryOutlookWeb(), 1000); // Fallback after 1 second
+                if (!tryOutlookDesktop()) {
+                    tryMailto();
+                }
+            } else {
+                // Try web Outlook first on other platforms
+                if (!tryOutlookWeb()) {
+                    tryMailto();
+                }
             }
-        };
-        
-        const tryMailto = () => {
-            try {
-                // Fallback to mailto
-                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.location.href = mailtoLink;
-                return true;
-            } catch (error) {
-                return false;
+            
+            // Download PDF for manual attachment
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            // Show success message with instructions
+            let message = 'Email client opened and PDF downloaded. Please attach the PDF file manually.';
+            if (ccEmail) {
+                message += ` CC: ${ccEmail}`;
             }
-        };
-        
-        // Check if we're on Windows and try Outlook desktop first
-        const isWindows = navigator.platform.indexOf('Win') > -1;
-        
-        if (isWindows) {
-            // Try Outlook desktop first on Windows
-            setTimeout(() => tryOutlookWeb(), 1000); // Fallback after 1 second
-            if (!tryOutlookDesktop()) {
-                tryMailto();
-            }
-        } else {
-            // Try web Outlook first on other platforms
-            if (!tryOutlookWeb()) {
-                tryMailto();
-            }
-        }
-        
-        // Show success message
-        showAutoSaveIndicator('Email client opened successfully.');
+            showAutoSaveIndicator(message);
+        }).catch(error => {
+            console.error('Error generating PDF:', error);
+            showAutoSaveIndicator('Error generating PDF. Please try export to PDF first.');
+        });
     });
     
-    // Export to Word functionality - MATCH VISIBLE CONTENT EXACTLY
+    // Function to generate PDF specifically for email attachment
+    function generatePDFForEmail() {
+        return new Promise((resolve, reject) => {
+            const clientName = document.getElementById('clientName').value || 'Client';
+            const element = document.querySelector('.container');
+            
+            // Hide elements that shouldn't be in PDF
+            const elementsToHide = document.querySelectorAll('.btn-group, .draft-selector, .auto-save-indicator, .modal');
+            const originalDisplays = [];
+            
+            elementsToHide.forEach(el => {
+                originalDisplays.push(el.style.display);
+                el.style.display = 'none';
+            });
+            
+            // Configure html2pdf options
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    letterRendering: true
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    compress: true
+                },
+                pagebreak: { 
+                    mode: ['avoid-all', 'css', 'legacy'],
+                    before: '.section',
+                    avoid: ['.product-item', '.checklist-item', '.form-group']
+                }
+            };
+            
+            // Generate PDF as blob
+            html2pdf().set(opt).from(element).output('blob').then(blob => {
+                // Restore hidden elements
+                elementsToHide.forEach((el, index) => {
+                    el.style.display = originalDisplays[index];
+                });
+                resolve(blob);
+            }).catch(error => {
+                // Restore hidden elements on error
+                elementsToHide.forEach((el, index) => {
+                    el.style.display = originalDisplays[index];
+                });
+                reject(error);
+            });
+        });
+    }
+    
+    // Export to Word functionality - FIXED to match visible content exactly
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Build clean Word document content
+        // Build clean Word document content - only include what's actually visible
         let wordContent = `
         <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
         `;
