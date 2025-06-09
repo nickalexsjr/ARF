@@ -1102,7 +1102,7 @@ input:checked + .slider:before {
             <div class="form-group" id="projectionOptionsGroup">
                 <div class="checklist-item">
                     <input type="checkbox" id="calmChart" name="projectionOptions" value="CALM">
-                    <label for="calmChart">CALM to LE chart, cashflow consolidated table, asset summary chart and table</label>
+                    <label for="calmChart">CALM to chart, cashflow consolidated table, asset summary chart and table</label>
                 </div>
                 
                 <div class="checklist-item">
@@ -1145,7 +1145,13 @@ input:checked + .slider:before {
                 </div>
                 
                 <div class="form-group">
-                    <label for="ongoingFee">Ongoing Advice Fee:</label>
+                    <label for="ongoingFee">
+                        Ongoing Advice Fee:
+                        <span class="inline-checkbox">
+                            <input type="checkbox" id="ongoingFeeRefer" name="ongoingFeeRefer">
+                            <label for="ongoingFeeRefer">Refer to Pricing Calculator</label>
+                        </span>
+                    </label>
                     <input type="text" id="ongoingFee" name="ongoingFee" placeholder="">
                 </div>
             </div>
@@ -1311,6 +1317,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // TMD checkbox
     const tmdInFilenoteCheckbox = document.getElementById('tmdInFilenote');
     const tmdDetailsTextarea = document.getElementById('tmdDetails');
+    
+    // Ongoing Fee checkbox
+    const ongoingFeeReferCheckbox = document.getElementById('ongoingFeeRefer');
+    const ongoingFeeInput = document.getElementById('ongoingFee');
     
     // Product options
     const productOptions = [
@@ -2339,6 +2349,16 @@ document.addEventListener('DOMContentLoaded', function() {
             tmdDetailsTextarea.value = 'TMD in filenote\n' + tmdDetailsTextarea.value;
         } else {
             tmdDetailsTextarea.value = tmdDetailsTextarea.value.replace('TMD in filenote\n', '');
+        }
+        triggerAutoSave();
+    });
+    
+    // Handle ongoing fee refer checkbox
+    ongoingFeeReferCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            ongoingFeeInput.value = 'Refer to Pricing Calculator\n' + ongoingFeeInput.value;
+        } else {
+            ongoingFeeInput.value = ongoingFeeInput.value.replace('Refer to Pricing Calculator\n', '');
         }
         triggerAutoSave();
     });
