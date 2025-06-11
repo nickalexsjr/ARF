@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Advice Request Form - SOA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <style>
 :root {
@@ -680,35 +676,6 @@ input:checked + .slider:before {
     100% { opacity: 0; transform: translateY(-20px); }
 }
 
-/* For Word export styling */
-.word-export {
-    font-family: 'Calibri', 'Arial', sans-serif;
-    line-height: 1.5;
-    color: #000;
-}
-
-.word-export h1 {
-    font-size: 24pt;
-    margin-bottom: 20pt;
-}
-
-.word-export h2 {
-    font-size: 18pt;
-    margin-top: 20pt;
-    margin-bottom: 10pt;
-}
-
-.word-export h3 {
-    font-size: 14pt;
-    margin-top: 15pt;
-    margin-bottom: 10pt;
-}
-
-.word-export .section {
-    margin-bottom: 20pt;
-    padding: 15pt;
-}
-
 /* New styles for recommendation sections with checkboxes */
 .recommendation-header {
     display: flex;
@@ -753,19 +720,20 @@ input:checked + .slider:before {
     margin-bottom: 0;
 }
 
+/* PDF Export Styles */
 @media print {
     body {
-        background: white;
-        padding: 0;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+        background: white !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
     .container {
-        box-shadow: none;
-        max-width: 100%;
-        padding: 20px;
-        margin-top: 0;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        padding: 20px !important;
+        margin-top: 0 !important;
     }
     
     .btn-group, .no-print, .draft-selector, .auto-save-indicator {
@@ -773,25 +741,45 @@ input:checked + .slider:before {
     }
     
     .section {
-        page-break-inside: avoid;
-        box-shadow: none;
-        border-left: 2px solid var(--accent);
+        page-break-inside: avoid !important;
+        box-shadow: none !important;
+        border-left: 2px solid var(--accent) !important;
+        margin-bottom: 20px !important;
     }
     
-    input, textarea, select {
-        border: 1px solid #ddd !important;
-        background: white !important;
+    /* Enhanced textarea handling for PDF */
+    textarea {
         min-height: auto !important;
         height: auto !important;
+        padding: 8px !important;
+        border: 1px solid #333 !important;
+        background: white !important;
         overflow: visible !important;
-        word-wrap: break-word !important;
+        resize: none !important;
         white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
+        page-break-inside: avoid !important;
     }
     
-    textarea {
-        min-height: 40px !important;
-        height: auto !important;
-        resize: none !important;
+    input[type="text"], input[type="date"], input[type="number"] {
+        border: 1px solid #333 !important;
+        background: white !important;
+        padding: 4px 8px !important;
+        font-size: 12pt !important;
+    }
+    
+    select {
+        border: 1px solid #333 !important;
+        background: white !important;
+        padding: 4px !important;
+        font-size: 12pt !important;
+    }
+    
+    .checkbox-item, .radio-item, .checklist-item {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }
 }
 
@@ -1033,7 +1021,13 @@ input:checked + .slider:before {
             </div>
             
             <div class="form-group">
-                <label for="mdaDetails">MDA Personalisation:</label>
+                <label for="mdaDetails">
+                    MDA Personalisation:
+                    <span class="inline-checkbox">
+                        <input type="checkbox" id="mdaDetailsNA" name="mdaDetailsNA">
+                        <label for="mdaDetailsNA">N/A</label>
+                    </span>
+                </label>
                 <textarea id="mdaDetails" name="mdaDetails" placeholder="Enter MDA personalisation details"></textarea>
             </div>
             
@@ -1343,6 +1337,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inaccurate info N/A checkbox
     const inaccurateInfoNACheckbox = document.getElementById('inaccurateInfoNA');
     const inaccurateInfoTextarea = document.getElementById('inaccurateInfo');
+    
+    // MDA Details N/A checkbox
+    const mdaDetailsNACheckbox = document.getElementById('mdaDetailsNA');
+    const mdaDetailsTextarea = document.getElementById('mdaDetails');
     
     // Ongoing Fee checkbox
     const ongoingFeeReferCheckbox = document.getElementById('ongoingFeeRefer');
@@ -2392,6 +2390,18 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     
+    // Handle MDA Details N/A checkbox
+    mdaDetailsNACheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            mdaDetailsTextarea.value = 'N/A - No MDA personalisation required';
+        } else {
+            if (mdaDetailsTextarea.value === 'N/A - No MDA personalisation required') {
+                mdaDetailsTextarea.value = '';
+            }
+        }
+        triggerAutoSave();
+    });
+    
     // Handle ongoing fee refer checkbox
     ongoingFeeReferCheckbox.addEventListener('change', function() {
         if (this.checked) {
@@ -2517,9 +2527,9 @@ document.addEventListener('DOMContentLoaded', function() {
         showAutoSaveIndicator('Draft deleted successfully!');
     }
     
-    // Enhanced Share as Link functionality with compression
+    // FIXED: Enhanced Share as Link functionality with better data collection
     function shareAsLink() {
-        const formData = collectFormData();
+        const formData = collectFormDataComplete();
         const clientName = document.getElementById('clientName').value || 'Shared Form';
         
         try {
@@ -2646,7 +2656,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Populate the form with shared data
         setTimeout(() => {
-            populateFormData(decodedData);
+            populateFormDataComplete(decodedData);
             
             // Clean URL after loading (optional)
             const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
@@ -2701,8 +2711,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000);
     }
     
-    function collectFormData() {
+    // FIXED: Enhanced data collection to capture ALL form data including dynamic content
+    function collectFormDataComplete() {
         const formData = {};
+        
+        // Collect all basic form elements
         document.querySelectorAll('input, textarea, select').forEach(element => {
             if (element.type === 'checkbox' || element.type === 'radio') {
                 formData[element.id] = element.checked;
@@ -2710,11 +2723,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 formData[element.id] = element.value;
             }
         });
+        
+        // Collect dynamic content state
+        formData._dynamicState = {
+            visibleSections: [],
+            productSections: {}
+        };
+        
+        // Capture which sections are visible
+        document.querySelectorAll('.section').forEach(section => {
+            if (section.style.display !== 'none') {
+                formData._dynamicState.visibleSections.push(section.id);
+            }
+        });
+        
+        // Capture product recommendation sections state
+        document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
+            formData._dynamicState.productSections[section.id] = section.style.display === 'block';
+        });
+        
+        // Capture checkbox visual states
+        document.querySelectorAll('.checkbox-item.selected').forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                formData[`${checkbox.id}_selected`] = true;
+            }
+        });
+        
         return formData;
     }
     
-    function populateFormData(formData) {
+    // Basic data collection for backward compatibility
+    function collectFormData() {
+        return collectFormDataComplete();
+    }
+    
+    // FIXED: Enhanced form population to restore ALL form data including dynamic content
+    function populateFormDataComplete(formData) {
+        // First populate basic form elements
         Object.keys(formData).forEach(key => {
+            if (key.startsWith('_') || key.endsWith('_selected')) return; // Skip metadata
+            
             const element = document.getElementById(key);
             if (element) {
                 if (element.type === 'checkbox' || element.type === 'radio') {
@@ -2724,35 +2773,64 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (item) {
                             item.classList.toggle('selected', element.checked);
                         }
-                        
-                        // Handle product recommendation checkboxes
-                        if (key.endsWith('ProductRecsCheckbox')) {
-                            const checkboxToSectionMap = {
-                                'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                                'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                                'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                                'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                                'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                                'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                                'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                            };
-                            
-                            const sectionId = checkboxToSectionMap[key];
-                            const section = document.getElementById(sectionId);
-                            if (section) {
-                                section.style.display = element.checked ? 'block' : 'none';
-                            }
-                        }
                     }
                 } else {
                     element.value = formData[key];
                 }
             }
         });
+        
+        // Trigger form updates to recreate dynamic content
         updateFormBasedOnSelections();
+        
+        // Wait for dynamic content to be created, then restore states
+        setTimeout(() => {
+            // Re-populate dynamically created elements
+            Object.keys(formData).forEach(key => {
+                if (key.startsWith('_') || key.endsWith('_selected')) return;
+                
+                const element = document.getElementById(key);
+                if (element && !element.hasAttribute('data-restored')) {
+                    element.setAttribute('data-restored', 'true');
+                    if (element.type === 'checkbox' || element.type === 'radio') {
+                        element.checked = formData[key];
+                    } else {
+                        element.value = formData[key];
+                    }
+                }
+            });
+            
+            // Restore product section visibility
+            if (formData._dynamicState && formData._dynamicState.productSections) {
+                Object.keys(formData._dynamicState.productSections).forEach(sectionId => {
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.style.display = formData._dynamicState.productSections[sectionId] ? 'block' : 'none';
+                    }
+                });
+            }
+            
+            // Restore checkbox states for product recommendation toggles
+            document.querySelectorAll('[id$="ProductRecsCheckbox"]').forEach(checkbox => {
+                if (formData[checkbox.id]) {
+                    checkbox.checked = true;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
+            
+            // Re-initialize product features for restored content
+            initializeProductFeatures();
+            setupProductRecommendationToggles();
+            setupAutoSaveForNewElements();
+        }, 200);
     }
     
-    // Email Document functionality - Desktop Outlook only
+    // Basic population for backward compatibility
+    function populateFormData(formData) {
+        populateFormDataComplete(formData);
+    }
+    
+    // FIXED: Email Document functionality - Multiple fallback methods
     emailDocumentBtnBottom.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         const xplanId = document.getElementById('xplanId').value;
@@ -2801,7 +2879,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Function to open email client - Desktop Outlook only
+    // FIXED: Enhanced email client opening with multiple fallback methods
     function openEmailClient(clientName, xplanId) {
         const subject = `Findex ARF for ${clientName}`;
         
@@ -2823,51 +2901,87 @@ If you have any questions or require additional information, please don't hesita
 Best regards,
 ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         
-        // Try multiple methods to open desktop Outlook only
         let emailOpened = false;
         
-        // Method 1: Try desktop Outlook protocol first (Windows)
-        if (navigator.platform.indexOf('Win') > -1) {
-            try {
-                let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = outlookDesktopUrl;
-                document.body.appendChild(iframe);
-                setTimeout(() => document.body.removeChild(iframe), 1000);
-                emailOpened = true;
-            } catch (error) {
-                console.error('Outlook desktop failed:', error);
-            }
+        // Method 1: Try direct mailto first
+        try {
+            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Create a temporary link and click it
+            const tempLink = document.createElement('a');
+            tempLink.href = mailtoLink;
+            tempLink.style.display = 'none';
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+            
+            emailOpened = true;
+            showAutoSaveIndicator('Email client opening...');
+        } catch (error) {
+            console.error('Direct mailto failed:', error);
         }
         
-        // Method 2: Try standard mailto as fallback (will use default email client)
+        // Method 2: Try window.location.href as fallback
         if (!emailOpened) {
             try {
-                let mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.location.href = mailtoLink;
+                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                 emailOpened = true;
+                showAutoSaveIndicator('Email client opening...');
             } catch (error) {
-                console.error('Mailto failed:', error);
+                console.error('Window location mailto failed:', error);
             }
         }
         
-        // Show success message
-        let message = 'Email client opening...';
-        if (xplanId && xplanId.trim()) {
-            message += ` Remember to CC: ${xplanId.trim()}@findex.xplan.iress.com.au`;
-        } else {
-            message += ' (No Xplan ID - manual CC required if saving to Xplan)';
+        // Method 3: Try window.open as final fallback
+        if (!emailOpened) {
+            try {
+                window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                emailOpened = true;
+                showAutoSaveIndicator('Email client opening...');
+            } catch (error) {
+                console.error('Window open mailto failed:', error);
+            }
         }
-        showAutoSaveIndicator(message);
         
-        // Follow-up message
+        // If all methods failed, show manual copy option
+        if (!emailOpened) {
+            const fallbackModal = document.createElement('div');
+            fallbackModal.className = 'modal';
+            fallbackModal.style.display = 'block';
+            fallbackModal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h3><i class="fas fa-exclamation-triangle"></i> Manual Email Setup Required</h3>
+                    <p>Unable to open email client automatically. Please copy the email content below:</p>
+                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 15px 0; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+Subject: ${subject}
+
+${body}
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('Subject: ${subject}\\n\\n${body}').then(() => alert('Email content copied to clipboard!'))">
+                            <i class="fas fa-copy"></i> Copy Email Content
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="fas fa-check"></i> Done
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(fallbackModal);
+        }
+        
+        // Show additional reminder message
         setTimeout(() => {
-            showAutoSaveIndicator('If email client didn\'t open, please check your default email app settings.');
+            if (xplanId && xplanId.trim()) {
+                showAutoSaveIndicator(`Remember to CC: ${xplanId.trim()}@findex.xplan.iress.com.au`);
+            } else {
+                showAutoSaveIndicator('Don\'t forget to attach the PDF file to your email!');
+            }
         }, 3000);
     }
     
-    // Export to Word functionality - FIXED to match visible content exactly and reorder sections
+    // Export to Word functionality - Enhanced with better content handling
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
@@ -2943,340 +3057,4 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                             wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
                                         }
                                         
-                                        // Process product fields with values
-                                        product.querySelectorAll('input, textarea, select').forEach(input => {
-                                            if (input.value && input.style.display !== 'none') {
-                                                const inputGroup = input.closest('.form-group');
-                                                const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
-                                                
-                                                if (inputLabel) {
-                                                    let value = input.value;
-                                                    if (input.tagName === 'SELECT') {
-                                                        const selected = input.options[input.selectedIndex];
-                                                        value = selected ? selected.text : '';
-                                                    }
-                                                    if (input.type === 'checkbox') {
-                                                        // Handle toggle switches in products
-                                                        const statusSpan = input.parentElement.nextElementSibling;
-                                                        value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
-                                                    }
-                                                    if (value && value !== 'Select investment option' && value !== '') {
-                                                        wordContent += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
-                                                    }
-                                                }
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                    
-                    // Then add the rest of the strategy recommendations fields
-                    section.querySelectorAll('.form-group').forEach(group => {
-                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                            // Process regular inputs (avoid duplicates)
-                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
-                                    const inputLabel = input.closest('.form-group').querySelector('label');
-                                    if (inputLabel && input.value) {
-                                        let value = input.value;
-                                        if (input.tagName === 'SELECT') {
-                                            const selected = input.options[input.selectedIndex];
-                                            value = selected ? selected.text : '';
-                                        }
-                                        if (value) {
-                                            wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
-                                            wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    });
-                } else {
-                    // Process form groups for other sections (excluding dynamic recommendations container)
-                    section.querySelectorAll('.form-group').forEach(group => {
-                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                            const label = group.querySelector('label');
-                            
-                            // Process radio groups
-                            const radioGroup = group.querySelector('.radio-group');
-                            if (radioGroup) {
-                                if (label) {
-                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                                }
-                                radioGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
-                                    if (radio.checked) {
-                                        const radioLabel = radio.nextElementSibling;
-                                        if (radioLabel) {
-                                            wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
-                                        }
-                                    }
-                                });
-                            }
-                            
-                            // Process checkbox groups
-                            const checkboxGroup = group.querySelector('.checkbox-group');
-                            if (checkboxGroup) {
-                                if (label) {
-                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                                }
-                                checkboxGroup.querySelectorAll('.checkbox-item').forEach(item => {
-                                    const checkbox = item.querySelector('input[type="checkbox"]');
-                                    const checkboxLabel = item.querySelector('label');
-                                    if (checkbox && checkboxLabel) {
-                                        wordContent += `<p style="margin-left: 20px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
-                                    }
-                                });
-                            }
-                            
-                            // Process regular inputs (avoid duplicates)
-                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
-                                    const inputLabel = input.closest('.form-group').querySelector('label');
-                                    if (inputLabel && input.value) {
-                                        let value = input.value;
-                                        if (input.tagName === 'SELECT') {
-                                            const selected = input.options[input.selectedIndex];
-                                            value = selected ? selected.text : '';
-                                        }
-                                        if (value) {
-                                            wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
-                                            wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
-                                        }
-                                    }
-                                }
-                            });
-                            
-                            // Process checklist items
-                            group.querySelectorAll('.checklist-item').forEach(item => {
-                                if (item.style.display !== 'none') {
-                                    const checkbox = item.querySelector('input[type="checkbox"]');
-                                    const checkboxLabel = item.querySelector('label');
-                                    if (checkbox && checkboxLabel) {
-                                        wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
-                                    }
-                                }
-                            });
-                            
-                            // Process toggle switches
-                            group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
-                                const toggleLabel = toggleGroup.querySelector('label');
-                                const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                                if (toggleLabel && toggleInput) {
-                                    wordContent += `<p><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
-                                }
-                            });
-                        }
-                    });
-                }
-            }
-        });
-        
-        // Create complete Word document
-        const html = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head>
-                <meta charset="utf-8">
-                <title>Financial Advice Request Form - ${clientName}</title>
-                <style>
-                    body { 
-                        font-family: Calibri, Arial, sans-serif; 
-                        line-height: 1.5; 
-                        color: #000; 
-                        margin: 20px; 
-                        background: white;
-                    }
-                    h1 { font-size: 24pt; margin-bottom: 20pt; page-break-after: avoid; }
-                    h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; page-break-after: avoid; }
-                    h3, h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
-                    p { margin-bottom: 10pt; }
-                    @page { margin: 1in; }
-                </style>
-            </head>
-            <body>
-                ${wordContent}
-            </body>
-            </html>
-        `;
-        
-        const blob = new Blob([html], { type: 'application/msword' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        showAutoSaveIndicator('Word document exported successfully!');
-    });
-    
-    // Export to PDF functionality - Enhanced for better text handling
-    exportPdfBtn.addEventListener('click', function() {
-        const clientName = document.getElementById('clientName').value || 'Client';
-        
-        // Hide elements that shouldn't be in PDF
-        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
-        const originalDisplays = [];
-        
-        elementsToHide.forEach(el => {
-            originalDisplays.push(el.style.display);
-            el.style.display = 'none';
-        });
-        
-        // Add PDF-specific styles for better text handling
-        const pdfStyle = document.createElement('style');
-        pdfStyle.id = 'pdf-export-style';
-        pdfStyle.textContent = `
-            @media print {
-                body { 
-                    background: white !important; 
-                    padding: 0 !important; 
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                .container { 
-                    box-shadow: none !important; 
-                    max-width: 100% !important; 
-                    margin: 0 !important; 
-                    padding: 20px !important;
-                }
-                .section { 
-                    page-break-inside: avoid !important; 
-                    margin-bottom: 20px !important;
-                }
-                textarea, input[type="text"] {
-                    min-height: auto !important;
-                    height: auto !important;
-                    padding: 8px !important;
-                    border: 1px solid #ddd !important;
-                    background: white !important;
-                    word-wrap: break-word !important;
-                    white-space: pre-wrap !important;
-                    overflow: visible !important;
-                    resize: none !important;
-                    box-sizing: border-box !important;
-                }
-                * { 
-                    print-color-adjust: exact !important; 
-                    -webkit-print-color-adjust: exact !important;
-                    color-adjust: exact !important;
-                }
-            }
-        `;
-        document.head.appendChild(pdfStyle);
-        
-        // Set document title for PDF filename
-        const originalTitle = document.title;
-        document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        
-        // Use window.print() for guaranteed text handling
-        setTimeout(() => {
-            window.print();
-        }, 100);
-        
-        // Clean up after print
-        const cleanupAfterPrint = () => {
-            // Remove PDF styles
-            const pdfStyleElement = document.getElementById('pdf-export-style');
-            if (pdfStyleElement) {
-                pdfStyleElement.remove();
-            }
-            
-            // Restore original title
-            document.title = originalTitle;
-            
-            // Restore hidden elements
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
-            
-            showAutoSaveIndicator('PDF ready for save/print!');
-        };
-        
-        // Listen for print events
-        window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
-        
-        // Fallback cleanup after 10 seconds
-        setTimeout(cleanupAfterPrint, 10000);
-    });
-    
-    // Reset Form functionality
-    resetBtn.addEventListener('click', function() {
-        if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
-            // Reset form fields
-            document.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea').forEach(field => {
-                field.value = '';
-                // Reset textarea size
-                if (field.tagName === 'TEXTAREA') {
-                    field.style.height = 'auto';
-                }
-            });
-            
-            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            document.querySelectorAll('input[type="radio"]').forEach(radio => {
-                radio.checked = false;
-            });
-            
-            document.querySelectorAll('select').forEach(select => {
-                select.selectedIndex = 0;
-            });
-            
-            // Reset client type selection
-            document.querySelectorAll('.checkbox-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            
-            // Hide conditional sections
-            partnerNameGroup.style.display = 'none';
-            entityNameGroup.style.display = 'none';
-            entitySelector.style.display = 'none';
-            smsfNameGroup.style.display = 'none';
-            trustNameGroup.style.display = 'none';
-            companyNameGroup.style.display = 'none';
-            
-            // Hide all product recommendation sections
-            document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Clear dynamic content
-            document.getElementById('recommendationsSectionsContainer').innerHTML = '';
-            document.getElementById('dynamicFeesContainer').innerHTML = '';
-            document.getElementById('complianceRequirements').innerHTML = '';
-            
-            // Reset other UI elements
-            flowchartRequiredToggle.checked = false;
-            flowchartStatus.textContent = 'No';
-            projectionDateLength.value = 'lifeExpectancy';
-            otherProjectionLength.style.display = 'none';
-            
-            // Reset projection visibility
-            const customProjectionInstructions = document.getElementById('customProjectionInstructions');
-            const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
-            if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
-            if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
-            
-            // Reset checkboxes
-            paraplannerCompareCheckbox.checked = false;
-            tmdInFilenoteCheckbox.checked = false;
-            inaccurateInfoNACheckbox.checked = false;
-            ongoingFeeReferCheckbox.checked = false;
-            
-            showAutoSaveIndicator('Form has been reset!');
-        }
-    });
-    
-    // Initial form update
-    updateFormBasedOnSelections();
-    
-    // Setup auto-save for existing elements
-    setupAutoSave();
-});
-    </script>
-</body>
-</html>
+                                        //
