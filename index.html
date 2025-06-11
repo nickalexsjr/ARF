@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
     <style>
 :root {
     --primary: #2c3e50;
@@ -196,6 +197,8 @@ textarea {
     resize: vertical;
     font-family: inherit;
     line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .btn {
@@ -754,6 +757,8 @@ input:checked + .slider:before {
     body {
         background: white;
         padding: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     
     .container {
@@ -776,6 +781,17 @@ input:checked + .slider:before {
     input, textarea, select {
         border: 1px solid #ddd !important;
         background: white !important;
+        min-height: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+        word-wrap: break-word !important;
+        white-space: pre-wrap !important;
+    }
+    
+    textarea {
+        min-height: 40px !important;
+        height: auto !important;
+        resize: none !important;
     }
 }
 
@@ -992,13 +1008,13 @@ input:checked + .slider:before {
             
             <div class="grid-2">
                 <div class="form-group">
-                    <label for="clientMeetingDate">Client Meeting Date:</label>
-                    <input type="date" id="clientMeetingDate" name="clientMeetingDate">
+                    <label for="formCompletedBy">Form Completed by:</label>
+                    <input type="text" id="formCompletedBy" name="formCompletedBy" placeholder="Enter your name">
                 </div>
                 
                 <div class="form-group">
-                    <label for="formCompletedBy">Form Completed by:</label>
-                    <input type="text" id="formCompletedBy" name="formCompletedBy" placeholder="Enter your name">
+                    <label for="clientMeetingDate">Client Meeting Date:</label>
+                    <input type="date" id="clientMeetingDate" name="clientMeetingDate">
                 </div>
             </div>
         </section>
@@ -1033,7 +1049,13 @@ input:checked + .slider:before {
             </div>
             
             <div class="form-group">
-                <label for="inaccurateInfo">Any potentially inaccurate or incomplete information:</label>
+                <label for="inaccurateInfo">
+                    Any potentially inaccurate or incomplete information:
+                    <span class="inline-checkbox">
+                        <input type="checkbox" id="inaccurateInfoNA" name="inaccurateInfoNA">
+                        <label for="inaccurateInfoNA">N/A</label>
+                    </span>
+                </label>
                 <textarea id="inaccurateInfo" name="inaccurateInfo" placeholder="Include reasons why information may be inaccurate or was not provided"></textarea>
             </div>
             
@@ -1318,9 +1340,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const tmdInFilenoteCheckbox = document.getElementById('tmdInFilenote');
     const tmdDetailsTextarea = document.getElementById('tmdDetails');
     
+    // Inaccurate info N/A checkbox
+    const inaccurateInfoNACheckbox = document.getElementById('inaccurateInfoNA');
+    const inaccurateInfoTextarea = document.getElementById('inaccurateInfo');
+    
     // Ongoing Fee checkbox
     const ongoingFeeReferCheckbox = document.getElementById('ongoingFeeRefer');
     const ongoingFeeInput = document.getElementById('ongoingFee');
+    const ongoingPcmFeeInput = document.getElementById('ongoingPcmFee');
     
     // Product options
     const productOptions = [
@@ -2353,12 +2380,31 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     
+    // Handle inaccurate info N/A checkbox
+    inaccurateInfoNACheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            inaccurateInfoTextarea.value = 'N/A - No potentially inaccurate or incomplete information';
+        } else {
+            if (inaccurateInfoTextarea.value === 'N/A - No potentially inaccurate or incomplete information') {
+                inaccurateInfoTextarea.value = '';
+            }
+        }
+        triggerAutoSave();
+    });
+    
     // Handle ongoing fee refer checkbox
     ongoingFeeReferCheckbox.addEventListener('change', function() {
         if (this.checked) {
-            ongoingFeeInput.value = 'Refer to Pricing Calculator\n' + ongoingFeeInput.value;
+            ongoingFeeInput.value = 'Refer to Pricing Calculator';
+            ongoingPcmFeeInput.value = 'Refer to Pricing Calculator';
         } else {
-            ongoingFeeInput.value = ongoingFeeInput.value.replace('Refer to Pricing Calculator\n', '');
+            // Clear the text when unchecked
+            if (ongoingFeeInput.value === 'Refer to Pricing Calculator') {
+                ongoingFeeInput.value = '';
+            }
+            if (ongoingPcmFeeInput.value === 'Refer to Pricing Calculator') {
+                ongoingPcmFeeInput.value = '';
+            }
         }
         triggerAutoSave();
     });
@@ -2471,106 +2517,143 @@ document.addEventListener('DOMContentLoaded', function() {
         showAutoSaveIndicator('Draft deleted successfully!');
     }
     
-    // Share as Link functionality
+    // Enhanced Share as Link functionality with compression
     function shareAsLink() {
         const formData = collectFormData();
         const clientName = document.getElementById('clientName').value || 'Shared Form';
         
         try {
-            // Encode form data as base64 to make it URL-safe
-            const encodedData = btoa(JSON.stringify(formData));
-            const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(encodedData)}`;
+            // Use LZ-String compression for better URL handling
+            const compressedData = LZString.compressToEncodedURIComponent(JSON.stringify(formData));
             
-            // Copy to clipboard
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showAutoSaveIndicator('Share link copied to clipboard!');
+            // Check if the compressed data is still too large for URL
+            if (compressedData.length > 8000) {
+                // Use a chunked approach with localStorage
+                const shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem(shareId, JSON.stringify(formData));
                 
-                // Also show a modal with the link for manual copying if needed
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.style.display = 'block';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                        <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
-                            ${shareUrl}
-                        </div>
-                        <div class="modal-buttons">
-                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
-                                <i class="fas fa-copy"></i> Copy Again
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                <i class="fas fa-check"></i> Done
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }).catch(() => {
-                // Fallback if clipboard API fails
-                showAutoSaveIndicator('Share link ready - check the modal');
+                // Set expiration for 24 hours
+                setTimeout(() => {
+                    localStorage.removeItem(shareId);
+                }, 24 * 60 * 60 * 1000);
                 
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.style.display = 'block';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                        <p>Copy this link to share the form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
-                            ${shareUrl}
-                        </div>
-                        <div class="modal-buttons">
-                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
-                                <i class="fas fa-copy"></i> Copy Link
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                <i class="fas fa-check"></i> Done
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            });
+                const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${shareId}`;
+                copyAndShowShareLink(shareUrl, clientName);
+            } else {
+                // Use direct URL with compressed data
+                const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${compressedData}`;
+                copyAndShowShareLink(shareUrl, clientName);
+            }
         } catch (error) {
             console.error('Error creating share link:', error);
-            showAutoSaveIndicator('Error creating share link - form too large');
+            showAutoSaveIndicator('Error creating share link');
         }
+    }
+    
+    function copyAndShowShareLink(shareUrl, clientName) {
+        // Copy to clipboard
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            showAutoSaveIndicator('Share link copied to clipboard!');
+            
+            // Also show a modal with the link for manual copying if needed
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
+                    <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
+                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
+                        ${shareUrl}
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
+                            <i class="fas fa-copy"></i> Copy Again
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="fas fa-check"></i> Done
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }).catch(() => {
+            // Fallback if clipboard API fails
+            showAutoSaveIndicator('Share link ready - check the modal');
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
+                    <p>Copy this link to share the form:</p>
+                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
+                        ${shareUrl}
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
+                            <i class="fas fa-copy"></i> Copy Link
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="fas fa-check"></i> Done
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        });
     }
     
     // Check for shared data in URL
     function checkForSharedData() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('shared');
+        const shareId = urlParams.get('shareId');
         
         if (sharedData) {
             try {
-                // Decode the shared data
-                const decodedData = JSON.parse(atob(decodeURIComponent(sharedData)));
-                
-                // Show notification about shared form
-                const clientName = decodedData.clientName || 'Unknown Client';
-                showAutoSaveIndicator(`Loading shared form: ${clientName}`);
-                
-                // Populate the form with shared data
-                setTimeout(() => {
-                    populateFormData(decodedData);
-                    
-                    // Clean URL after loading (optional)
-                    const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-                    window.history.replaceState({}, document.title, cleanUrl);
-                    
-                    showAutoSaveIndicator('Shared form loaded successfully!');
-                }, 500);
-                
+                // Decompress the shared data
+                const decodedData = JSON.parse(LZString.decompressFromEncodedURIComponent(sharedData));
+                loadSharedData(decodedData);
             } catch (error) {
                 console.error('Error loading shared data:', error);
                 showAutoSaveIndicator('Error loading shared form data');
             }
+        } else if (shareId) {
+            try {
+                // Load from localStorage using shareId
+                const storedData = localStorage.getItem(shareId);
+                if (storedData) {
+                    const decodedData = JSON.parse(storedData);
+                    loadSharedData(decodedData);
+                } else {
+                    showAutoSaveIndicator('Shared form link has expired or is invalid');
+                }
+            } catch (error) {
+                console.error('Error loading shared data from storage:', error);
+                showAutoSaveIndicator('Error loading shared form data');
+            }
         }
+    }
+    
+    function loadSharedData(decodedData) {
+        // Show notification about shared form
+        const clientName = decodedData.clientName || 'Unknown Client';
+        showAutoSaveIndicator(`Loading shared form: ${clientName}`);
+        
+        // Populate the form with shared data
+        setTimeout(() => {
+            populateFormData(decodedData);
+            
+            // Clean URL after loading (optional)
+            const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+            
+            showAutoSaveIndicator('Shared form loaded successfully!');
+        }, 500);
     }
     
     // Auto-save functionality
@@ -2669,7 +2752,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFormBasedOnSelections();
     }
     
-    // Email Document functionality - simplified approach
+    // Email Document functionality - Desktop Outlook only
     emailDocumentBtnBottom.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         const xplanId = document.getElementById('xplanId').value;
@@ -2718,15 +2801,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Function to open email client with proper CC - FIXED VERSION
+    // Function to open email client - Desktop Outlook only
     function openEmailClient(clientName, xplanId) {
         const subject = `Findex ARF for ${clientName}`;
         
         // Build CC email if Xplan ID is provided
-        let ccEmail = '';
         let ccNote = '';
         if (xplanId && xplanId.trim()) {
-            ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
+            const ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
             ccNote = `**IF YOU WANT TO SAVE TO XPLAN CC ${ccEmail}**\n\n`;
         }
         
@@ -2741,48 +2823,39 @@ If you have any questions or require additional information, please don't hesita
 Best regards,
 ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         
-        // Create mailto link with proper encoding
-        let mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        // Try multiple approaches to open email client
+        // Try multiple methods to open desktop Outlook only
         let emailOpened = false;
         
-        // Method 1: Direct mailto (most reliable)
-        try {
-            window.location.href = mailtoLink;
-            emailOpened = true;
-        } catch (error) {
-            console.error('Mailto failed:', error);
-        }
-        
-        // Method 2: Try Outlook Web if on Windows (as backup)
-        if (!emailOpened || navigator.platform.indexOf('Win') > -1) {
-            setTimeout(() => {
-                try {
-                    let outlookWebUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                    window.open(outlookWebUrl, '_blank');
-                } catch (error) {
-                    console.error('Outlook web failed:', error);
-                }
-            }, 1000);
-        }
-        
-        // Method 3: Try Outlook desktop protocol (Windows only)
+        // Method 1: Try desktop Outlook protocol first (Windows)
         if (navigator.platform.indexOf('Win') > -1) {
-            setTimeout(() => {
-                try {
-                    let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                    window.location.href = outlookDesktopUrl;
-                } catch (error) {
-                    console.error('Outlook desktop failed:', error);
-                }
-            }, 2000);
+            try {
+                let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = outlookDesktopUrl;
+                document.body.appendChild(iframe);
+                setTimeout(() => document.body.removeChild(iframe), 1000);
+                emailOpened = true;
+            } catch (error) {
+                console.error('Outlook desktop failed:', error);
+            }
         }
         
-        // Show success message with CC info
+        // Method 2: Try standard mailto as fallback (will use default email client)
+        if (!emailOpened) {
+            try {
+                let mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.location.href = mailtoLink;
+                emailOpened = true;
+            } catch (error) {
+                console.error('Mailto failed:', error);
+            }
+        }
+        
+        // Show success message
         let message = 'Email client opening...';
-        if (ccEmail) {
-            message += ` Remember to CC: ${ccEmail}`;
+        if (xplanId && xplanId.trim()) {
+            message += ` Remember to CC: ${xplanId.trim()}@findex.xplan.iress.com.au`;
         } else {
             message += ' (No Xplan ID - manual CC required if saving to Xplan)';
         }
@@ -2794,7 +2867,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         }, 3000);
     }
     
-    // Export to Word functionality - FIXED to match visible content exactly
+    // Export to Word functionality - FIXED to match visible content exactly and reorder sections
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
@@ -2803,170 +2876,196 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
         `;
         
-        // Process each visible section
-        document.querySelectorAll('.section').forEach(section => {
+        // Process each visible section in correct order
+        document.querySelectorAll('.section').forEach((section, index) => {
             if (section.style.display !== 'none') {
                 const h2 = section.querySelector('h2');
                 if (h2) {
                     wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">${h2.textContent}</h2>`;
                 }
                 
-                // Process form groups (excluding dynamic recommendations container)
-                section.querySelectorAll('.form-group').forEach(group => {
-                    if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                        const label = group.querySelector('label');
-                        
-                        // Process radio groups
-                        const radioGroup = group.querySelector('.radio-group');
-                        if (radioGroup) {
-                            if (label) {
-                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                            }
-                            radioGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
-                                if (radio.checked) {
-                                    const radioLabel = radio.nextElementSibling;
-                                    if (radioLabel) {
-                                        wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
+                // Special handling for Strategy Recommendations section to reorder content
+                if (section.id === 'strategyRecommendationsSection') {
+                    // First add all recommendation sections (Client 1, Client 2, Joint, Entities, etc.)
+                    const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
+                    if (dynamicContainer) {
+                        // Process recommendation sections with new layout
+                        dynamicContainer.querySelectorAll('.recommendation-section').forEach(recSection => {
+                            if (recSection.style.display !== 'none') {
+                                const textareaDiv = recSection.querySelector('.recommendation-textarea');
+                                const riskDiv = recSection.querySelector('.risk-profile-inline');
+                                
+                                if (textareaDiv) {
+                                    const label = textareaDiv.querySelector('label');
+                                    const textarea = textareaDiv.querySelector('textarea');
+                                    const productCheckbox = textareaDiv.querySelector('input[type="checkbox"]');
+                                    
+                                    if (label && textarea && textarea.value) {
+                                        wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${label.textContent}</h3>`;
+                                        wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
+                                    }
+                                    
+                                    if (productCheckbox) {
+                                        const productLabel = productCheckbox.nextElementSibling;
+                                        if (productLabel) {
+                                            wordContent += `<p style="margin-left: 20px;">${productCheckbox.checked ? '☑' : '☐'} ${productLabel.textContent}</p>`;
+                                        }
                                     }
                                 }
-                            });
-                        }
-                        
-                        // Process checkbox groups
-                        const checkboxGroup = group.querySelector('.checkbox-group');
-                        if (checkboxGroup) {
-                            if (label) {
-                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                            }
-                            checkboxGroup.querySelectorAll('.checkbox-item').forEach(item => {
-                                const checkbox = item.querySelector('input[type="checkbox"]');
-                                const checkboxLabel = item.querySelector('label');
-                                if (checkbox && checkboxLabel) {
-                                    wordContent += `<p style="margin-left: 20px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
-                                }
-                            });
-                        }
-                        
-                        // Process regular inputs (avoid duplicates)
-                        group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
-                                const inputLabel = input.closest('.form-group').querySelector('label');
-                                if (inputLabel && input.value) {
-                                    let value = input.value;
-                                    if (input.tagName === 'SELECT') {
-                                        const selected = input.options[input.selectedIndex];
-                                        value = selected ? selected.text : '';
-                                    }
-                                    if (value) {
-                                        wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
-                                        wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
+                                
+                                if (riskDiv) {
+                                    const riskLabel = riskDiv.querySelector('label');
+                                    const riskSelect = riskDiv.querySelector('select');
+                                    
+                                    if (riskLabel && riskSelect && riskSelect.value) {
+                                        const selected = riskSelect.options[riskSelect.selectedIndex];
+                                        if (selected && selected.text) {
+                                            wordContent += `<p><strong>${riskLabel.textContent}</strong> ${selected.text}</p>`;
+                                        }
                                     }
                                 }
                             }
                         });
                         
-                        // Process checklist items
-                        group.querySelectorAll('.checklist-item').forEach(item => {
-                            if (item.style.display !== 'none') {
-                                const checkbox = item.querySelector('input[type="checkbox"]');
-                                const checkboxLabel = item.querySelector('label');
-                                if (checkbox && checkboxLabel) {
-                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
+                        // Process product recommendations sections - ONLY IF VISIBLE AND CHECKBOX IS CHECKED
+                        dynamicContainer.querySelectorAll('.product-recommendations').forEach(productSection => {
+                            if (productSection.style.display === 'block') {  // Only visible sections
+                                const sectionTitle = productSection.querySelector('h4');
+                                if (sectionTitle) {
+                                    wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${sectionTitle.textContent}</h3>`;
                                 }
-                            }
-                        });
-                        
-                        // Process toggle switches
-                        group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
-                            const toggleLabel = toggleGroup.querySelector('label');
-                            const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                            if (toggleLabel && toggleInput) {
-                                wordContent += `<p><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
+                                
+                                // Process each product item
+                                productSection.querySelectorAll('.product-item').forEach(product => {
+                                    if (product.style.display !== 'none') {
+                                        const productHeader = product.querySelector('h5');
+                                        if (productHeader) {
+                                            wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
+                                        }
+                                        
+                                        // Process product fields with values
+                                        product.querySelectorAll('input, textarea, select').forEach(input => {
+                                            if (input.value && input.style.display !== 'none') {
+                                                const inputGroup = input.closest('.form-group');
+                                                const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
+                                                
+                                                if (inputLabel) {
+                                                    let value = input.value;
+                                                    if (input.tagName === 'SELECT') {
+                                                        const selected = input.options[input.selectedIndex];
+                                                        value = selected ? selected.text : '';
+                                                    }
+                                                    if (input.type === 'checkbox') {
+                                                        // Handle toggle switches in products
+                                                        const statusSpan = input.parentElement.nextElementSibling;
+                                                        value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
+                                                    }
+                                                    if (value && value !== 'Select investment option' && value !== '') {
+                                                        wordContent += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
                             }
                         });
                     }
-                });
-                
-                // Process dynamic content (recommendations sections) - ONLY VISIBLE CONTENT
-                const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
-                if (dynamicContainer) {
-                    // Process recommendation sections with new layout
-                    dynamicContainer.querySelectorAll('.recommendation-section').forEach(recSection => {
-                        if (recSection.style.display !== 'none') {
-                            const textareaDiv = recSection.querySelector('.recommendation-textarea');
-                            const riskDiv = recSection.querySelector('.risk-profile-inline');
-                            
-                            if (textareaDiv) {
-                                const label = textareaDiv.querySelector('label');
-                                const textarea = textareaDiv.querySelector('textarea');
-                                const productCheckbox = textareaDiv.querySelector('input[type="checkbox"]');
-                                
-                                if (label && textarea && textarea.value) {
-                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                                    wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
-                                }
-                                
-                                if (productCheckbox) {
-                                    const productLabel = productCheckbox.nextElementSibling;
-                                    if (productLabel) {
-                                        wordContent += `<p style="margin-left: 20px;">${productCheckbox.checked ? '☑' : '☐'} ${productLabel.textContent}</p>`;
+                    
+                    // Then add the rest of the strategy recommendations fields
+                    section.querySelectorAll('.form-group').forEach(group => {
+                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
+                            // Process regular inputs (avoid duplicates)
+                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
+                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
+                                    const inputLabel = input.closest('.form-group').querySelector('label');
+                                    if (inputLabel && input.value) {
+                                        let value = input.value;
+                                        if (input.tagName === 'SELECT') {
+                                            const selected = input.options[input.selectedIndex];
+                                            value = selected ? selected.text : '';
+                                        }
+                                        if (value) {
+                                            wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
+                                            wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
+                                        }
                                     }
                                 }
-                            }
-                            
-                            if (riskDiv) {
-                                const riskLabel = riskDiv.querySelector('label');
-                                const riskSelect = riskDiv.querySelector('select');
-                                
-                                if (riskLabel && riskSelect && riskSelect.value) {
-                                    const selected = riskSelect.options[riskSelect.selectedIndex];
-                                    if (selected && selected.text) {
-                                        wordContent += `<p><strong>${riskLabel.textContent}</strong> ${selected.text}</p>`;
-                                    }
-                                }
-                            }
+                            });
                         }
                     });
-                    
-                    // Process product recommendations sections - ONLY IF VISIBLE AND CHECKBOX IS CHECKED
-                    dynamicContainer.querySelectorAll('.product-recommendations').forEach(productSection => {
-                        if (productSection.style.display === 'block') {  // Only visible sections
-                            const sectionTitle = productSection.querySelector('h4');
-                            if (sectionTitle) {
-                                wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${sectionTitle.textContent}</h3>`;
+                } else {
+                    // Process form groups for other sections (excluding dynamic recommendations container)
+                    section.querySelectorAll('.form-group').forEach(group => {
+                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
+                            const label = group.querySelector('label');
+                            
+                            // Process radio groups
+                            const radioGroup = group.querySelector('.radio-group');
+                            if (radioGroup) {
+                                if (label) {
+                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                }
+                                radioGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
+                                    if (radio.checked) {
+                                        const radioLabel = radio.nextElementSibling;
+                                        if (radioLabel) {
+                                            wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
+                                        }
+                                    }
+                                });
                             }
                             
-                            // Process each product item
-                            productSection.querySelectorAll('.product-item').forEach(product => {
-                                if (product.style.display !== 'none') {
-                                    const productHeader = product.querySelector('h5');
-                                    if (productHeader) {
-                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
+                            // Process checkbox groups
+                            const checkboxGroup = group.querySelector('.checkbox-group');
+                            if (checkboxGroup) {
+                                if (label) {
+                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                }
+                                checkboxGroup.querySelectorAll('.checkbox-item').forEach(item => {
+                                    const checkbox = item.querySelector('input[type="checkbox"]');
+                                    const checkboxLabel = item.querySelector('label');
+                                    if (checkbox && checkboxLabel) {
+                                        wordContent += `<p style="margin-left: 20px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
                                     }
-                                    
-                                    // Process product fields with values
-                                    product.querySelectorAll('input, textarea, select').forEach(input => {
-                                        if (input.value && input.style.display !== 'none') {
-                                            const inputGroup = input.closest('.form-group');
-                                            const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
-                                            
-                                            if (inputLabel) {
-                                                let value = input.value;
-                                                if (input.tagName === 'SELECT') {
-                                                    const selected = input.options[input.selectedIndex];
-                                                    value = selected ? selected.text : '';
-                                                }
-                                                if (input.type === 'checkbox') {
-                                                    // Handle toggle switches in products
-                                                    const statusSpan = input.parentElement.nextElementSibling;
-                                                    value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
-                                                }
-                                                if (value && value !== 'Select investment option' && value !== '') {
-                                                    wordContent += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
-                                                }
-                                            }
+                                });
+                            }
+                            
+                            // Process regular inputs (avoid duplicates)
+                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
+                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
+                                    const inputLabel = input.closest('.form-group').querySelector('label');
+                                    if (inputLabel && input.value) {
+                                        let value = input.value;
+                                        if (input.tagName === 'SELECT') {
+                                            const selected = input.options[input.selectedIndex];
+                                            value = selected ? selected.text : '';
                                         }
-                                    });
+                                        if (value) {
+                                            wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
+                                            wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Process checklist items
+                            group.querySelectorAll('.checklist-item').forEach(item => {
+                                if (item.style.display !== 'none') {
+                                    const checkbox = item.querySelector('input[type="checkbox"]');
+                                    const checkboxLabel = item.querySelector('label');
+                                    if (checkbox && checkboxLabel) {
+                                        wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
+                                    }
+                                }
+                            });
+                            
+                            // Process toggle switches
+                            group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
+                                const toggleLabel = toggleGroup.querySelector('label');
+                                const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
+                                if (toggleLabel && toggleInput) {
+                                    wordContent += `<p><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
                                 }
                             });
                         }
@@ -2989,9 +3088,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                         margin: 20px; 
                         background: white;
                     }
-                    h1 { font-size: 24pt; margin-bottom: 20pt; }
-                    h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; }
-                    h3, h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; }
+                    h1 { font-size: 24pt; margin-bottom: 20pt; page-break-after: avoid; }
+                    h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; page-break-after: avoid; }
+                    h3, h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
                     p { margin-bottom: 10pt; }
                     @page { margin: 1in; }
                 </style>
@@ -3013,8 +3112,10 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - SAVE AS PDF
+    // Export to PDF functionality - Enhanced for better text handling
     exportPdfBtn.addEventListener('click', function() {
+        const clientName = document.getElementById('clientName').value || 'Client';
+        
         // Hide elements that shouldn't be in PDF
         const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
         const originalDisplays = [];
@@ -3024,25 +3125,53 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             el.style.display = 'none';
         });
         
-        // Add PDF-specific styles
+        // Add PDF-specific styles for better text handling
         const pdfStyle = document.createElement('style');
         pdfStyle.id = 'pdf-export-style';
         pdfStyle.textContent = `
             @media print {
-                body { background: white !important; padding: 0 !important; }
-                .container { box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
-                .section { page-break-inside: avoid !important; }
-                * { print-color-adjust: exact !important; }
+                body { 
+                    background: white !important; 
+                    padding: 0 !important; 
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                .container { 
+                    box-shadow: none !important; 
+                    max-width: 100% !important; 
+                    margin: 0 !important; 
+                    padding: 20px !important;
+                }
+                .section { 
+                    page-break-inside: avoid !important; 
+                    margin-bottom: 20px !important;
+                }
+                textarea, input[type="text"] {
+                    min-height: auto !important;
+                    height: auto !important;
+                    padding: 8px !important;
+                    border: 1px solid #ddd !important;
+                    background: white !important;
+                    word-wrap: break-word !important;
+                    white-space: pre-wrap !important;
+                    overflow: visible !important;
+                    resize: none !important;
+                    box-sizing: border-box !important;
+                }
+                * { 
+                    print-color-adjust: exact !important; 
+                    -webkit-print-color-adjust: exact !important;
+                    color-adjust: exact !important;
+                }
             }
         `;
         document.head.appendChild(pdfStyle);
         
         // Set document title for PDF filename
         const originalTitle = document.title;
-        const clientName = document.getElementById('clientName').value || 'Client';
         document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
         
-        // Trigger print dialog
+        // Use window.print() for guaranteed text handling
         setTimeout(() => {
             window.print();
         }, 100);
@@ -3062,6 +3191,8 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             elementsToHide.forEach((el, index) => {
                 el.style.display = originalDisplays[index];
             });
+            
+            showAutoSaveIndicator('PDF ready for save/print!');
         };
         
         // Listen for print events
@@ -3104,6 +3235,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             partnerNameGroup.style.display = 'none';
             entityNameGroup.style.display = 'none';
             entitySelector.style.display = 'none';
+            smsfNameGroup.style.display = 'none';
+            trustNameGroup.style.display = 'none';
+            companyNameGroup.style.display = 'none';
             
             // Hide all product recommendation sections
             document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
@@ -3127,9 +3261,11 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
             if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
             
-            // Reset paraplanner compare checkbox
+            // Reset checkboxes
             paraplannerCompareCheckbox.checked = false;
-            alternativePlatformsTextarea.value = '';
+            tmdInFilenoteCheckbox.checked = false;
+            inaccurateInfoNACheckbox.checked = false;
+            ongoingFeeReferCheckbox.checked = false;
             
             showAutoSaveIndicator('Form has been reset!');
         }
