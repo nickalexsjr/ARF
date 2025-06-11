@@ -2358,96 +2358,118 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     
-    // Handle paraplanner compare checkbox
-    paraplannerCompareCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            alternativePlatformsTextarea.value = 'Paraplanner to complete compare\n' + alternativePlatformsTextarea.value;
-        } else {
-            alternativePlatformsTextarea.value = alternativePlatformsTextarea.value.replace('Paraplanner to complete compare\n', '');
-        }
-        triggerAutoSave();
-    });
-    
-    // Handle TMD in filenote checkbox
-    tmdInFilenoteCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            tmdDetailsTextarea.value = 'TMD in filenote\n' + tmdDetailsTextarea.value;
-        } else {
-            tmdDetailsTextarea.value = tmdDetailsTextarea.value.replace('TMD in filenote\n', '');
-        }
-        triggerAutoSave();
-    });
-    
-    // Handle inaccurate info N/A checkbox
-    inaccurateInfoNACheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            inaccurateInfoTextarea.value = 'N/A - No potentially inaccurate or incomplete information';
-        } else {
-            if (inaccurateInfoTextarea.value === 'N/A - No potentially inaccurate or incomplete information') {
-                inaccurateInfoTextarea.value = '';
+    // Handle paraplanner compare checkbox - FIXED
+    if (paraplannerCompareCheckbox && alternativePlatformsTextarea) {
+        paraplannerCompareCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (!alternativePlatformsTextarea.value.includes('Paraplanner to complete compare')) {
+                    alternativePlatformsTextarea.value = 'Paraplanner to complete compare\n' + alternativePlatformsTextarea.value;
+                }
+            } else {
+                alternativePlatformsTextarea.value = alternativePlatformsTextarea.value.replace('Paraplanner to complete compare\n', '').replace('Paraplanner to complete compare', '');
             }
-        }
-        triggerAutoSave();
-    });
+            triggerAutoSave();
+        });
+    }
     
-    // Handle MDA Details N/A checkbox
-    mdaDetailsNACheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            mdaDetailsTextarea.value = 'N/A - No MDA personalisation required';
-        } else {
-            if (mdaDetailsTextarea.value === 'N/A - No MDA personalisation required') {
-                mdaDetailsTextarea.value = '';
+    // Handle TMD in filenote checkbox - FIXED
+    if (tmdInFilenoteCheckbox && tmdDetailsTextarea) {
+        tmdInFilenoteCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (!tmdDetailsTextarea.value.includes('TMD in filenote')) {
+                    tmdDetailsTextarea.value = 'TMD in filenote\n' + tmdDetailsTextarea.value;
+                }
+            } else {
+                tmdDetailsTextarea.value = tmdDetailsTextarea.value.replace('TMD in filenote\n', '').replace('TMD in filenote', '');
             }
-        }
-        triggerAutoSave();
-    });
+            triggerAutoSave();
+        });
+    }
     
-    // Handle ongoing fee refer checkbox
-    ongoingFeeReferCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            ongoingFeeInput.value = 'Refer to Pricing Calculator';
-            ongoingPcmFeeInput.value = 'Refer to Pricing Calculator';
-        } else {
-            // Clear the text when unchecked
-            if (ongoingFeeInput.value === 'Refer to Pricing Calculator') {
-                ongoingFeeInput.value = '';
+    // Handle inaccurate info N/A checkbox - FIXED
+    if (inaccurateInfoNACheckbox && inaccurateInfoTextarea) {
+        inaccurateInfoNACheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                inaccurateInfoTextarea.value = 'N/A - No potentially inaccurate or incomplete information';
+            } else {
+                if (inaccurateInfoTextarea.value === 'N/A - No potentially inaccurate or incomplete information') {
+                    inaccurateInfoTextarea.value = '';
+                }
             }
-            if (ongoingPcmFeeInput.value === 'Refer to Pricing Calculator') {
-                ongoingPcmFeeInput.value = '';
-            }
-        }
-        triggerAutoSave();
-    });
+            triggerAutoSave();
+        });
+    }
     
-    // Draft Functionality
+    // Handle MDA Details N/A checkbox - FIXED
+    if (mdaDetailsNACheckbox && mdaDetailsTextarea) {
+        mdaDetailsNACheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                mdaDetailsTextarea.value = 'N/A - No MDA personalisation required';
+            } else {
+                if (mdaDetailsTextarea.value === 'N/A - No MDA personalisation required') {
+                    mdaDetailsTextarea.value = '';
+                }
+            }
+            triggerAutoSave();
+        });
+    }
+    
+    // Handle ongoing fee refer checkbox - FIXED
+    if (ongoingFeeReferCheckbox && ongoingFeeInput && ongoingPcmFeeInput) {
+        ongoingFeeReferCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                ongoingFeeInput.value = 'Refer to Pricing Calculator';
+                ongoingPcmFeeInput.value = 'Refer to Pricing Calculator';
+            } else {
+                // Clear the text when unchecked
+                if (ongoingFeeInput.value === 'Refer to Pricing Calculator') {
+                    ongoingFeeInput.value = '';
+                }
+                if (ongoingPcmFeeInput.value === 'Refer to Pricing Calculator') {
+                    ongoingPcmFeeInput.value = '';
+                }
+            }
+            triggerAutoSave();
+        });
+    }
+    
+    // Draft Functionality - ENSURE ALL BUTTONS WORK
     function initializeDraftFunctionality() {
         loadDraftList();
         
         // Save draft modal functionality
-        saveBtn.addEventListener('click', function() {
-            const clientName = document.getElementById('clientName').value || 'Unnamed Client';
-            draftNameInput.value = `${clientName} ARF`;
-            saveDraftModal.style.display = 'block';
-        });
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                const clientName = document.getElementById('clientName').value || 'Unnamed Client';
+                draftNameInput.value = `${clientName} ARF`;
+                saveDraftModal.style.display = 'block';
+            });
+        }
         
-        confirmSaveDraftBtn.addEventListener('click', function() {
-            const draftName = draftNameInput.value.trim();
-            if (draftName) {
-                saveDraft(draftName);
+        if (confirmSaveDraftBtn) {
+            confirmSaveDraftBtn.addEventListener('click', function() {
+                const draftName = draftNameInput.value.trim();
+                if (draftName) {
+                    saveDraft(draftName);
+                    saveDraftModal.style.display = 'none';
+                    showAutoSaveIndicator('Draft saved successfully!');
+                } else {
+                    alert('Please enter a draft name.');
+                }
+            });
+        }
+        
+        if (cancelSaveDraftBtn) {
+            cancelSaveDraftBtn.addEventListener('click', function() {
                 saveDraftModal.style.display = 'none';
-                showAutoSaveIndicator('Draft saved successfully!');
-            } else {
-                alert('Please enter a draft name.');
-            }
-        });
+            });
+        }
         
-        cancelSaveDraftBtn.addEventListener('click', function() {
-            saveDraftModal.style.display = 'none';
-        });
-        
-        closeModal.addEventListener('click', function() {
-            saveDraftModal.style.display = 'none';
-        });
+        if (closeModal) {
+            closeModal.addEventListener('click', function() {
+                saveDraftModal.style.display = 'none';
+            });
+        }
         
         window.addEventListener('click', function(event) {
             if (event.target === saveDraftModal) {
@@ -2456,31 +2478,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Load draft functionality
-        loadDraftBtn.addEventListener('click', function() {
-            const selectedDraft = draftSelector.value;
-            if (selectedDraft) {
-                loadDraft(selectedDraft);
-            } else {
-                alert('Please select a draft to load.');
-            }
-        });
+        if (loadDraftBtn) {
+            loadDraftBtn.addEventListener('click', function() {
+                const selectedDraft = draftSelector.value;
+                if (selectedDraft) {
+                    loadDraft(selectedDraft);
+                } else {
+                    alert('Please select a draft to load.');
+                }
+            });
+        }
         
         // Delete draft functionality
-        deleteDraftBtn.addEventListener('click', function() {
-            const selectedDraft = draftSelector.value;
-            if (selectedDraft) {
-                if (confirm(`Are you sure you want to delete the draft "${selectedDraft}"?`)) {
-                    deleteDraft(selectedDraft);
+        if (deleteDraftBtn) {
+            deleteDraftBtn.addEventListener('click', function() {
+                const selectedDraft = draftSelector.value;
+                if (selectedDraft) {
+                    if (confirm(`Are you sure you want to delete the draft "${selectedDraft}"?`)) {
+                        deleteDraft(selectedDraft);
+                    }
+                } else {
+                    alert('Please select a draft to delete.');
                 }
-            } else {
-                alert('Please select a draft to delete.');
-            }
-        });
+            });
+        }
         
         // Share as Link functionality
-        shareAsLinkBtn.addEventListener('click', function() {
-            shareAsLink();
-        });
+        if (shareAsLinkBtn) {
+            shareAsLinkBtn.addEventListener('click', function() {
+                shareAsLink();
+            });
+        }
     }
     
     function loadDraftList() {
@@ -2831,53 +2859,133 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // FIXED: Email Document functionality - Multiple fallback methods
-    emailDocumentBtnBottom.addEventListener('click', function() {
-        const clientName = document.getElementById('clientName').value || 'Client';
-        const xplanId = document.getElementById('xplanId').value;
-        
-        // Show popup reminder about PDF attachment
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.style.display = 'block';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <h3><i class="fas fa-info-circle"></i> Email Document Reminder</h3>
-                <p><strong>Before sending the email:</strong></p>
-                <ul style="margin: 15px 0; padding-left: 20px; text-align: left;">
-                    <li>Please ensure you have downloaded the ARF PDF using "Export to PDF"</li>
-                    <li>You will need to manually attach the PDF file to your email</li>
-                    ${xplanId ? `<li style="background-color: yellow; padding: 5px; margin: 5px 0; border-radius: 3px;"><strong>IF YOU WANT TO SAVE TO XPLAN CC: ${xplanId.trim()}@findex.xplan.iress.com.au</strong></li>` : '<li>No Xplan ID entered - manually CC if saving to Xplan</li>'}
-                </ul>
-                <div class="modal-buttons">
-                    <button type="button" class="btn btn-success" id="proceedWithEmail">
-                        <i class="fas fa-check"></i> OK - Open Email Client
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="cancelEmail">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
+    if (emailDocumentBtnBottom) {
+        emailDocumentBtnBottom.addEventListener('click', function() {
+            const clientName = document.getElementById('clientName').value || 'Client';
+            const xplanId = document.getElementById('xplanId').value;
+            
+            // Show popup reminder about PDF attachment
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3><i class="fas fa-info-circle"></i> Email Document Reminder</h3>
+                    <p><strong>Before sending the email:</strong></p>
+                    <ul style="margin: 15px 0; padding-left: 20px; text-align: left;">
+                        <li>Please ensure you have downloaded the ARF PDF using "Export to PDF"</li>
+                        <li>You will need to manually attach the PDF file to your email</li>
+                        ${xplanId ? `<li style="background-color: yellow; padding: 5px; margin: 5px 0; border-radius: 3px;"><strong>IF YOU WANT TO SAVE TO XPLAN CC: ${xplanId.trim()}@findex.xplan.iress.com.au</strong></li>` : '<li>No Xplan ID entered - manually CC if saving to Xplan</li>'}
+                    </ul>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn btn-success" id="proceedWithEmail">
+                            <i class="fas fa-check"></i> OK - Open Email Client
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="cancelEmail">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
                 </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        // Handle proceed button
-        modal.querySelector('#proceedWithEmail').addEventListener('click', function() {
-            modal.remove();
-            openEmailClient(clientName, xplanId);
-        });
-        
-        // Handle cancel button
-        modal.querySelector('#cancelEmail').addEventListener('click', function() {
-            modal.remove();
-        });
-        
-        // Handle clicking outside modal
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
+            `;
+            document.body.appendChild(modal);
+            
+            // Handle proceed button
+            modal.querySelector('#proceedWithEmail').addEventListener('click', function() {
                 modal.remove();
+                openEmailClient(clientName, xplanId);
+            });
+            
+            // Handle cancel button
+            modal.querySelector('#cancelEmail').addEventListener('click', function() {
+                modal.remove();
+            });
+            
+            // Handle clicking outside modal
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        });
+    }
+    
+    // Reset Form functionality
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+                // Reset form fields
+                document.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea').forEach(field => {
+                    field.value = '';
+                    // Reset textarea size
+                    if (field.tagName === 'TEXTAREA') {
+                        field.style.height = 'auto';
+                    }
+                });
+                
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                document.querySelectorAll('select').forEach(select => {
+                    select.selectedIndex = 0;
+                });
+                
+                // Reset client type selection
+                document.querySelectorAll('.checkbox-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                
+                // Hide conditional sections
+                if (partnerNameGroup) partnerNameGroup.style.display = 'none';
+                if (entityNameGroup) entityNameGroup.style.display = 'none';
+                if (entitySelector) entitySelector.style.display = 'none';
+                if (smsfNameGroup) smsfNameGroup.style.display = 'none';
+                if (trustNameGroup) trustNameGroup.style.display = 'none';
+                if (companyNameGroup) companyNameGroup.style.display = 'none';
+                
+                // Hide all product recommendation sections
+                document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                // Clear dynamic content
+                const recommendationsContainer = document.getElementById('recommendationsSectionsContainer');
+                const dynamicFeesContainer = document.getElementById('dynamicFeesContainer');
+                const complianceRequirements = document.getElementById('complianceRequirements');
+                
+                if (recommendationsContainer) recommendationsContainer.innerHTML = '';
+                if (dynamicFeesContainer) dynamicFeesContainer.innerHTML = '';
+                if (complianceRequirements) complianceRequirements.innerHTML = '';
+                
+                // Reset other UI elements
+                if (flowchartRequiredToggle) {
+                    flowchartRequiredToggle.checked = false;
+                    if (flowchartStatus) flowchartStatus.textContent = 'No';
+                }
+                if (projectionDateLength) projectionDateLength.value = 'lifeExpectancy';
+                if (otherProjectionLength) otherProjectionLength.style.display = 'none';
+                
+                // Reset projection visibility
+                const customProjectionInstructions = document.getElementById('customProjectionInstructions');
+                const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
+                if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
+                if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
+                
+                // Reset checkboxes
+                if (paraplannerCompareCheckbox) paraplannerCompareCheckbox.checked = false;
+                if (tmdInFilenoteCheckbox) tmdInFilenoteCheckbox.checked = false;
+                if (inaccurateInfoNACheckbox) inaccurateInfoNACheckbox.checked = false;
+                if (mdaDetailsNACheckbox) mdaDetailsNACheckbox.checked = false;
+                if (ongoingFeeReferCheckbox) ongoingFeeReferCheckbox.checked = false;
+                
+                showAutoSaveIndicator('Form has been reset!');
             }
         });
-    });
+    }
     
     // FIXED: Enhanced email client opening with multiple fallback methods
     function openEmailClient(clientName, xplanId) {
