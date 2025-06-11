@@ -18,9 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form Groups that are conditionally shown
     const partnerNameGroup = document.getElementById('partnerNameGroup');
     const entityNameGroup = document.getElementById('entityNameGroup');
-    const smsfNameGroup = document.getElementById('smsfNameGroup');
-    const trustNameGroup = document.getElementById('trustNameGroup');
-    const companyNameGroup = document.getElementById('companyNameGroup');
     
     // Yes/No Toggle
     const flowchartRequiredToggle = document.getElementById('flowchartRequired');
@@ -35,12 +32,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportWordBtn = document.getElementById('exportWordBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
     const resetBtn = document.getElementById('resetBtn');
+    const saveToXplanBtnBottom = document.getElementById('saveToXplanBtnBottom');
     const emailDocumentBtnBottom = document.getElementById('emailDocumentBtnBottom');
     
     // Draft functionality
     const draftSelector = document.getElementById('draftSelector');
     const loadDraftBtn = document.getElementById('loadDraftBtn');
-    const shareAsLinkBtn = document.getElementById('shareAsLinkBtn');
     const deleteDraftBtn = document.getElementById('deleteDraftBtn');
     const saveDraftModal = document.getElementById('saveDraftModal');
     const draftNameInput = document.getElementById('draftName');
@@ -52,19 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Alternative platforms checkbox
     const paraplannerCompareCheckbox = document.getElementById('paraplannerCompare');
     const alternativePlatformsTextarea = document.getElementById('alternativePlatforms');
-    
-    // TMD checkbox
-    const tmdInFilenoteCheckbox = document.getElementById('tmdInFilenote');
-    const tmdDetailsTextarea = document.getElementById('tmdDetails');
-    
-    // Inaccurate info N/A checkbox
-    const inaccurateInfoNACheckbox = document.getElementById('inaccurateInfoNA');
-    const inaccurateInfoTextarea = document.getElementById('inaccurateInfo');
-    
-    // Ongoing Fee checkbox
-    const ongoingFeeReferCheckbox = document.getElementById('ongoingFeeRefer');
-    const ongoingFeeInput = document.getElementById('ongoingFee');
-    const ongoingPcmFeeInput = document.getElementById('ongoingPcmFee');
     
     // Product options
     const productOptions = [
@@ -97,9 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize draft functionality
     initializeDraftFunctionality();
-    
-    // Check for shared form data in URL
-    checkForSharedData();
     
     // Set up auto-save
     setupAutoSave();
@@ -283,34 +264,184 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Function to fill Joint sections with N/A
-    window.fillJointNA = function() {
-        const jointRecommendations = document.getElementById('jointRecommendations');
-        if (jointRecommendations) {
-            jointRecommendations.value = 'N/A - No joint recommendations required';
-            triggerAutoSave();
-        }
-    };
-    
-    window.fillJointProductNA = function() {
-        // Hide the joint product section and mark as N/A
-        const jointProductCheckbox = document.getElementById('jointProductRecsCheckbox');
-        const jointProductSection = document.getElementById('jointProductRecommendationsSection');
+    // Function to update recommendation sections based on selections
+    function updateRecommendationSections() {
+        const container = document.getElementById('recommendationsSectionsContainer');
+        container.innerHTML = '';
         
-        if (jointProductCheckbox && jointProductSection) {
-            jointProductCheckbox.checked = false;
-            jointProductSection.style.display = 'none';
-            triggerAutoSave();
+        // Get client names
+        const clientName = document.getElementById('clientName').value || 'Client 1';
+        const partnerName = document.getElementById('partnerName').value || 'Client 2';
+        
+        // Add client recommendations if single or couple is selected
+        if (singleClientCheckbox.checked || coupleClientCheckbox.checked) {
+            const clientRecommendationHTML = `
+                <div class="form-group">
+                    <label for="clientRecommendations">${clientName} Recommendations:</label>
+                    <textarea id="clientRecommendations" name="clientRecommendations" 
+                        placeholder="Enter recommendations for ${clientName}"></textarea>
+                </div>
+                
+                <div class="product-recommendations">
+                    <h4>Product Recommendations - ${clientName}</h4>
+                    <div id="client1_products">
+                        ${createProductRecommendation('client1', clientName, 0)}
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client1', '${clientName}')">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                
+                <div class="risk-profile-section">
+                    <h4>Risk Profile - ${clientName}</h4>
+                    <div class="form-group">
+                        <label for="riskProfile1">Risk Profile:</label>
+                        <select id="riskProfile1" name="riskProfile1">
+                            <option value="">Select Risk Profile</option>
+                            <option value="conservative">Conservative</option>
+                            <option value="defensive">Defensive</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="balanced">Balanced</option>
+                            <option value="growth">Growth</option>
+                            <option value="highGrowth">High Growth</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', clientRecommendationHTML);
         }
-    };
+        
+        // Add partner recommendations if couple is selected
+        if (coupleClientCheckbox.checked) {
+            const partnerRecommendationHTML = `
+                <div class="form-group">
+                    <label for="partnerRecommendations">${partnerName} Recommendations:</label>
+                    <textarea id="partnerRecommendations" name="partnerRecommendations" 
+                        placeholder="Enter recommendations for ${partnerName}"></textarea>
+                </div>
+                
+                <div class="product-recommendations">
+                    <h4>Product Recommendations - ${partnerName}</h4>
+                    <div id="client2_products">
+                        ${createProductRecommendation('client2', partnerName, 0)}
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client2', '${partnerName}')">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                
+                <div class="risk-profile-section">
+                    <h4>Risk Profile - ${partnerName}</h4>
+                    <div class="form-group">
+                        <label for="riskProfile2">Risk Profile:</label>
+                        <select id="riskProfile2" name="riskProfile2">
+                            <option value="">Select Risk Profile</option>
+                            <option value="conservative">Conservative</option>
+                            <option value="defensive">Defensive</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="balanced">Balanced</option>
+                            <option value="growth">Growth</option>
+                            <option value="highGrowth">High Growth</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="jointRecommendations">Joint Recommendations:</label>
+                    <textarea id="jointRecommendations" name="jointRecommendations" 
+                        placeholder="Enter joint recommendations"></textarea>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', partnerRecommendationHTML);
+        }
+        
+        // Add entity recommendations
+        if (entityClientCheckbox.checked) {
+            const entityName = document.getElementById('entityName').value || 'Entity';
+            
+            if (entitySMSFCheckbox.checked) {
+                addEntityRecommendation('SMSF', entityName);
+            }
+            
+            if (entityTrustCheckbox.checked) {
+                addEntityRecommendation('Trust', entityName);
+            }
+            
+            if (entityCompanyCheckbox.checked) {
+                addEntityRecommendation('Company', entityName);
+            }
+            
+            if (!entitySMSFCheckbox.checked && !entityTrustCheckbox.checked && !entityCompanyCheckbox.checked) {
+                addEntityRecommendation('Entity', entityName);
+            }
+        }
+        
+        // Add dependants recommendations if selected
+        if (dependantsClientCheckbox.checked) {
+            const dependantsRecommendationHTML = `
+                <div class="form-group">
+                    <label for="dependantsRecommendations">Dependants Recommendations:</label>
+                    <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
+                        placeholder="Enter recommendations for dependants"></textarea>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', dependantsRecommendationHTML);
+        }
+        
+        // Initialize all product dropdowns and event listeners
+        setTimeout(() => {
+            initializeProductFeatures();
+            setupAutoSaveForNewElements();
+        }, 100);
+    }
     
-    window.fillJointRiskNA = function() {
-        const jointRiskProfile = document.getElementById('riskProfileJoint');
-        if (jointRiskProfile) {
-            jointRiskProfile.value = 'na';
-            triggerAutoSave();
-        }
-    };
+    // Helper function to add entity recommendation sections
+    function addEntityRecommendation(entityType, entityName) {
+        const container = document.getElementById('recommendationsSectionsContainer');
+        const entityId = entityType.toLowerCase();
+        
+        const entityRecommendationHTML = `
+            <div class="form-group">
+                <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations:</label>
+                <textarea id="${entityId}Recommendations" name="${entityId}Recommendations" 
+                    placeholder="Enter recommendations for ${entityType}"></textarea>
+            </div>
+            
+            <div class="product-recommendations">
+                <h4>Product Recommendations - ${entityType} - ${entityName}</h4>
+                <div id="${entityId}_products">
+                    ${createProductRecommendation(entityId, entityName, 0)}
+                </div>
+                <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('${entityId}', '${entityName}')">
+                    <i class="fas fa-plus"></i> Add Product
+                </button>
+            </div>
+            
+            <div class="risk-profile-section">
+                <h4>Risk Profile - ${entityType} - ${entityName}</h4>
+                <div class="form-group">
+                    <label for="riskProfile${entityId}">Risk Profile:</label>
+                    <select id="riskProfile${entityId}" name="riskProfile${entityId}">
+                        <option value="">Select Risk Profile</option>
+                        <option value="conservative">Conservative</option>
+                        <option value="defensive">Defensive</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="balanced">Balanced</option>
+                        <option value="growth">Growth</option>
+                        <option value="highGrowth">High Growth</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', entityRecommendationHTML);
+    }
     
     // Function to add product
     window.addProduct = function(clientId, clientName) {
@@ -327,311 +458,6 @@ document.addEventListener('DOMContentLoaded', function() {
             triggerAutoSave();
         }, 100);
     };
-    
-    // Function to update recommendation sections based on selections
-    function updateRecommendationSections() {
-        const container = document.getElementById('recommendationsSectionsContainer');
-        container.innerHTML = '';
-        
-        // Get client names
-        const clientName = document.getElementById('clientName').value || 'Client 1';
-        const partnerName = document.getElementById('partnerName').value || 'Client 2';
-        
-        // Add client recommendations if single or couple is selected
-        if (singleClientCheckbox.checked || coupleClientCheckbox.checked) {
-            const clientRecommendationHTML = `
-                <div class="recommendation-section">
-                    <div class="recommendation-textarea">
-                        <div class="recommendation-header">
-                            <label for="clientRecommendations">${clientName} Recommendations:</label>
-                            <div class="recommendation-checkbox">
-                                <input type="checkbox" id="client1ProductRecsCheckbox" name="client1ProductRecsCheckbox">
-                                <label for="client1ProductRecsCheckbox">Product Recommendations?</label>
-                            </div>
-                        </div>
-                        <textarea id="clientRecommendations" name="clientRecommendations" 
-                            placeholder="Enter recommendations for ${clientName}"></textarea>
-                    </div>
-                    <div class="risk-profile-inline">
-                        <div class="form-group">
-                            <label for="riskProfile1">Risk Profile - ${clientName}:</label>
-                            <select id="riskProfile1" name="riskProfile1">
-                                <option value="">Select Risk Profile</option>
-                                <option value="conservative">Conservative</option>
-                                <option value="defensive">Defensive</option>
-                                <option value="moderate">Moderate</option>
-                                <option value="balanced">Balanced</option>
-                                <option value="growth">Growth</option>
-                                <option value="highGrowth">High Growth</option>
-                                <option value="growthPlus">Growth Plus</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="product-recommendations" id="client1ProductRecommendationsSection" style="display: none;">
-                    <h4>Product Recommendations - ${clientName}</h4>
-                    <div id="client1_products">
-                        ${createProductRecommendation('client1', clientName, 0)}
-                    </div>
-                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client1', '${clientName}')">
-                        <i class="fas fa-plus"></i> Add Product
-                    </button>
-                </div>
-            `;
-            
-            container.insertAdjacentHTML('beforeend', clientRecommendationHTML);
-        }
-        
-        // Add partner recommendations if couple is selected
-        if (coupleClientCheckbox.checked) {
-            const partnerRecommendationHTML = `
-                <div class="recommendation-section">
-                    <div class="recommendation-textarea">
-                        <div class="recommendation-header">
-                            <label for="partnerRecommendations">${partnerName} Recommendations:</label>
-                            <div class="recommendation-checkbox">
-                                <input type="checkbox" id="client2ProductRecsCheckbox" name="client2ProductRecsCheckbox">
-                                <label for="client2ProductRecsCheckbox">Product Recommendations?</label>
-                            </div>
-                        </div>
-                        <textarea id="partnerRecommendations" name="partnerRecommendations" 
-                            placeholder="Enter recommendations for ${partnerName}"></textarea>
-                    </div>
-                    <div class="risk-profile-inline">
-                        <div class="form-group">
-                            <label for="riskProfile2">Risk Profile - ${partnerName}:</label>
-                            <select id="riskProfile2" name="riskProfile2">
-                                <option value="">Select Risk Profile</option>
-                                <option value="conservative">Conservative</option>
-                                <option value="defensive">Defensive</option>
-                                <option value="moderate">Moderate</option>
-                                <option value="balanced">Balanced</option>
-                                <option value="growth">Growth</option>
-                                <option value="highGrowth">High Growth</option>
-                                <option value="growthPlus">Growth Plus</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="product-recommendations" id="client2ProductRecommendationsSection" style="display: none;">
-                    <h4>Product Recommendations - ${partnerName}</h4>
-                    <div id="client2_products">
-                        ${createProductRecommendation('client2', partnerName, 0)}
-                    </div>
-                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client2', '${partnerName}')">
-                        <i class="fas fa-plus"></i> Add Product
-                    </button>
-                </div>
-                
-                <div class="recommendation-section">
-                    <div class="recommendation-textarea">
-                        <div class="recommendation-header">
-                            <label for="jointRecommendations">Joint Recommendations:</label>
-                            <div class="recommendation-checkbox">
-                                <input type="checkbox" id="jointProductRecsCheckbox" name="jointProductRecsCheckbox">
-                                <label for="jointProductRecsCheckbox">Product Recommendations?</label>
-                            </div>
-                        </div>
-                        <textarea id="jointRecommendations" name="jointRecommendations" 
-                            placeholder="Enter joint recommendations"></textarea>
-                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointNA()">
-                            N/A
-                        </button>
-                    </div>
-                    <div class="risk-profile-inline">
-                        <div class="form-group">
-                            <label for="riskProfileJoint">Risk Profile - Joint:</label>
-                            <select id="riskProfileJoint" name="riskProfileJoint">
-                                <option value="">Select Risk Profile</option>
-                                <option value="conservative">Conservative</option>
-                                <option value="defensive">Defensive</option>
-                                <option value="moderate">Moderate</option>
-                                <option value="balanced">Balanced</option>
-                                <option value="growth">Growth</option>
-                                <option value="highGrowth">High Growth</option>
-                                <option value="growthPlus">Growth Plus</option>
-                                <option value="na">N/A</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                            <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointRiskNA()">
-                                N/A
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="product-recommendations" id="jointProductRecommendationsSection" style="display: none;">
-                    <h4>Product Recommendations - Joint</h4>
-                    <div id="joint_products">
-                        ${createProductRecommendation('joint', 'Joint', 0)}
-                    </div>
-                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('joint', 'Joint')">
-                        <i class="fas fa-plus"></i> Add Product
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointProductNA()">
-                        N/A
-                    </button>
-                </div>
-            `;
-            
-            container.insertAdjacentHTML('beforeend', partnerRecommendationHTML);
-        }
-        
-        // Add entity recommendations
-        if (entityClientCheckbox.checked) {
-            if (entitySMSFCheckbox.checked) {
-                const smsfName = document.getElementById('smsfName').value || 'SMSF';
-                addEntityRecommendation('SMSF', smsfName);
-            }
-            
-            if (entityTrustCheckbox.checked) {
-                const trustName = document.getElementById('trustName').value || 'Trust';
-                addEntityRecommendation('Trust', trustName);
-            }
-            
-            if (entityCompanyCheckbox.checked) {
-                const companyName = document.getElementById('companyName').value || 'Company';
-                addEntityRecommendation('Company', companyName);
-            }
-        }
-        
-        // Add dependants recommendations if selected
-        if (dependantsClientCheckbox.checked) {
-            const dependantsRecommendationHTML = `
-                <div class="recommendation-section">
-                    <div class="recommendation-textarea">
-                        <div class="recommendation-header">
-                            <label for="dependantsRecommendations">Dependants Recommendations:</label>
-                            <div class="recommendation-checkbox">
-                                <input type="checkbox" id="dependantsProductRecsCheckbox" name="dependantsProductRecsCheckbox">
-                                <label for="dependantsProductRecsCheckbox">Product Recommendations?</label>
-                            </div>
-                        </div>
-                        <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
-                            placeholder="Enter recommendations for dependants"></textarea>
-                    </div>
-                    <div class="risk-profile-inline">
-                        <div class="form-group">
-                            <label for="riskProfileDependants">Risk Profile - Dependants:</label>
-                            <select id="riskProfileDependants" name="riskProfileDependants">
-                                <option value="">Select Risk Profile</option>
-                                <option value="conservative">Conservative</option>
-                                <option value="defensive">Defensive</option>
-                                <option value="moderate">Moderate</option>
-                                <option value="balanced">Balanced</option>
-                                <option value="growth">Growth</option>
-                                <option value="highGrowth">High Growth</option>
-                                <option value="growthPlus">Growth Plus</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="product-recommendations" id="dependantsProductRecommendationsSection" style="display: none;">
-                    <h4>Product Recommendations - Dependants</h4>
-                    <div id="dependants_products">
-                        ${createProductRecommendation('dependants', 'Dependants', 0)}
-                    </div>
-                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('dependants', 'Dependants')">
-                        <i class="fas fa-plus"></i> Add Product
-                    </button>
-                </div>
-            `;
-            
-            container.insertAdjacentHTML('beforeend', dependantsRecommendationHTML);
-        }
-        
-        // Initialize all product dropdowns and event listeners
-        setTimeout(() => {
-            initializeProductFeatures();
-            setupProductRecommendationToggles();
-            setupAutoSaveForNewElements();
-        }, 100);
-    }
-    
-    // Function to setup product recommendation toggles
-    function setupProductRecommendationToggles() {
-        // Setup toggles for all product recommendation checkboxes
-        document.querySelectorAll('[id$="ProductRecsCheckbox"]').forEach(checkbox => {
-            if (!checkbox.hasAttribute('data-initialized')) {
-                checkbox.setAttribute('data-initialized', 'true');
-                checkbox.addEventListener('change', function() {
-                    // Map checkbox IDs to section IDs
-                    const checkboxToSectionMap = {
-                        'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                        'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                        'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                        'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                        'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                        'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                        'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                    };
-                    
-                    const sectionId = checkboxToSectionMap[this.id];
-                    const section = document.getElementById(sectionId);
-                    if (section) {
-                        section.style.display = this.checked ? 'block' : 'none';
-                    }
-                    triggerAutoSave();
-                });
-            }
-        });
-    }
-    
-    // Helper function to add entity recommendation sections
-    function addEntityRecommendation(entityType, entityName) {
-        const container = document.getElementById('recommendationsSectionsContainer');
-        const entityId = entityType.toLowerCase();
-        
-        const entityRecommendationHTML = `
-            <div class="recommendation-section">
-                <div class="recommendation-textarea">
-                    <div class="recommendation-header">
-                        <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations:</label>
-                        <div class="recommendation-checkbox">
-                            <input type="checkbox" id="${entityId}ProductRecsCheckbox" name="${entityId}ProductRecsCheckbox">
-                            <label for="${entityId}ProductRecsCheckbox">Product Recommendations?</label>
-                        </div>
-                    </div>
-                    <textarea id="${entityId}Recommendations" name="${entityId}Recommendations" 
-                        placeholder="Enter recommendations for ${entityType}"></textarea>
-                </div>
-                <div class="risk-profile-inline">
-                    <div class="form-group">
-                        <label for="riskProfile${entityId}">Risk Profile - ${entityType}:</label>
-                        <select id="riskProfile${entityId}" name="riskProfile${entityId}">
-                            <option value="">Select Risk Profile</option>
-                            <option value="conservative">Conservative</option>
-                            <option value="defensive">Defensive</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="balanced">Balanced</option>
-                            <option value="growth">Growth</option>
-                            <option value="highGrowth">High Growth</option>
-                            <option value="growthPlus">Growth Plus</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="product-recommendations" id="${entityId}ProductRecommendationsSection" style="display: none;">
-                <h4>Product Recommendations - ${entityType} - ${entityName}</h4>
-                <div id="${entityId}_products">
-                    ${createProductRecommendation(entityId, entityName, 0)}
-                </div>
-                <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('${entityId}', '${entityName}')">
-                    <i class="fas fa-plus"></i> Add Product
-                </button>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', entityRecommendationHTML);
-    }
     
     // Function to initialize product features
     function initializeProductFeatures() {
@@ -667,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             selectedProduct.includes('Centric Super Choice') || 
                             selectedProduct === 'Centric IDPS') {
                             mdaSection.style.display = 'block';
-                            // Enable MDA for applicable products
+                            // Disable MDA for Centric Super One products
                             if (mdaCheckbox) {
                                 mdaCheckbox.disabled = false;
                             }
@@ -970,22 +796,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update partner-related fields based on couple selection
         partnerNameGroup.style.display = coupleClientCheckbox.checked ? 'block' : 'none';
         
-        // Update entity name fields based on entity selections
-        if (entityClientCheckbox.checked) {
-            // Show specific entity name fields based on what's selected
-            smsfNameGroup.style.display = entitySMSFCheckbox.checked ? 'block' : 'none';
-            trustNameGroup.style.display = entityTrustCheckbox.checked ? 'block' : 'none';
-            companyNameGroup.style.display = entityCompanyCheckbox.checked ? 'block' : 'none';
-            
-            // Hide generic entity name field since we have specific ones now
-            entityNameGroup.style.display = 'none';
-        } else {
-            // Hide all entity name fields when entity is not selected
-            entityNameGroup.style.display = 'none';
-            smsfNameGroup.style.display = 'none';
-            trustNameGroup.style.display = 'none';
-            companyNameGroup.style.display = 'none';
-        }
+        // Update entity name field
+        entityNameGroup.style.display = entityClientCheckbox.checked ? 'block' : 'none';
         
         // Update recommendation sections
         updateRecommendationSections();
@@ -1007,20 +819,6 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     document.getElementById('entityName').addEventListener('input', function() {
-        updateRecommendationSections();
-        triggerAutoSave();
-    });
-    
-    // Add event listeners for specific entity name changes
-    document.getElementById('smsfName').addEventListener('input', function() {
-        updateRecommendationSections();
-        triggerAutoSave();
-    });
-    document.getElementById('trustName').addEventListener('input', function() {
-        updateRecommendationSections();
-        triggerAutoSave();
-    });
-    document.getElementById('companyName').addEventListener('input', function() {
         updateRecommendationSections();
         triggerAutoSave();
     });
@@ -1054,26 +852,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle Projection Length Dropdown
     projectionDateLength.addEventListener('change', function() {
-        const otherProjectionLength = document.getElementById('otherProjectionLength');
-        const customProjectionInstructions = document.getElementById('customProjectionInstructions');
-        const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
-        
-        if (this.value === 'other') {
-            otherProjectionLength.style.display = 'block';
-        } else {
-            otherProjectionLength.style.display = 'none';
-        }
-        
-        if (this.value === 'noProjections') {
-            // Hide projection options and custom instructions if no projections needed
-            projectionOptionsGroup.style.display = 'none';
-            customProjectionInstructions.style.display = 'none';
-        } else {
-            // Show projection options and custom instructions for all other selections
-            projectionOptionsGroup.style.display = 'block';
-            customProjectionInstructions.style.display = 'block';
-        }
-        
+        otherProjectionLength.style.display = this.value === 'other' ? 'block' : 'none';
         triggerAutoSave();
     });
     
@@ -1083,45 +862,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alternativePlatformsTextarea.value = 'Paraplanner to complete compare\n' + alternativePlatformsTextarea.value;
         } else {
             alternativePlatformsTextarea.value = alternativePlatformsTextarea.value.replace('Paraplanner to complete compare\n', '');
-        }
-        triggerAutoSave();
-    });
-    
-    // Handle TMD in filenote checkbox
-    tmdInFilenoteCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            tmdDetailsTextarea.value = 'TMD in filenote\n' + tmdDetailsTextarea.value;
-        } else {
-            tmdDetailsTextarea.value = tmdDetailsTextarea.value.replace('TMD in filenote\n', '');
-        }
-        triggerAutoSave();
-    });
-    
-    // Handle inaccurate info N/A checkbox
-    inaccurateInfoNACheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            inaccurateInfoTextarea.value = 'N/A - No potentially inaccurate or incomplete information';
-        } else {
-            if (inaccurateInfoTextarea.value === 'N/A - No potentially inaccurate or incomplete information') {
-                inaccurateInfoTextarea.value = '';
-            }
-        }
-        triggerAutoSave();
-    });
-    
-    // Handle ongoing fee refer checkbox
-    ongoingFeeReferCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            ongoingFeeInput.value = 'Refer to Pricing Calculator';
-            ongoingPcmFeeInput.value = 'Refer to Pricing Calculator';
-        } else {
-            // Clear the text when unchecked
-            if (ongoingFeeInput.value === 'Refer to Pricing Calculator') {
-                ongoingFeeInput.value = '';
-            }
-            if (ongoingPcmFeeInput.value === 'Refer to Pricing Calculator') {
-                ongoingPcmFeeInput.value = '';
-            }
         }
         triggerAutoSave();
     });
@@ -1183,11 +923,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Please select a draft to delete.');
             }
         });
-        
-        // Share as Link functionality
-        shareAsLinkBtn.addEventListener('click', function() {
-            shareAsLink();
-        });
     }
     
     function loadDraftList() {
@@ -1202,7 +937,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function saveDraft(draftName, isAutoSave = false) {
+    function saveDraft(draftName) {
         const formData = collectFormData();
         const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
         drafts[draftName] = {
@@ -1210,11 +945,7 @@ document.addEventListener('DOMContentLoaded', function() {
             timestamp: new Date().toISOString()
         };
         localStorage.setItem('financialAdviceFormDrafts', JSON.stringify(drafts));
-        
-        // Only refresh dropdown if it's not an auto-save
-        if (!isAutoSave) {
-            loadDraftList();
-        }
+        loadDraftList();
     }
     
     function loadDraft(draftName) {
@@ -1232,145 +963,6 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDraftList();
         draftSelector.value = '';
         showAutoSaveIndicator('Draft deleted successfully!');
-    }
-    
-    // Enhanced Share as Link functionality with compression
-    function shareAsLink() {
-        const formData = collectFormData();
-        const clientName = document.getElementById('clientName').value || 'Shared Form';
-        
-        try {
-            // Use LZ-String compression for better URL handling
-            const compressedData = LZString.compressToEncodedURIComponent(JSON.stringify(formData));
-            
-            // Check if the compressed data is still too large for URL
-            if (compressedData.length > 8000) {
-                // Use a chunked approach with localStorage
-                const shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem(shareId, JSON.stringify(formData));
-                
-                // Set expiration for 24 hours
-                setTimeout(() => {
-                    localStorage.removeItem(shareId);
-                }, 24 * 60 * 60 * 1000);
-                
-                const shareUrl = `${window.location.origin}${window.location.pathname}?shareId=${shareId}`;
-                copyAndShowShareLink(shareUrl, clientName);
-            } else {
-                // Use direct URL with compressed data
-                const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${compressedData}`;
-                copyAndShowShareLink(shareUrl, clientName);
-            }
-        } catch (error) {
-            console.error('Error creating share link:', error);
-            showAutoSaveIndicator('Error creating share link');
-        }
-    }
-    
-    function copyAndShowShareLink(shareUrl, clientName) {
-        // Copy to clipboard
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            showAutoSaveIndicator('Share link copied to clipboard!');
-            
-            // Also show a modal with the link for manual copying if needed
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.style.display = 'block';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                    <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
-                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
-                        ${shareUrl}
-                    </div>
-                    <div class="modal-buttons">
-                        <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
-                            <i class="fas fa-copy"></i> Copy Again
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                            <i class="fas fa-check"></i> Done
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }).catch(() => {
-            // Fallback if clipboard API fails
-            showAutoSaveIndicator('Share link ready - check the modal');
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.style.display = 'block';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                    <p>Copy this link to share the form:</p>
-                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
-                        ${shareUrl}
-                    </div>
-                    <div class="modal-buttons">
-                        <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
-                            <i class="fas fa-copy"></i> Copy Link
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                            <i class="fas fa-check"></i> Done
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        });
-    }
-    
-    // Check for shared data in URL
-    function checkForSharedData() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedData = urlParams.get('shared');
-        const shareId = urlParams.get('shareId');
-        
-        if (sharedData) {
-            try {
-                // Decompress the shared data
-                const decodedData = JSON.parse(LZString.decompressFromEncodedURIComponent(sharedData));
-                loadSharedData(decodedData);
-            } catch (error) {
-                console.error('Error loading shared data:', error);
-                showAutoSaveIndicator('Error loading shared form data');
-            }
-        } else if (shareId) {
-            try {
-                // Load from localStorage using shareId
-                const storedData = localStorage.getItem(shareId);
-                if (storedData) {
-                    const decodedData = JSON.parse(storedData);
-                    loadSharedData(decodedData);
-                } else {
-                    showAutoSaveIndicator('Shared form link has expired or is invalid');
-                }
-            } catch (error) {
-                console.error('Error loading shared data from storage:', error);
-                showAutoSaveIndicator('Error loading shared form data');
-            }
-        }
-    }
-    
-    function loadSharedData(decodedData) {
-        // Show notification about shared form
-        const clientName = decodedData.clientName || 'Unknown Client';
-        showAutoSaveIndicator(`Loading shared form: ${clientName}`);
-        
-        // Populate the form with shared data
-        setTimeout(() => {
-            populateFormData(decodedData);
-            
-            // Clean URL after loading (optional)
-            const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-            window.history.replaceState({}, document.title, cleanUrl);
-            
-            showAutoSaveIndicator('Shared form loaded successfully!');
-        }, 500);
     }
     
     // Auto-save functionality
@@ -1405,8 +997,8 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(autoSaveTimeout);
         autoSaveTimeout = setTimeout(() => {
             const clientName = document.getElementById('clientName').value || 'Auto-Save';
-            saveDraft(`${clientName} - Auto Save`, true); // Pass true for silent auto-save
-            // Completely silent - no notifications, no dropdown updates
+            saveDraft(`${clientName} - Auto Save`);
+            showAutoSaveIndicator();
         }, 2000); // Auto-save after 2 seconds of inactivity
     }
     
@@ -1441,25 +1033,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (item) {
                             item.classList.toggle('selected', element.checked);
                         }
-                        
-                        // Handle product recommendation checkboxes
-                        if (key.endsWith('ProductRecsCheckbox')) {
-                            const checkboxToSectionMap = {
-                                'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                                'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                                'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                                'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                                'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                                'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                                'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                            };
-                            
-                            const sectionId = checkboxToSectionMap[key];
-                            const section = document.getElementById(sectionId);
-                            if (section) {
-                                section.style.display = element.checked ? 'block' : 'none';
-                            }
-                        }
                     }
                 } else {
                     element.value = formData[key];
@@ -1469,69 +1042,46 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFormBasedOnSelections();
     }
     
-    // Email Document functionality - Desktop Outlook only
-    emailDocumentBtnBottom.addEventListener('click', function() {
-        const clientName = document.getElementById('clientName').value || 'Client';
-        const xplanId = document.getElementById('xplanId').value;
-        
-        // Show popup reminder about PDF attachment
+    // Save to Xplan functionality
+    saveToXplanBtnBottom.addEventListener('click', function() {
+        // Show coming soon modal or alert
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'block';
         modal.innerHTML = `
             <div class="modal-content">
-                <h3><i class="fas fa-info-circle"></i> Email Document Reminder</h3>
-                <p><strong>Before sending the email:</strong></p>
-                <ul style="margin: 15px 0; padding-left: 20px; text-align: left;">
-                    <li>Please ensure you have downloaded the ARF PDF using "Export to PDF"</li>
-                    <li>You will need to manually attach the PDF file to your email</li>
-                    ${xplanId ? `<li style="background-color: yellow; padding: 5px; margin: 5px 0; border-radius: 3px;"><strong>IF YOU WANT TO SAVE TO XPLAN CC: ${xplanId.trim()}@findex.xplan.iress.com.au</strong></li>` : '<li>No Xplan ID entered - manually CC if saving to Xplan</li>'}
+                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h3><i class="fas fa-info-circle"></i> Feature Coming Soon</h3>
+                <p>The "Save to Xplan" functionality is currently under development and will be available in a future update.</p>
+                <p>In the meantime, you can:</p>
+                <ul style="margin: 15px 0; padding-left: 20px;">
+                    <li>Save your work as a draft</li>
+                    <li>Export to Word or PDF</li>
+                    <li>Email the document to relevant parties</li>
                 </ul>
                 <div class="modal-buttons">
-                    <button type="button" class="btn btn-success" id="proceedWithEmail">
-                        <i class="fas fa-check"></i> OK - Open Email Client
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="cancelEmail">
-                        <i class="fas fa-times"></i> Cancel
+                    <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        <i class="fas fa-check"></i> Got it
                     </button>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
-        
-        // Handle proceed button
-        modal.querySelector('#proceedWithEmail').addEventListener('click', function() {
-            modal.remove();
-            openEmailClient(clientName, xplanId);
-        });
-        
-        // Handle cancel button
-        modal.querySelector('#cancelEmail').addEventListener('click', function() {
-            modal.remove();
-        });
-        
-        // Handle clicking outside modal
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                modal.remove();
-            }
-        });
     });
     
-    // Function to open email client - Desktop Outlook only
-    function openEmailClient(clientName, xplanId) {
+    // Email Document functionality
+    emailDocumentBtnBottom.addEventListener('click', function() {
+        const clientName = document.getElementById('clientName').value || 'Client';
         const subject = `Findex ARF for ${clientName}`;
-        
-        // Build CC email if Xplan ID is provided
-        let ccNote = '';
-        if (xplanId && xplanId.trim()) {
-            const ccEmail = `${xplanId.trim()}@findex.xplan.iress.com.au`;
-            ccNote = `**IF YOU WANT TO SAVE TO XPLAN CC ${ccEmail}**\n\n`;
-        }
-        
-        const body = `${ccNote}Dear Team,
+        const body = `Dear Team,
 
 Please find attached the Financial Advice Request Form (ARF) for ${clientName}.
+
+This ARF contains:
+- Client details and strategy recommendations
+- Product recommendations and risk profiling
+- Fee structure and compliance requirements
+- All necessary documentation requirements
 
 This document has been prepared for your acknowledgment and further processing.
 
@@ -1540,280 +1090,64 @@ If you have any questions or require additional information, please don't hesita
 Best regards,
 ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         
-        // Try multiple methods to open desktop Outlook only
-        let emailOpened = false;
+        // Create mailto link with Outlook-specific parameters
+        const outlookUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         
-        // Method 1: Try desktop Outlook protocol first (Windows)
-        if (navigator.platform.indexOf('Win') > -1) {
-            try {
-                let outlookDesktopUrl = `outlook:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = outlookDesktopUrl;
-                document.body.appendChild(iframe);
-                setTimeout(() => document.body.removeChild(iframe), 1000);
-                emailOpened = true;
-            } catch (error) {
-                console.error('Outlook desktop failed:', error);
-            }
-        }
-        
-        // Method 2: Try standard mailto as fallback (will use default email client)
-        if (!emailOpened) {
-            try {
-                let mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                window.location.href = mailtoLink;
-                emailOpened = true;
-            } catch (error) {
-                console.error('Mailto failed:', error);
-            }
+        // Try to open Outlook web app first, fall back to mailto
+        try {
+            window.open(outlookUrl, '_blank');
+        } catch (error) {
+            // Fallback to regular mailto
+            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
         }
         
         // Show success message
-        let message = 'Email client opening...';
-        if (xplanId && xplanId.trim()) {
-            message += ` Remember to CC: ${xplanId.trim()}@findex.xplan.iress.com.au`;
-        } else {
-            message += ' (No Xplan ID - manual CC required if saving to Xplan)';
-        }
-        showAutoSaveIndicator(message);
-        
-        // Follow-up message
-        setTimeout(() => {
-            showAutoSaveIndicator('If email client didn\'t open, please check your default email app settings.');
-        }, 3000);
-    }
+        showAutoSaveIndicator('Email client opened. Note: Attachment requires manual addition.');
+    });
     
-    // Export to Word functionality - FIXED to match visible content exactly and reorder sections
+    // Export to Word functionality
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Build clean Word document content - only include what's actually visible
-        let wordContent = `
-        <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
-        `;
+        // Get clean HTML content
+        const container = document.querySelector('.container').cloneNode(true);
         
-        // Process each visible section in correct order
-        document.querySelectorAll('.section').forEach((section, index) => {
-            if (section.style.display !== 'none') {
-                const h2 = section.querySelector('h2');
-                if (h2) {
-                    wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">${h2.textContent}</h2>`;
-                }
-                
-                // Special handling for Strategy Recommendations section to reorder content
-                if (section.id === 'strategyRecommendationsSection') {
-                    // First add all recommendation sections (Client 1, Client 2, Joint, Entities, etc.)
-                    const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
-                    if (dynamicContainer) {
-                        // Process recommendation sections with new layout
-                        dynamicContainer.querySelectorAll('.recommendation-section').forEach(recSection => {
-                            if (recSection.style.display !== 'none') {
-                                const textareaDiv = recSection.querySelector('.recommendation-textarea');
-                                const riskDiv = recSection.querySelector('.risk-profile-inline');
-                                
-                                if (textareaDiv) {
-                                    const label = textareaDiv.querySelector('label');
-                                    const textarea = textareaDiv.querySelector('textarea');
-                                    const productCheckbox = textareaDiv.querySelector('input[type="checkbox"]');
-                                    
-                                    if (label && textarea && textarea.value) {
-                                        wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${label.textContent}</h3>`;
-                                        wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
-                                    }
-                                    
-                                    if (productCheckbox) {
-                                        const productLabel = productCheckbox.nextElementSibling;
-                                        if (productLabel) {
-                                            wordContent += `<p style="margin-left: 20px;">${productCheckbox.checked ? '☑' : '☐'} ${productLabel.textContent}</p>`;
-                                        }
-                                    }
-                                }
-                                
-                                if (riskDiv) {
-                                    const riskLabel = riskDiv.querySelector('label');
-                                    const riskSelect = riskDiv.querySelector('select');
-                                    
-                                    if (riskLabel && riskSelect && riskSelect.value) {
-                                        const selected = riskSelect.options[riskSelect.selectedIndex];
-                                        if (selected && selected.text) {
-                                            wordContent += `<p><strong>${riskLabel.textContent}</strong> ${selected.text}</p>`;
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                        
-                        // Process product recommendations sections - ONLY IF VISIBLE AND CHECKBOX IS CHECKED
-                        dynamicContainer.querySelectorAll('.product-recommendations').forEach(productSection => {
-                            if (productSection.style.display === 'block') {  // Only visible sections
-                                const sectionTitle = productSection.querySelector('h4');
-                                if (sectionTitle) {
-                                    wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${sectionTitle.textContent}</h3>`;
-                                }
-                                
-                                // Process each product item
-                                productSection.querySelectorAll('.product-item').forEach(product => {
-                                    if (product.style.display !== 'none') {
-                                        const productHeader = product.querySelector('h5');
-                                        if (productHeader) {
-                                            wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
-                                        }
-                                        
-                                        // Process product fields with values
-                                        product.querySelectorAll('input, textarea, select').forEach(input => {
-                                            if (input.value && input.style.display !== 'none') {
-                                                const inputGroup = input.closest('.form-group');
-                                                const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
-                                                
-                                                if (inputLabel) {
-                                                    let value = input.value;
-                                                    if (input.tagName === 'SELECT') {
-                                                        const selected = input.options[input.selectedIndex];
-                                                        value = selected ? selected.text : '';
-                                                    }
-                                                    if (input.type === 'checkbox') {
-                                                        // Handle toggle switches in products
-                                                        const statusSpan = input.parentElement.nextElementSibling;
-                                                        value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
-                                                    }
-                                                    if (value && value !== 'Select investment option' && value !== '') {
-                                                        wordContent += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
-                                                    }
-                                                }
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                    
-                    // Then add the rest of the strategy recommendations fields
-                    section.querySelectorAll('.form-group').forEach(group => {
-                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                            // Process regular inputs (avoid duplicates)
-                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
-                                    const inputLabel = input.closest('.form-group').querySelector('label');
-                                    if (inputLabel && input.value) {
-                                        let value = input.value;
-                                        if (input.tagName === 'SELECT') {
-                                            const selected = input.options[input.selectedIndex];
-                                            value = selected ? selected.text : '';
-                                        }
-                                        if (value) {
-                                            wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
-                                            wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    });
-                } else {
-                    // Process form groups for other sections (excluding dynamic recommendations container)
-                    section.querySelectorAll('.form-group').forEach(group => {
-                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                            const label = group.querySelector('label');
-                            
-                            // Process radio groups
-                            const radioGroup = group.querySelector('.radio-group');
-                            if (radioGroup) {
-                                if (label) {
-                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                                }
-                                radioGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
-                                    if (radio.checked) {
-                                        const radioLabel = radio.nextElementSibling;
-                                        if (radioLabel) {
-                                            wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
-                                        }
-                                    }
-                                });
-                            }
-                            
-                            // Process checkbox groups
-                            const checkboxGroup = group.querySelector('.checkbox-group');
-                            if (checkboxGroup) {
-                                if (label) {
-                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                                }
-                                checkboxGroup.querySelectorAll('.checkbox-item').forEach(item => {
-                                    const checkbox = item.querySelector('input[type="checkbox"]');
-                                    const checkboxLabel = item.querySelector('label');
-                                    if (checkbox && checkboxLabel) {
-                                        wordContent += `<p style="margin-left: 20px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
-                                    }
-                                });
-                            }
-                            
-                            // Process regular inputs (avoid duplicates)
-                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
-                                    const inputLabel = input.closest('.form-group').querySelector('label');
-                                    if (inputLabel && input.value) {
-                                        let value = input.value;
-                                        if (input.tagName === 'SELECT') {
-                                            const selected = input.options[input.selectedIndex];
-                                            value = selected ? selected.text : '';
-                                        }
-                                        if (value) {
-                                            wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
-                                            wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
-                                        }
-                                    }
-                                }
-                            });
-                            
-                            // Process checklist items
-                            group.querySelectorAll('.checklist-item').forEach(item => {
-                                if (item.style.display !== 'none') {
-                                    const checkbox = item.querySelector('input[type="checkbox"]');
-                                    const checkboxLabel = item.querySelector('label');
-                                    if (checkbox && checkboxLabel) {
-                                        wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
-                                    }
-                                }
-                            });
-                            
-                            // Process toggle switches
-                            group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
-                                const toggleLabel = toggleGroup.querySelector('label');
-                                const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                                if (toggleLabel && toggleInput) {
-                                    wordContent += `<p><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
-                                }
-                            });
-                        }
-                    });
-                }
-            }
-        });
+        // Remove buttons and draft selector
+        const buttons = container.querySelector('.btn-group');
+        if (buttons) buttons.remove();
         
-        // Create complete Word document
+        // Remove hidden elements
+        container.querySelectorAll('.draft-selector, .auto-save-indicator, .modal').forEach(el => el.remove());
+        
+        // Clean up styling for Word
         const html = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head>
                 <meta charset="utf-8">
                 <title>Financial Advice Request Form - ${clientName}</title>
                 <style>
-                    body { 
-                        font-family: Calibri, Arial, sans-serif; 
-                        line-height: 1.5; 
-                        color: #000; 
-                        margin: 20px; 
-                        background: white;
-                    }
-                    h1 { font-size: 24pt; margin-bottom: 20pt; page-break-after: avoid; }
-                    h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; page-break-after: avoid; }
-                    h3, h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
-                    p { margin-bottom: 10pt; }
+                    body { font-family: Calibri, Arial, sans-serif; line-height: 1.5; color: #000; margin: 20px; }
+                    h1 { font-size: 24pt; text-align: center; color: #2c3e50; margin-bottom: 20pt; page-break-after: avoid; }
+                    h2 { font-size: 18pt; color: #3498db; margin-top: 20pt; margin-bottom: 10pt; border-bottom: 2px solid #ecf0f1; padding-bottom: 5pt; page-break-after: avoid; }
+                    h3 { font-size: 14pt; color: #34495e; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
+                    h4 { font-size: 12pt; color: #34495e; margin-top: 10pt; margin-bottom: 8pt; page-break-after: avoid; }
+                    .section { margin-bottom: 20pt; padding: 15pt; border-left: 4px solid #1abc9c; background-color: #f9f9f9; page-break-inside: avoid; }
+                    .form-group { margin-bottom: 15pt; }
+                    label { font-weight: bold; display: block; margin-bottom: 5pt; }
+                    input, textarea, select { border: 1px solid #ddd; padding: 8pt; width: 100%; margin-bottom: 10pt; font-family: Calibri, Arial, sans-serif; background-color: white; }
+                    textarea { min-height: 40pt; }
+                    .checklist-item { margin-bottom: 8pt; padding: 5pt; background-color: #ecf0f1; page-break-inside: avoid; }
+                    .note { background-color: #e3f2fd; padding: 10pt; margin: 15pt 0; border-left: 4px solid #3498db; }
+                    .product-item { border: 1px solid #ddd; padding: 10pt; margin-bottom: 10pt; background-color: #fff; page-break-inside: avoid; }
+                    .grid-2 { display: block; }
+                    .grid-2 > div { margin-bottom: 10pt; }
+                    .product-recommendations, .risk-profile-section { margin: 15pt 0; padding: 10pt; background-color: #f0f8ff; border: 1px solid #ddd; }
                     @page { margin: 1in; }
                 </style>
             </head>
             <body>
-                ${wordContent}
+                ${container.innerHTML}
             </body>
             </html>
         `;
@@ -1829,94 +1163,45 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - Enhanced for better text handling
+    // Export to PDF functionality
     exportPdfBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
+        const element = document.querySelector('.container');
         
         // Hide elements that shouldn't be in PDF
-        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
-        const originalDisplays = [];
+        const elementsToHide = document.querySelectorAll('.btn-group, .draft-selector, .auto-save-indicator, .modal');
+        elementsToHide.forEach(el => el.style.display = 'none');
         
-        elementsToHide.forEach(el => {
-            originalDisplays.push(el.style.display);
-            el.style.display = 'none';
-        });
-        
-        // Add PDF-specific styles for better text handling
-        const pdfStyle = document.createElement('style');
-        pdfStyle.id = 'pdf-export-style';
-        pdfStyle.textContent = `
-            @media print {
-                body { 
-                    background: white !important; 
-                    padding: 0 !important; 
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                .container { 
-                    box-shadow: none !important; 
-                    max-width: 100% !important; 
-                    margin: 0 !important; 
-                    padding: 20px !important;
-                }
-                .section { 
-                    page-break-inside: avoid !important; 
-                    margin-bottom: 20px !important;
-                }
-                textarea, input[type="text"] {
-                    min-height: auto !important;
-                    height: auto !important;
-                    padding: 8px !important;
-                    border: 1px solid #ddd !important;
-                    background: white !important;
-                    word-wrap: break-word !important;
-                    white-space: pre-wrap !important;
-                    overflow: visible !important;
-                    resize: none !important;
-                    box-sizing: border-box !important;
-                }
-                * { 
-                    print-color-adjust: exact !important; 
-                    -webkit-print-color-adjust: exact !important;
-                    color-adjust: exact !important;
-                }
+        // Configure html2pdf options
+        const opt = {
+            margin: [10, 10, 10, 10],
+            filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                letterRendering: true
+            },
+            jsPDF: { 
+                unit: 'mm', 
+                format: 'a4', 
+                orientation: 'portrait',
+                compress: true
+            },
+            pagebreak: { 
+                mode: ['avoid-all', 'css', 'legacy'],
+                before: '.section',
+                avoid: ['.product-item', '.checklist-item', '.form-group']
             }
-        `;
-        document.head.appendChild(pdfStyle);
-        
-        // Set document title for PDF filename
-        const originalTitle = document.title;
-        document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        
-        // Use window.print() for guaranteed text handling
-        setTimeout(() => {
-            window.print();
-        }, 100);
-        
-        // Clean up after print
-        const cleanupAfterPrint = () => {
-            // Remove PDF styles
-            const pdfStyleElement = document.getElementById('pdf-export-style');
-            if (pdfStyleElement) {
-                pdfStyleElement.remove();
-            }
-            
-            // Restore original title
-            document.title = originalTitle;
-            
-            // Restore hidden elements
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
-            
-            showAutoSaveIndicator('PDF ready for save/print!');
         };
         
-        // Listen for print events
-        window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
-        
-        // Fallback cleanup after 10 seconds
-        setTimeout(cleanupAfterPrint, 10000);
+        // Generate PDF
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Restore hidden elements
+            elementsToHide.forEach(el => el.style.display = '');
+            showAutoSaveIndicator('PDF exported successfully!');
+        });
     });
     
     // Reset Form functionality
@@ -1952,14 +1237,6 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             partnerNameGroup.style.display = 'none';
             entityNameGroup.style.display = 'none';
             entitySelector.style.display = 'none';
-            smsfNameGroup.style.display = 'none';
-            trustNameGroup.style.display = 'none';
-            companyNameGroup.style.display = 'none';
-            
-            // Hide all product recommendation sections
-            document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
-                section.style.display = 'none';
-            });
             
             // Clear dynamic content
             document.getElementById('recommendationsSectionsContainer').innerHTML = '';
@@ -1972,17 +1249,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             projectionDateLength.value = 'lifeExpectancy';
             otherProjectionLength.style.display = 'none';
             
-            // Reset projection visibility
-            const customProjectionInstructions = document.getElementById('customProjectionInstructions');
-            const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
-            if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
-            if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
-            
-            // Reset checkboxes
+            // Reset paraplanner compare checkbox
             paraplannerCompareCheckbox.checked = false;
-            tmdInFilenoteCheckbox.checked = false;
-            inaccurateInfoNACheckbox.checked = false;
-            ongoingFeeReferCheckbox.checked = false;
+            alternativePlatformsTextarea.value = '';
             
             showAutoSaveIndicator('Form has been reset!');
         }
