@@ -2462,28 +2462,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Handle Pricing Calculator N/A button - FIXED to work like Super Research
+    // Handle Pricing Calculator N/A button - MAKE IT TRANSPARENT LIKE SUPER RESEARCH
     if (pricingCalculatorNABtn && pricingCalculatorItem) {
         pricingCalculatorNABtn.addEventListener('click', function() {
             pricingCalculatorItem.classList.toggle('na-active');
             const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
             if (pricingCalculatorItem.classList.contains('na-active') && pricingCalculatorCheckbox) {
                 pricingCalculatorCheckbox.checked = false;
+                console.log('Pricing Calculator set to N/A - checkbox unchecked and made transparent');
+            } else {
+                console.log('Pricing Calculator N/A removed - item restored to normal');
             }
             triggerAutoSave();
         });
+        
+        // Also remove N/A state if checkbox is manually clicked
+        const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
+        if (pricingCalculatorCheckbox) {
+            pricingCalculatorCheckbox.addEventListener('change', function() {
+                if (this.checked && pricingCalculatorItem.classList.contains('na-active')) {
+                    pricingCalculatorItem.classList.remove('na-active');
+                    console.log('Pricing Calculator manually checked - N/A state removed');
+                }
+            });
+        }
     }
     
-    // Handle Beneficiary Nomination N/A button - FIXED to work like Super Research
+    // Handle Beneficiary Nomination N/A button - MAKE IT TRANSPARENT LIKE SUPER RESEARCH
     if (beneficiaryNominationNABtn && beneficiaryNominationItem) {
         beneficiaryNominationNABtn.addEventListener('click', function() {
             beneficiaryNominationItem.classList.toggle('na-active');
             const beneficiaryNominationCheckbox = document.getElementById('beneficiaryNomination');
             if (beneficiaryNominationItem.classList.contains('na-active') && beneficiaryNominationCheckbox) {
                 beneficiaryNominationCheckbox.checked = false;
+                console.log('Beneficiary Nomination set to N/A - checkbox unchecked and made transparent');
+            } else {
+                console.log('Beneficiary Nomination N/A removed - item restored to normal');
             }
             triggerAutoSave();
         });
+        
+        // Also remove N/A state if checkbox is manually clicked
+        const beneficiaryNominationCheckbox = document.getElementById('beneficiaryNomination');
+        if (beneficiaryNominationCheckbox) {
+            beneficiaryNominationCheckbox.addEventListener('change', function() {
+                if (this.checked && beneficiaryNominationItem.classList.contains('na-active')) {
+                    beneficiaryNominationItem.classList.remove('na-active');
+                    console.log('Beneficiary Nomination manually checked - N/A state removed');
+                }
+            });
+        }
     }
     
     // Draft Functionality
