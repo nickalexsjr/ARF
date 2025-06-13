@@ -2579,16 +2579,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (element.id.includes('tranching')) {
                         console.log('VALUE SAVED:', element.id, '=', element.value);
                     }
+                    if (element.id.includes('_custom')) {
+                        console.log('CUSTOM PRODUCT SAVED:', element.id, '=', element.value);
+                    }
                 }
             }
         });
         
         // FORCE save visibility states for ALL elements with IDs
         document.querySelectorAll('[id]').forEach(element => {
-            if (element.id.includes('_details') || element.id.includes('_section') || element.id.includes('ProductRecommendationsSection')) {
+            if (element.id.includes('_details') || element.id.includes('_section') || element.id.includes('ProductRecommendationsSection') || element.id.includes('_custom_group')) {
                 formData[element.id + '_visible'] = (element.style.display !== 'none' && element.style.display !== '');
                 if (element.id.includes('tranching')) {
                     console.log('VISIBILITY SAVED:', element.id, '=', (element.style.display !== 'none' && element.style.display !== ''));
+                }
+                if (element.id.includes('_custom_group')) {
+                    console.log('CUSTOM GROUP VISIBILITY SAVED:', element.id, '=', (element.style.display !== 'none' && element.style.display !== ''));
                 }
             }
         });
@@ -2616,6 +2622,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const tranchingFields = Object.keys(formData).filter(key => key.includes('tranching'));
         console.log('Tranching fields saved:', tranchingFields.length, tranchingFields);
         
+        // Count custom product fields
+        const customFields = Object.keys(formData).filter(key => key.includes('_custom'));
+        console.log('Custom product fields saved:', customFields.length, customFields);
+        
         const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
         drafts[draftName] = {
             data: formData,
@@ -2641,6 +2651,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Count tranching fields in saved data
         const tranchingFields = Object.keys(formData).filter(key => key.includes('tranching') && !key.endsWith('_visible'));
         console.log('Tranching fields to restore:', tranchingFields.length, tranchingFields);
+        
+        // Count custom product fields in saved data
+        const customFields = Object.keys(formData).filter(key => key.includes('_custom') && !key.endsWith('_visible'));
+        console.log('Custom product fields to restore:', customFields.length, customFields);
         
         // STEP 1: Restore basic form state first
         Object.keys(formData).forEach(key => {
@@ -2713,9 +2727,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (key.includes('tranching_text')) {
                                 console.log('RESTORED tranching text:', key, '=', formData[key]);
                             }
+                            if (key.includes('_custom') && !key.includes('_custom_group')) {
+                                console.log('RESTORED custom product:', key, '=', formData[key]);
+                            }
+                            
+                            // SPECIAL: Handle product name changes to trigger custom field visibility
+                            if (key.endsWith('_name') && element.value === 'Custom') {
+                                const productId = key.replace('_name', '');
+                                const customGroup = document.getElementById(`${productId}_custom_group`);
+                                if (customGroup) {
+                                    customGroup.style.display = 'block';
+                                    console.log('SHOWING custom group for product:', productId);
+                                }
+                            }
                         }
                     } else if (key.includes('tranching_text')) {
                         console.log('WARNING: Could not find element for:', key);
+                    } else if (key.includes('_custom') && !key.includes('_custom_group')) {
+                        console.log('WARNING: Could not find custom product element for:', key);
                     }
                 }
             });
@@ -2725,16 +2754,46 @@ document.addEventListener('DOMContentLoaded', function() {
             setupProductRecommendationToggles();
             setupAutoSaveForNewElements();
             
-            // STEP 5: One final check for tranching fields
+            // STEP 5: Restore visibility states
             setTimeout(() => {
-                console.log('=== FINAL TRANCHING CHECK ===');
+                console.log('=== RESTORING VISIBILITY STATES ===');
+                Object.keys(formData).forEach(key => {
+                    if (key.endsWith('_visible') && formData[key]) {
+                        const elementId = key.replace('_visible', '');
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            element.style.display = 'block';
+                            if (elementId.includes('_custom_group')) {
+                                console.log('RESTORED custom group visibility:', elementId);
+                            }
+                        }
+                    }
+                });
+            }, 100);
+            
+            // STEP 6: One final check for custom product and tranching fields
+            setTimeout(() => {
+                console.log('=== FINAL CUSTOM PRODUCT & TRANCHING CHECK ===');
+                
+                // Final restore of custom product fields
+                const finalCustomElements = document.querySelectorAll('[id*="_custom"]:not([id*="_custom_group"])');
+                console.log('Found custom product elements in DOM:', finalCustomElements.length);
+                
+                finalCustomElements.forEach(element => {
+                    if (formData[element.id]) {
+                        element.value = formData[element.id];
+                        console.log('FINAL CUSTOM RESTORE:', element.id, '=', formData[element.id]);
+                    }
+                });
+                
+                // Final restore of tranching text fields
                 const finalTrancingElements = document.querySelectorAll('[id*="tranching_text"]');
                 console.log('Found tranching text elements in DOM:', finalTrancingElements.length);
                 
                 finalTrancingElements.forEach(element => {
                     if (formData[element.id]) {
                         element.value = formData[element.id];
-                        console.log('FINAL RESTORE:', element.id, '=', formData[element.id]);
+                        console.log('FINAL TRANCHING RESTORE:', element.id, '=', formData[element.id]);
                     }
                 });
                 
