@@ -2822,9 +2822,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Wait for dynamic content to be rebuilt, then restore states
         setTimeout(() => {
-            // First restore all basic form fields
+            // First restore all basic form fields (except investment options)
             Object.keys(formData).forEach(key => {
-                if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text')) {
+                if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text') && !key.endsWith('_investment_option')) {
                     const element = document.getElementById(key);
                     if (element) {
                         if (element.type === 'checkbox' || element.type === 'radio') {
@@ -2839,7 +2839,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Then re-initialize product features to ensure proper section visibility
             initializeProductFeatures();
             
-            // Wait a bit more, then restore all states again
+            // Wait a bit more, then restore all states again including investment options
             setTimeout(() => {
                 // Restore form fields again (for any that were missed)
                 Object.keys(formData).forEach(key => {
@@ -2917,6 +2917,21 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (investmentOptions) {
                                 investmentOptions.style.display = 'block';
                                 console.log('Showing investment options for:', productId);
+                                
+                                // Populate investment options first
+                                updateInvestmentOptions(productId);
+                                
+                                // Then restore the selected investment option value
+                                setTimeout(() => {
+                                    const investmentOptionKey = `${productId}_investment_option`;
+                                    if (formData[investmentOptionKey]) {
+                                        const investmentSelect = document.getElementById(investmentOptionKey);
+                                        if (investmentSelect) {
+                                            investmentSelect.value = formData[investmentOptionKey];
+                                            console.log('Restored investment option:', productId, formData[investmentOptionKey]);
+                                        }
+                                    }
+                                }, 100);
                             }
                             
                             // Restore investment field
@@ -2942,6 +2957,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 });
+                
+                // Restore all investment option values (final pass)
+                setTimeout(() => {
+                    Object.keys(formData).forEach(key => {
+                        if (key.endsWith('_investment_option') && formData[key]) {
+                            const element = document.getElementById(key);
+                            if (element) {
+                                element.value = formData[key];
+                                console.log('Final restore of investment option:', key, formData[key]);
+                            }
+                        }
+                    });
+                }, 200);
                 
                 // Restore status text for toggle switches
                 Object.keys(formData).forEach(key => {
