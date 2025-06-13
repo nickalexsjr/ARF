@@ -1839,16 +1839,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ensure product recommendation sections are properly displayed based on saved state
             document.querySelectorAll('[id$="ProductRecsCheckbox"]').forEach(checkbox => {
                 if (checkbox.checked) {
-                    checkbox.dispatchEvent(new Event('change'));
+                    // Trigger the change event to show the section
+                    const event = new Event('change');
+                    checkbox.dispatchEvent(event);
                 }
             });
-        }, 100);
+            
+            console.log('Initialized recommendation sections with', document.querySelectorAll('[id$="ProductRecsCheckbox"]').length, 'product checkboxes');
+        }, 200); // Increased timeout for better reliability
     }
     
     // Function to setup product recommendation toggles
     function setupProductRecommendationToggles() {
         // Setup toggles for all product recommendation checkboxes
-        document.querySelectorAll('[id$="ProductRecsCheckbox"]').forEach(checkbox => {
+        const productRecsCheckboxes = document.querySelectorAll('[id$="ProductRecsCheckbox"]');
+        
+        productRecsCheckboxes.forEach(checkbox => {
             if (!checkbox.hasAttribute('data-initialized')) {
                 checkbox.setAttribute('data-initialized', 'true');
                 checkbox.addEventListener('change', function() {
@@ -1867,11 +1873,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     const section = document.getElementById(sectionId);
                     if (section) {
                         section.style.display = this.checked ? 'block' : 'none';
+                        console.log('Toggled', sectionId, 'to', this.checked ? 'visible' : 'hidden');
                     }
                     triggerAutoSave();
                 });
             }
         });
+        
+        console.log('Setup product recommendation toggles for', productRecsCheckboxes.length, 'checkboxes');
     }
     
     // Helper function to add entity recommendation sections
@@ -2518,18 +2527,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function saveDraft(draftName, isAutoSave = false) {
-        const formData = collectFormData();
-        const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
-        drafts[draftName] = {
-            data: formData,
-            timestamp: new Date().toISOString()
-        };
-        localStorage.setItem('financialAdviceFormDrafts', JSON.stringify(drafts));
-        
-        // Only refresh dropdown if it's not an auto-save
-        if (!isAutoSave) {
-            loadDraftList();
-        }
+        // Ensure we capture the current state properly
+        setTimeout(() => {
+            const formData = collectFormData();
+            const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
+            drafts[draftName] = {
+                data: formData,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('financialAdviceFormDrafts', JSON.stringify(drafts));
+            
+            // Only refresh dropdown if it's not an auto-save
+            if (!isAutoSave) {
+                loadDraftList();
+                console.log('Draft saved:', draftName, 'Data keys:', Object.keys(formData).length);
+            }
+        }, 100); // Small delay to ensure all dynamic elements are captured
     }
     
     function loadDraft(draftName) {
@@ -2597,7 +2610,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupAutoSaveForNewElements() {
         // Setup auto-save for dynamically added elements
         setTimeout(() => {
-            document.querySelectorAll('input:not([data-autosave]), textarea:not([data-autosave]), select:not([data-autosave])').forEach(element => {
+            // Get all inputs, textareas, and selects that don't have the autosave marker
+            const newElements = document.querySelectorAll('input:not([data-autosave]), textarea:not([data-autosave]), select:not([data-autosave])');
+            
+            newElements.forEach(element => {
                 element.setAttribute('data-autosave', 'true');
                 if (element.type === 'checkbox' || element.type === 'radio') {
                     element.addEventListener('change', triggerAutoSave);
@@ -2608,7 +2624,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Setup N/A buttons for dynamically created compliance items
-            document.querySelectorAll('.na-button:not([data-initialized])').forEach(button => {
+            const newNAButtons = document.querySelectorAll('.na-button:not([data-initialized])');
+            newNAButtons.forEach(button => {
                 button.setAttribute('data-initialized', 'true');
                 button.addEventListener('click', function() {
                     const item = this.closest('.checklist-item');
@@ -2635,6 +2652,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             });
+            
+            console.log('Setup auto-save for', newElements.length, 'new elements and', newNAButtons.length, 'new N/A buttons');
         }, 100);
     }
     
@@ -2657,83 +2676,132 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function collectFormData() {
         const formData = {};
-        document.querySelectorAll('input, textarea, select').forEach(element => {
-            if (element.type === 'checkbox' || element.type === 'radio') {
-                formData[element.id] = element.checked;
-            } else {
-                formData[element.id] = element.value;
+        
+        // Wait a moment to ensure all dynamic elements are rendered
+        const allInputs = document.querySelectorAll('input, textarea, select');
+        
+        allInputs.forEach(element => {
+            if (element.id) { // Only collect elements with IDs
+                if (element.type === 'checkbox' || element.type === 'radio') {
+                    formData[element.id] = element.checked;
+                } else {
+                    formData[element.id] = element.value;
+                }
             }
         });
         
-        // Save N/A states
+        // Save N/A states for all checklist items
         document.querySelectorAll('.checklist-item.na-active').forEach(item => {
             const checkbox = item.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                formData[checkbox.id + '_na'] = true;
+            if (checkbox && checkbox.id) {
+                formData[checkbox.id + '_na_active'] = true;
             }
         });
         
         // Save MDA N/A state
-        if (mdaDetailsTextarea.classList.contains('strikethrough')) {
-            formData['mdaDetails_na'] = true;
+        if (mdaDetailsTextarea && mdaDetailsTextarea.classList.contains('strikethrough')) {
+            formData['mdaDetails_na_active'] = true;
         }
         
         // Save Pricing Calculator N/A state
         const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
         if (pricingCalculatorItem && pricingCalculatorItem.classList.contains('na-active')) {
-            formData['pricingCalculator_na'] = true;
+            formData['pricingCalculator_na_active'] = true;
         }
         
-        // Save product recommendation section visibility
+        // Save product recommendation section visibility states
         document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
-            formData[section.id + '_visible'] = section.style.display === 'block';
+            if (section.id) {
+                formData[section.id + '_visible'] = (section.style.display === 'block');
+            }
         });
         
+        // Save which client types are selected for rebuilding dynamic content
+        formData['_clientTypes'] = {
+            single: singleClientCheckbox.checked,
+            couple: coupleClientCheckbox.checked,
+            dependants: dependantsClientCheckbox.checked,
+            entity: entityClientCheckbox.checked,
+            smsf: entitySMSFCheckbox.checked,
+            trust: entityTrustCheckbox.checked,
+            company: entityCompanyCheckbox.checked
+        };
+        
+        // Save client status for rebuilding compliance requirements
+        formData['_clientStatus'] = {
+            new: newClientRadio.checked,
+            existing: existingClientRadio.checked
+        };
+        
+        console.log('Saving form data:', formData); // Debug logging
         return formData;
     }
     
     function populateFormData(formData) {
+        console.log('Loading form data:', formData); // Debug logging
+        
+        // First restore basic form fields
         Object.keys(formData).forEach(key => {
-            const element = document.getElementById(key);
-            if (element) {
-                if (element.type === 'checkbox' || element.type === 'radio') {
-                    element.checked = formData[key];
-                    if (element.type === 'checkbox') {
-                        const item = element.closest('.checkbox-item');
-                        if (item) {
-                            item.classList.toggle('selected', element.checked);
-                        }
-                        
-                        // Handle product recommendation checkboxes
-                        if (key.endsWith('ProductRecsCheckbox')) {
-                            const checkboxToSectionMap = {
-                                'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                                'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                                'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                                'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                                'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                                'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                                'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                            };
-                            
-                            const sectionId = checkboxToSectionMap[key];
-                            const section = document.getElementById(sectionId);
-                            if (section) {
-                                section.style.display = element.checked ? 'block' : 'none';
+            if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible')) {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.type === 'checkbox' || element.type === 'radio') {
+                        element.checked = formData[key];
+                        if (element.type === 'checkbox') {
+                            const item = element.closest('.checkbox-item');
+                            if (item) {
+                                item.classList.toggle('selected', element.checked);
                             }
                         }
+                    } else {
+                        element.value = formData[key];
                     }
-                } else {
-                    element.value = formData[key];
                 }
             }
         });
         
-        // Restore N/A states after form is rebuilt
+        // Rebuild form structure based on saved client types and status
+        updateFormBasedOnSelections();
+        
+        // Wait for dynamic content to be rebuilt, then restore states
         setTimeout(() => {
+            // Restore all form fields again (for dynamically created ones)
             Object.keys(formData).forEach(key => {
-                if (key.endsWith('_na') && formData[key]) {
-                    const originalKey = key.replace('_na', '');
+                if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible')) {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (element.type === 'checkbox' || element.type === 'radio') {
+                            element.checked = formData[key];
+                            
+                            // Handle product recommendation checkboxes specifically
+                            if (key.endsWith('ProductRecsCheckbox')) {
+                                const checkboxToSectionMap = {
+                                    'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                                    'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                                    'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                                    'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                                    'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                                    'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                                    'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                                };
+                                
+                                const sectionId = checkboxToSectionMap[key];
+                                const section = document.getElementById(sectionId);
+                                if (section) {
+                                    section.style.display = element.checked ? 'block' : 'none';
+                                }
+                            }
+                        } else {
+                            element.value = formData[key];
+                        }
+                    }
+                }
+            });
+            
+            // Restore N/A states
+            Object.keys(formData).forEach(key => {
+                if (key.endsWith('_na_active') && formData[key]) {
+                    const originalKey = key.replace('_na_active', '');
                     const element = document.getElementById(originalKey);
                     if (element) {
                         const item = element.closest('.checklist-item');
@@ -2746,7 +2814,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const contributionHistoryItem = document.getElementById('contributionHistoryItem');
                                 if (contributionHistoryItem) {
                                     contributionHistoryItem.style.display = 'none';
-                                    document.getElementById('contributionHistory').checked = false;
+                                    const contributionCheckbox = document.getElementById('contributionHistory');
+                                    if (contributionCheckbox) {
+                                        contributionCheckbox.checked = false;
+                                    }
                                 }
                             }
                         }
@@ -2755,15 +2826,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Restore MDA N/A state
-            if (formData['mdaDetails_na']) {
-                mdaDetailsTextarea.classList.add('strikethrough');
-                if (!mdaDetailsTextarea.value.includes('N/A')) {
-                    mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
+            if (formData['mdaDetails_na_active']) {
+                if (mdaDetailsTextarea) {
+                    mdaDetailsTextarea.classList.add('strikethrough');
+                    if (!mdaDetailsTextarea.value.includes('N/A')) {
+                        mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
+                    }
                 }
             }
             
             // Restore Pricing Calculator N/A state  
-            if (formData['pricingCalculator_na']) {
+            if (formData['pricingCalculator_na_active']) {
                 const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
                 if (pricingCalculatorItem) {
                     pricingCalculatorItem.classList.add('na-active');
@@ -2784,9 +2857,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
-        }, 500);
-        
-        updateFormBasedOnSelections();
+            
+            // Re-setup event listeners for all dynamic content
+            setupAutoSaveForNewElements();
+            setupProductRecommendationToggles();
+            
+        }, 750); // Increased timeout to ensure all dynamic content is rendered
     }
     
     // Email Document functionality - simplified approach
