@@ -2558,56 +2558,193 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function saveDraft(draftName, isAutoSave = false) {
-        // FORCE collection of ALL tranching textareas with verbose logging
-        setTimeout(() => {
-            const formData = collectFormData();
-            
-            // SUPER FORCE - manually collect ALL tranching data with detailed logging
-            const allTrancingElements = document.querySelectorAll('textarea[id*="_tranching_text"], input[id*="_tranching"], [id*="_tranching_details"]');
-            console.log('FORCE COLLECTING ALL TRANCHING ELEMENTS:', allTrancingElements.length);
-            
-            allTrancingElements.forEach(element => {
-                if (element.id) {
-                    if (element.type === 'checkbox') {
-                        formData[element.id] = element.checked;
-                        console.log('FORCE SAVED tranching checkbox:', element.id, '=', element.checked);
-                    } else if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
-                        formData[element.id] = element.value;
-                        console.log('FORCE SAVED tranching field:', element.id, '=', element.value);
-                    } else {
-                        // For divs, save visibility
-                        formData[element.id + '_visible'] = (element.style.display !== 'none');
-                        console.log('FORCE SAVED tranching visibility:', element.id, '=', (element.style.display !== 'none'));
+        // IMMEDIATE collection - no timeout nonsense
+        console.log('=== IMMEDIATE SAVE STARTING ===');
+        
+        const formData = {};
+        
+        // Get EVERY single form element in the entire document RIGHT NOW
+        const allElements = document.querySelectorAll('input, textarea, select');
+        console.log('Found total elements:', allElements.length);
+        
+        allElements.forEach(element => {
+            if (element.id && element.id.trim() !== '') {
+                if (element.type === 'checkbox' || element.type === 'radio') {
+                    formData[element.id] = element.checked;
+                    if (element.id.includes('tranching')) {
+                        console.log('CHECKBOX SAVED:', element.id, '=', element.checked);
+                    }
+                } else {
+                    formData[element.id] = element.value;
+                    if (element.id.includes('tranching')) {
+                        console.log('VALUE SAVED:', element.id, '=', element.value);
                     }
                 }
-            });
-            
-            const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
-            drafts[draftName] = {
-                data: formData,
-                timestamp: new Date().toISOString()
-            };
-            localStorage.setItem('financialAdviceFormDrafts', JSON.stringify(drafts));
-            
-            // Only refresh dropdown if it's not an auto-save
-            if (!isAutoSave) {
-                loadDraftList();
-                console.log('Draft saved:', draftName, 'Total fields:', Object.keys(formData).length);
             }
-        }, 150); // Increased delay to ensure all dynamic content is captured
+        });
+        
+        // FORCE save visibility states for ALL elements with IDs
+        document.querySelectorAll('[id]').forEach(element => {
+            if (element.id.includes('_details') || element.id.includes('_section') || element.id.includes('ProductRecommendationsSection')) {
+                formData[element.id + '_visible'] = (element.style.display !== 'none' && element.style.display !== '');
+                if (element.id.includes('tranching')) {
+                    console.log('VISIBILITY SAVED:', element.id, '=', (element.style.display !== 'none' && element.style.display !== ''));
+                }
+            }
+        });
+        
+        // Save client type states for rebuilding
+        formData['_clientTypes'] = {
+            single: singleClientCheckbox.checked,
+            couple: coupleClientCheckbox.checked,
+            dependants: dependantsClientCheckbox.checked,
+            entity: entityClientCheckbox.checked,
+            smsf: entitySMSFCheckbox.checked,
+            trust: entityTrustCheckbox.checked,
+            company: entityCompanyCheckbox.checked
+        };
+        
+        formData['_clientStatus'] = {
+            new: newClientRadio.checked,
+            existing: existingClientRadio.checked
+        };
+        
+        console.log('=== SAVING TO LOCALSTORAGE ===');
+        console.log('Total form fields saved:', Object.keys(formData).length);
+        
+        // Count tranching fields
+        const tranchingFields = Object.keys(formData).filter(key => key.includes('tranching'));
+        console.log('Tranching fields saved:', tranchingFields.length, tranchingFields);
+        
+        const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
+        drafts[draftName] = {
+            data: formData,
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('financialAdviceFormDrafts', JSON.stringify(drafts));
+        
+        if (!isAutoSave) {
+            loadDraftList();
+        }
+        
+        console.log('=== SAVE COMPLETE ===');
     }
     
     function loadDraft(draftName) {
         const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
-        if (drafts[draftName]) {
-            populateFormData(drafts[draftName].data);
-            showAutoSaveIndicator('Draft loaded successfully!');
+        if (!drafts[draftName]) return;
+        
+        const formData = drafts[draftName].data;
+        console.log('=== LOADING DRAFT ===');
+        console.log('Total fields to restore:', Object.keys(formData).length);
+        
+        // Count tranching fields in saved data
+        const tranchingFields = Object.keys(formData).filter(key => key.includes('tranching') && !key.endsWith('_visible'));
+        console.log('Tranching fields to restore:', tranchingFields.length, tranchingFields);
+        
+        // STEP 1: Restore basic form state first
+        Object.keys(formData).forEach(key => {
+            if (!key.startsWith('_') && !key.endsWith('_visible')) {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.type === 'checkbox' || element.type === 'radio') {
+                        element.checked = formData[key];
+                        if (element.type === 'checkbox') {
+                            const item = element.closest('.checkbox-item');
+                            if (item) {
+                                item.classList.toggle('selected', element.checked);
+                            }
+                        }
+                    } else {
+                        element.value = formData[key];
+                    }
+                }
+            }
+        });
+        
+        // STEP 2: Rebuild the form structure based on saved client types
+        updateFormBasedOnSelections();
+        
+        // STEP 3: Wait for rebuild, then restore EVERYTHING again
+        setTimeout(() => {
+            console.log('=== STEP 3: RESTORING AFTER REBUILD ===');
             
-            // Ensure MDA button is properly initialized after loading
+            // Restore ALL form values again (in case they were cleared during rebuild)
+            Object.keys(formData).forEach(key => {
+                if (!key.startsWith('_') && !key.endsWith('_visible')) {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (element.type === 'checkbox' || element.type === 'radio') {
+                            element.checked = formData[key];
+                            
+                            // SPECIAL: If this is a tranching toggle, update its status and show details
+                            if (key.endsWith('_tranching') && element.checked) {
+                                const productId = key.replace('_tranching', '');
+                                const status = document.getElementById(`${productId}_tranching_status`);
+                                const details = document.getElementById(`${productId}_tranching_details`);
+                                
+                                if (status) status.textContent = 'Yes';
+                                if (details) {
+                                    details.style.display = 'block';
+                                    console.log('ENABLED tranching details for:', productId);
+                                }
+                            }
+                            
+                            // Handle product recommendation checkboxes
+                            if (key.endsWith('ProductRecsCheckbox') && element.checked) {
+                                const checkboxToSectionMap = {
+                                    'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                                    'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                                    'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                                    'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                                    'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                                    'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                                    'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                                };
+                                
+                                const sectionId = checkboxToSectionMap[key];
+                                const section = document.getElementById(sectionId);
+                                if (section) {
+                                    section.style.display = 'block';
+                                }
+                            }
+                        } else {
+                            element.value = formData[key];
+                            if (key.includes('tranching_text')) {
+                                console.log('RESTORED tranching text:', key, '=', formData[key]);
+                            }
+                        }
+                    } else if (key.includes('tranching_text')) {
+                        console.log('WARNING: Could not find element for:', key);
+                    }
+                }
+            });
+            
+            // STEP 4: Initialize all product features
+            initializeProductFeatures();
+            setupProductRecommendationToggles();
+            setupAutoSaveForNewElements();
+            
+            // STEP 5: One final check for tranching fields
             setTimeout(() => {
-                setupMDANAButton();
-            }, 100);
-        }
+                console.log('=== FINAL TRANCHING CHECK ===');
+                const finalTrancingElements = document.querySelectorAll('[id*="tranching_text"]');
+                console.log('Found tranching text elements in DOM:', finalTrancingElements.length);
+                
+                finalTrancingElements.forEach(element => {
+                    if (formData[element.id]) {
+                        element.value = formData[element.id];
+                        console.log('FINAL RESTORE:', element.id, '=', formData[element.id]);
+                    }
+                });
+                
+                console.log('=== LOAD COMPLETE ===');
+            }, 200);
+            
+        }, 300);
+        
+        showAutoSaveIndicator('Draft loaded successfully!');
+        setupMDANAButton();
     }
     
     function deleteDraft(draftName) {
