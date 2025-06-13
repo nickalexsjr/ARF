@@ -2461,7 +2461,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Handle Pricing Calculator N/A button
+    // Handle Pricing Calculator N/A button - FIXED to work like Super Research
     if (pricingCalculatorNABtn && pricingCalculatorItem) {
         pricingCalculatorNABtn.addEventListener('click', function() {
             pricingCalculatorItem.classList.toggle('na-active');
@@ -2473,7 +2473,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle Beneficiary Nomination N/A button
+    // Handle Beneficiary Nomination N/A button - FIXED to work like Super Research
     if (beneficiaryNominationNABtn && beneficiaryNominationItem) {
         beneficiaryNominationNABtn.addEventListener('click', function() {
             beneficiaryNominationItem.classList.toggle('na-active');
@@ -2658,7 +2658,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Setup N/A buttons for dynamically created compliance items
+            // Setup N/A buttons for dynamically created compliance items - FIXED to work like Super Research
             const newNAButtons = document.querySelectorAll('.na-button:not([data-initialized])');
             newNAButtons.forEach(button => {
                 button.setAttribute('data-initialized', 'true');
@@ -2728,11 +2728,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // EXPLICITLY save tranching text content to ensure it's captured
+        // FORCE capture ALL tranching text content - even empty values
         document.querySelectorAll('[id$="_tranching_text"]').forEach(textarea => {
-            if (textarea.id && textarea.value) {
-                formData[textarea.id] = textarea.value;
-                console.log('Saving tranching text:', textarea.id, textarea.value);
+            if (textarea.id) {
+                formData[textarea.id] = textarea.value; // Save even if empty
+                console.log('FORCE saving tranching text:', textarea.id, '=', textarea.value);
             }
         });
         
@@ -2741,8 +2741,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const contributionHistoryItem = document.getElementById('contributionHistoryItem');
         if (contributionHistory) {
             formData['contributionHistory'] = contributionHistory.checked;
-            formData['contributionHistoryItem_visible'] = (contributionHistoryItem && contributionHistoryItem.style.display !== 'none');
-            console.log('Saving contribution history:', contributionHistory.checked, 'visible:', (contributionHistoryItem && contributionHistoryItem.style.display !== 'none'));
+            // Check if the item exists AND is visible (not display:none)
+            formData['contributionHistoryItem_visible'] = !!(contributionHistoryItem && contributionHistoryItem.style.display === 'block');
+            console.log('Saving contribution history:', contributionHistory.checked, 'visible:', formData['contributionHistoryItem_visible']);
+        }
+        
+        // EXPLICITLY save super research state to ensure contribution history shows properly
+        const superResearch = document.getElementById('superResearch');
+        if (superResearch) {
+            formData['superResearch'] = superResearch.checked;
+            console.log('Saving super research state:', superResearch.checked);
         }
         
         // Save toggle switch status spans (for MDA, tranching, etc.)
