@@ -2728,11 +2728,46 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // FORCE capture ALL tranching text content - even empty values
-        document.querySelectorAll('[id$="_tranching_text"]').forEach(textarea => {
+        // ULTRA FORCE - Find ALL tranching textareas anywhere in the document
+        const allTrancingTextareas = document.querySelectorAll('textarea[id*="_tranching_text"]');
+        allTrancingTextareas.forEach(textarea => {
             if (textarea.id) {
-                formData[textarea.id] = textarea.value; // Save even if empty
-                console.log('FORCE saving tranching text:', textarea.id, '=', textarea.value);
+                formData[textarea.id] = textarea.value;
+                console.log('ULTRA FORCE saving tranching text:', textarea.id, '=', textarea.value);
+            }
+        });
+        
+        // ULTRA FORCE - Find ALL cash preference inputs anywhere in the document  
+        const allCashInputs = document.querySelectorAll('input[id*="_cash"]');
+        allCashInputs.forEach(input => {
+            if (input.id) {
+                formData[input.id] = input.value;
+                console.log('ULTRA FORCE saving cash preference:', input.id, '=', input.value);
+            }
+        });
+        
+        // ULTRA FORCE - Find ALL product investment textareas anywhere in the document
+        const allInvestmentTextareas = document.querySelectorAll('textarea[id*="_investment"]');
+        allInvestmentTextareas.forEach(textarea => {
+            if (textarea.id && !textarea.id.includes('_investment_option')) {
+                formData[textarea.id] = textarea.value;
+                console.log('ULTRA FORCE saving investment textarea:', textarea.id, '=', textarea.value);
+            }
+        });
+        
+        // EXPLICITLY save ALL entity recommendations and risk profiles
+        ['smsf', 'trust', 'company'].forEach(entityType => {
+            const entityRec = document.getElementById(`${entityType}Recommendations`);
+            const entityRisk = document.getElementById(`riskProfile${entityType}`);
+            
+            if (entityRec) {
+                formData[`${entityType}Recommendations`] = entityRec.value;
+                console.log(`Saving ${entityType} recommendations:`, entityRec.value);
+            }
+            
+            if (entityRisk) {
+                formData[`riskProfile${entityType}`] = entityRisk.value;
+                console.log(`Saving ${entityType} risk profile:`, entityRisk.value);
             }
         });
         
