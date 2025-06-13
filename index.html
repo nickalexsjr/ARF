@@ -1225,9 +1225,10 @@ input:checked + .slider:before {
                     <button type="button" class="btn btn-secondary btn-sm na-button" id="pricingCalculatorNABtn">N/A</button>
                 </div>
                 
-                <div class="checklist-item">
+                <div class="checklist-item" id="beneficiaryNominationItem">
                     <input type="checkbox" id="beneficiaryNomination" name="compliance" value="BeneficiaryNomination">
                     <label for="beneficiaryNomination">Beneficiary nomination advice made (if relevant)</label>
+                    <button type="button" class="btn btn-secondary btn-sm na-button" id="beneficiaryNominationNABtn">N/A</button>
                 </div>
             </div>
             
@@ -1342,11 +1343,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const ongoingFeeInput = document.getElementById('ongoingFee');
     const ongoingPcmFeeInput = document.getElementById('ongoingPcmFee');
     
-    // MDA N/A button will be handled by setupMDANAButton function
-    
-    // Pricing Calculator N/A button
+    // N/A buttons
     const pricingCalculatorNABtn = document.getElementById('pricingCalculatorNABtn');
     const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
+    const beneficiaryNominationNABtn = document.getElementById('beneficiaryNominationNABtn');
+    const beneficiaryNominationItem = document.getElementById('beneficiaryNominationItem');
     
     // Product options
     const productOptions = [
@@ -2270,17 +2271,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const superResearchNABtn = document.getElementById('superResearchNABtn');
             const contributionHistoryNABtn = document.getElementById('contributionHistoryNABtn');
             const superResearchItem = document.getElementById('superResearchItem');
-            const pricingCalculatorNABtn = document.getElementById('pricingCalculatorNABtn');
-            const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
             
             if (superResearchCheckbox && contributionHistoryItem) {
                 superResearchCheckbox.addEventListener('change', function() {
                     if (this.checked) {
                         contributionHistoryItem.style.display = 'block';
                         // Remove N/A state when manually checking
-                        const superItem = document.getElementById('superResearchItem');
-                        if (superItem) {
-                            superItem.classList.remove('na-active');
+                        if (superResearchItem) {
+                            superResearchItem.classList.remove('na-active');
                         }
                     } else {
                         contributionHistoryItem.style.display = 'none';
@@ -2463,13 +2461,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Handle Pricing Calculator N/A button - FIXED
+    // Handle Pricing Calculator N/A button
     if (pricingCalculatorNABtn && pricingCalculatorItem) {
         pricingCalculatorNABtn.addEventListener('click', function() {
             pricingCalculatorItem.classList.toggle('na-active');
             const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
             if (pricingCalculatorItem.classList.contains('na-active') && pricingCalculatorCheckbox) {
                 pricingCalculatorCheckbox.checked = false;
+            }
+            triggerAutoSave();
+        });
+    }
+    
+    // Handle Beneficiary Nomination N/A button
+    if (beneficiaryNominationNABtn && beneficiaryNominationItem) {
+        beneficiaryNominationNABtn.addEventListener('click', function() {
+            beneficiaryNominationItem.classList.toggle('na-active');
+            const beneficiaryNominationCheckbox = document.getElementById('beneficiaryNomination');
+            if (beneficiaryNominationItem.classList.contains('na-active') && beneficiaryNominationCheckbox) {
+                beneficiaryNominationCheckbox.checked = false;
             }
             triggerAutoSave();
         });
@@ -2766,6 +2776,12 @@ document.addEventListener('DOMContentLoaded', function() {
             formData['pricingCalculator_na_active'] = true;
         }
         
+        // Save Beneficiary Nomination N/A state
+        const beneficiaryNominationItem = document.getElementById('beneficiaryNominationItem');
+        if (beneficiaryNominationItem && beneficiaryNominationItem.classList.contains('na-active')) {
+            formData['beneficiaryNomination_na_active'] = true;
+        }
+        
         // Save product recommendation section visibility states
         document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
             if (section.id) {
@@ -3040,6 +3056,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
                         if (pricingCalculatorCheckbox) {
                             pricingCalculatorCheckbox.checked = false;
+                        }
+                    }
+                }
+                
+                // Restore Beneficiary Nomination N/A state  
+                if (formData['beneficiaryNomination_na_active']) {
+                    const beneficiaryNominationItem = document.getElementById('beneficiaryNominationItem');
+                    if (beneficiaryNominationItem) {
+                        beneficiaryNominationItem.classList.add('na-active');
+                        const beneficiaryNominationCheckbox = document.getElementById('beneficiaryNomination');
+                        if (beneficiaryNominationCheckbox) {
+                            beneficiaryNominationCheckbox.checked = false;
                         }
                     }
                 }
