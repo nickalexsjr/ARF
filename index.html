@@ -2728,6 +2728,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // EXPLICITLY save tranching text content to ensure it's captured
+        document.querySelectorAll('[id$="_tranching_text"]').forEach(textarea => {
+            if (textarea.id && textarea.value) {
+                formData[textarea.id] = textarea.value;
+                console.log('Saving tranching text:', textarea.id, textarea.value);
+            }
+        });
+        
+        // EXPLICITLY save contribution history checkbox state and visibility
+        const contributionHistory = document.getElementById('contributionHistory');
+        const contributionHistoryItem = document.getElementById('contributionHistoryItem');
+        if (contributionHistory) {
+            formData['contributionHistory'] = contributionHistory.checked;
+            formData['contributionHistoryItem_visible'] = (contributionHistoryItem && contributionHistoryItem.style.display !== 'none');
+            console.log('Saving contribution history:', contributionHistory.checked, 'visible:', (contributionHistoryItem && contributionHistoryItem.style.display !== 'none'));
+        }
+        
         // Save toggle switch status spans (for MDA, tranching, etc.)
         document.querySelectorAll('[id$="_status"]').forEach(span => {
             if (span.id) {
@@ -2806,7 +2823,7 @@ document.addEventListener('DOMContentLoaded', function() {
             existing: existingClientRadio.checked
         };
         
-        console.log('Saving form data:', formData); // Debug logging
+        console.log('Saving form data with', Object.keys(formData).length, 'fields'); // Debug logging
         return formData;
     }
     
