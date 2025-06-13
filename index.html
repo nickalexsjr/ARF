@@ -2822,64 +2822,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Wait for dynamic content to be rebuilt, then restore states
         setTimeout(() => {
-            // Restore all form fields again (for dynamically created ones)
+            // First restore all basic form fields
             Object.keys(formData).forEach(key => {
                 if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text')) {
                     const element = document.getElementById(key);
                     if (element) {
                         if (element.type === 'checkbox' || element.type === 'radio') {
                             element.checked = formData[key];
-                            
-                            // Handle product recommendation checkboxes specifically
-                            if (key.endsWith('ProductRecsCheckbox')) {
-                                const checkboxToSectionMap = {
-                                    'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                                    'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                                    'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                                    'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                                    'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                                    'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                                    'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                                };
-                                
-                                const sectionId = checkboxToSectionMap[key];
-                                const section = document.getElementById(sectionId);
-                                if (section) {
-                                    section.style.display = element.checked ? 'block' : 'none';
-                                }
-                            }
-                            
-                            // Handle MDA toggles in products
-                            if (key.endsWith('_mda')) {
-                                const productId = key.replace('_mda', '');
-                                const status = document.getElementById(`${productId}_mda_status`);
-                                const investmentOptions = document.getElementById(`${productId}_investment_options`);
-                                const investmentField = document.getElementById(`${productId}_investment`);
-                                
-                                if (status) status.textContent = element.checked ? 'Yes' : 'No';
-                                if (investmentOptions) {
-                                    investmentOptions.style.display = element.checked ? 'block' : 'none';
-                                }
-                                
-                                if (element.checked && investmentField) {
-                                    updateInvestmentOptions(productId);
-                                    if (investmentField.value === '' || investmentField.value === 'Enter investment details (can list multiple investments)') {
-                                        investmentField.value = 'Refer to Investment option below';
-                                    }
-                                }
-                            }
-                            
-                            // Handle tranching toggles in products
-                            if (key.endsWith('_tranching')) {
-                                const productId = key.replace('_tranching', '');
-                                const status = document.getElementById(`${productId}_tranching_status`);
-                                const details = document.getElementById(`${productId}_tranching_details`);
-                                
-                                if (status) status.textContent = element.checked ? 'Yes' : 'No';
-                                if (details) {
-                                    details.style.display = element.checked ? 'block' : 'none';
-                                }
-                            }
                         } else {
                             element.value = formData[key];
                         }
@@ -2887,86 +2836,196 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Restore status text for toggle switches
-            Object.keys(formData).forEach(key => {
-                if (key.endsWith('_text')) {
-                    const statusId = key.replace('_text', '');
-                    const statusElement = document.getElementById(statusId);
-                    if (statusElement) {
-                        statusElement.textContent = formData[key];
-                    }
-                }
-            });
+            // Then re-initialize product features to ensure proper section visibility
+            initializeProductFeatures();
             
-            // Restore section visibility states
-            Object.keys(formData).forEach(key => {
-                if (key.endsWith('_visible') && formData[key]) {
-                    const sectionId = key.replace('_visible', '');
-                    const section = document.getElementById(sectionId);
-                    if (section) {
-                        section.style.display = 'block';
-                    }
-                }
-            });
-            
-            // Restore N/A states
-            Object.keys(formData).forEach(key => {
-                if (key.endsWith('_na_active') && formData[key]) {
-                    const originalKey = key.replace('_na_active', '');
-                    const element = document.getElementById(originalKey);
-                    if (element) {
-                        const item = element.closest('.checklist-item');
-                        if (item) {
-                            item.classList.add('na-active');
-                            element.checked = false;
-                            
-                            // Special handling for super research
-                            if (originalKey === 'superResearch') {
-                                const contributionHistoryItem = document.getElementById('contributionHistoryItem');
-                                if (contributionHistoryItem) {
-                                    contributionHistoryItem.style.display = 'none';
-                                    const contributionCheckbox = document.getElementById('contributionHistory');
-                                    if (contributionCheckbox) {
-                                        contributionCheckbox.checked = false;
+            // Wait a bit more, then restore all states again
+            setTimeout(() => {
+                // Restore form fields again (for any that were missed)
+                Object.keys(formData).forEach(key => {
+                    if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text')) {
+                        const element = document.getElementById(key);
+                        if (element) {
+                            if (element.type === 'checkbox' || element.type === 'radio') {
+                                element.checked = formData[key];
+                                
+                                // Handle product recommendation checkboxes specifically
+                                if (key.endsWith('ProductRecsCheckbox')) {
+                                    const checkboxToSectionMap = {
+                                        'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                                        'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                                        'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                                        'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                                        'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                                        'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                                        'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                                    };
+                                    
+                                    const sectionId = checkboxToSectionMap[key];
+                                    const section = document.getElementById(sectionId);
+                                    if (section) {
+                                        section.style.display = element.checked ? 'block' : 'none';
+                                    }
+                                }
+                            } else {
+                                element.value = formData[key];
+                                
+                                // Trigger product selection logic for product name fields
+                                if (key.endsWith('_name') && element.value) {
+                                    const productId = key.replace('_name', '');
+                                    const selectedProduct = element.value;
+                                    
+                                    // Show/hide sections based on product selection
+                                    const customGroup = document.getElementById(`${productId}_custom_group`);
+                                    const mdaSection = document.getElementById(`${productId}_mda_section`);
+                                    
+                                    if (selectedProduct === 'Custom') {
+                                        if (customGroup) customGroup.style.display = 'block';
+                                        if (mdaSection) mdaSection.style.display = 'none';
+                                    } else {
+                                        if (customGroup) customGroup.style.display = 'none';
+                                        
+                                        // Show MDA section for applicable products
+                                        if (selectedProduct.includes('BT Panorama') || 
+                                            selectedProduct.includes('Centric Super Choice') || 
+                                            selectedProduct === 'Centric IDPS') {
+                                            if (mdaSection) {
+                                                mdaSection.style.display = 'block';
+                                                console.log('Showing MDA section for product:', selectedProduct);
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            });
-            
-            // Restore MDA N/A state
-            if (formData['mdaDetails_na_active']) {
-                const mdaTextarea = document.getElementById('mdaDetails');
-                if (mdaTextarea) {
-                    mdaTextarea.classList.add('strikethrough');
-                    if (!mdaTextarea.value.includes('N/A')) {
-                        mdaTextarea.value = 'N/A\n' + mdaTextarea.value;
+                });
+                
+                // Now restore toggle states and their visual effects
+                Object.keys(formData).forEach(key => {
+                    // Handle MDA toggles in products
+                    if (key.endsWith('_mda') && formData[key]) {
+                        const element = document.getElementById(key);
+                        if (element) {
+                            element.checked = true;
+                            const productId = key.replace('_mda', '');
+                            const status = document.getElementById(`${productId}_mda_status`);
+                            const investmentOptions = document.getElementById(`${productId}_investment_options`);
+                            const investmentField = document.getElementById(`${productId}_investment`);
+                            
+                            if (status) status.textContent = 'Yes';
+                            if (investmentOptions) {
+                                investmentOptions.style.display = 'block';
+                                console.log('Showing investment options for:', productId);
+                            }
+                            
+                            // Restore investment field
+                            if (investmentField && investmentField.value === 'Refer to Investment option below') {
+                                updateInvestmentOptions(productId);
+                            }
+                        }
+                    }
+                    
+                    // Handle tranching toggles in products
+                    if (key.endsWith('_tranching') && formData[key]) {
+                        const element = document.getElementById(key);
+                        if (element) {
+                            element.checked = true;
+                            const productId = key.replace('_tranching', '');
+                            const status = document.getElementById(`${productId}_tranching_status`);
+                            const details = document.getElementById(`${productId}_tranching_details`);
+                            
+                            if (status) status.textContent = 'Yes';
+                            if (details) {
+                                details.style.display = 'block';
+                            }
+                        }
+                    }
+                });
+                
+                // Restore status text for toggle switches
+                Object.keys(formData).forEach(key => {
+                    if (key.endsWith('_text')) {
+                        const statusId = key.replace('_text', '');
+                        const statusElement = document.getElementById(statusId);
+                        if (statusElement) {
+                            statusElement.textContent = formData[key];
+                        }
+                    }
+                });
+                
+                // Restore section visibility states
+                Object.keys(formData).forEach(key => {
+                    if (key.endsWith('_visible') && formData[key]) {
+                        const sectionId = key.replace('_visible', '');
+                        const section = document.getElementById(sectionId);
+                        if (section) {
+                            section.style.display = 'block';
+                            console.log('Restoring visibility for:', sectionId);
+                        }
+                    }
+                });
+                
+                // Restore N/A states
+                Object.keys(formData).forEach(key => {
+                    if (key.endsWith('_na_active') && formData[key]) {
+                        const originalKey = key.replace('_na_active', '');
+                        const element = document.getElementById(originalKey);
+                        if (element) {
+                            const item = element.closest('.checklist-item');
+                            if (item) {
+                                item.classList.add('na-active');
+                                element.checked = false;
+                                
+                                // Special handling for super research
+                                if (originalKey === 'superResearch') {
+                                    const contributionHistoryItem = document.getElementById('contributionHistoryItem');
+                                    if (contributionHistoryItem) {
+                                        contributionHistoryItem.style.display = 'none';
+                                        const contributionCheckbox = document.getElementById('contributionHistory');
+                                        if (contributionCheckbox) {
+                                            contributionCheckbox.checked = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Restore MDA N/A state
+                if (formData['mdaDetails_na_active']) {
+                    const mdaTextarea = document.getElementById('mdaDetails');
+                    if (mdaTextarea) {
+                        mdaTextarea.classList.add('strikethrough');
+                        if (!mdaTextarea.value.includes('N/A')) {
+                            mdaTextarea.value = 'N/A\n' + mdaTextarea.value;
+                        }
                     }
                 }
-            }
-            
-            // Restore Pricing Calculator N/A state  
-            if (formData['pricingCalculator_na_active']) {
-                const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
-                if (pricingCalculatorItem) {
-                    pricingCalculatorItem.classList.add('na-active');
-                    const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
-                    if (pricingCalculatorCheckbox) {
-                        pricingCalculatorCheckbox.checked = false;
+                
+                // Restore Pricing Calculator N/A state  
+                if (formData['pricingCalculator_na_active']) {
+                    const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
+                    if (pricingCalculatorItem) {
+                        pricingCalculatorItem.classList.add('na-active');
+                        const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
+                        if (pricingCalculatorCheckbox) {
+                            pricingCalculatorCheckbox.checked = false;
+                        }
                     }
                 }
-            }
+                
+                // Re-setup event listeners for all dynamic content
+                setupAutoSaveForNewElements();
+                setupProductRecommendationToggles();
+                setupMDANAButton(); // Re-initialize MDA N/A button
+                
+                console.log('Form data restoration complete - all product toggles should be working');
+                
+            }, 200); // Second phase restoration
             
-            // Re-setup event listeners for all dynamic content
-            setupAutoSaveForNewElements();
-            setupProductRecommendationToggles();
-            setupMDANAButton(); // Re-initialize MDA N/A button
-            
-            console.log('Form data restoration complete - all product toggles should be working');
-            
-        }, 750); // Increased timeout to ensure all dynamic content is rendered
+        }, 500); // First phase restoration
     }
     
     // Email Document functionality - simplified approach
