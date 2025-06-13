@@ -1835,6 +1835,13 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeProductFeatures();
             setupProductRecommendationToggles();
             setupAutoSaveForNewElements();
+            
+            // Ensure product recommendation sections are properly displayed based on saved state
+            document.querySelectorAll('[id$="ProductRecsCheckbox"]').forEach(checkbox => {
+                if (checkbox.checked) {
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
         }, 100);
     }
     
@@ -2242,36 +2249,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const superResearchNABtn = document.getElementById('superResearchNABtn');
             const contributionHistoryNABtn = document.getElementById('contributionHistoryNABtn');
             const superResearchItem = document.getElementById('superResearchItem');
+            const pricingCalculatorNABtn = document.getElementById('pricingCalculatorNABtn');
+            const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
             
             if (superResearchCheckbox && contributionHistoryItem) {
                 superResearchCheckbox.addEventListener('change', function() {
-                    contributionHistoryItem.style.display = this.checked ? 'block' : 'none';
-                    if (!this.checked) {
-                        document.getElementById('contributionHistory').checked = false;
-                    }
-                    triggerAutoSave();
-                });
-            }
-            
-            // Super Research N/A button
-            if (superResearchNABtn && superResearchItem) {
-                superResearchNABtn.addEventListener('click', function() {
-                    superResearchItem.classList.toggle('na-active');
-                    if (superResearchItem.classList.contains('na-active')) {
-                        superResearchCheckbox.checked = false;
+                    if (this.checked) {
+                        contributionHistoryItem.style.display = 'block';
+                        // Remove N/A state when manually checking
+                        const superItem = document.getElementById('superResearchItem');
+                        if (superItem) {
+                            superItem.classList.remove('na-active');
+                        }
+                    } else {
                         contributionHistoryItem.style.display = 'none';
                         document.getElementById('contributionHistory').checked = false;
-                    }
-                    triggerAutoSave();
-                });
-            }
-            
-            // Contribution History N/A button
-            if (contributionHistoryNABtn && contributionHistoryItem) {
-                contributionHistoryNABtn.addEventListener('click', function() {
-                    contributionHistoryItem.classList.toggle('na-active');
-                    if (contributionHistoryItem.classList.contains('na-active')) {
-                        document.getElementById('contributionHistory').checked = false;
+                        // Also remove N/A state from contribution history
+                        contributionHistoryItem.classList.remove('na-active');
                     }
                     triggerAutoSave();
                 });
@@ -2428,24 +2422,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle MDA N/A button
     mdaNABtn.addEventListener('click', function() {
-        if (mdaDetailsTextarea.value.includes('N/A')) {
+        if (mdaDetailsTextarea.classList.contains('strikethrough')) {
             mdaDetailsTextarea.value = mdaDetailsTextarea.value.replace('N/A\n', '').replace('N/A', '');
             mdaDetailsTextarea.classList.remove('strikethrough');
         } else {
-            mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
+            if (!mdaDetailsTextarea.value.includes('N/A')) {
+                mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
+            }
             mdaDetailsTextarea.classList.add('strikethrough');
         }
         triggerAutoSave();
     });
     
-    // Handle Pricing Calculator N/A button
-    pricingCalculatorNABtn.addEventListener('click', function() {
-        pricingCalculatorItem.classList.toggle('na-active');
-        if (pricingCalculatorItem.classList.contains('na-active')) {
-            document.getElementById('pricingCalculator').checked = false;
-        }
-        triggerAutoSave();
-    });
+    // Handle Pricing Calculator N/A button - FIXED
+    if (pricingCalculatorNABtn && pricingCalculatorItem) {
+        pricingCalculatorNABtn.addEventListener('click', function() {
+            pricingCalculatorItem.classList.toggle('na-active');
+            const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
+            if (pricingCalculatorItem.classList.contains('na-active') && pricingCalculatorCheckbox) {
+                pricingCalculatorCheckbox.checked = false;
+            }
+            triggerAutoSave();
+        });
+    }
     
     // Draft Functionality
     function initializeDraftFunctionality() {
@@ -2607,6 +2606,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     element.addEventListener('change', triggerAutoSave);
                 }
             });
+            
+            // Setup N/A buttons for dynamically created compliance items
+            document.querySelectorAll('.na-button:not([data-initialized])').forEach(button => {
+                button.setAttribute('data-initialized', 'true');
+                button.addEventListener('click', function() {
+                    const item = this.closest('.checklist-item');
+                    if (item) {
+                        item.classList.toggle('na-active');
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        if (checkbox && item.classList.contains('na-active')) {
+                            checkbox.checked = false;
+                            
+                            // Special handling for super research
+                            if (checkbox.id === 'superResearch') {
+                                const contributionHistoryItem = document.getElementById('contributionHistoryItem');
+                                if (contributionHistoryItem) {
+                                    contributionHistoryItem.style.display = 'none';
+                                    contributionHistoryItem.classList.remove('na-active');
+                                    const contributionCheckbox = document.getElementById('contributionHistory');
+                                    if (contributionCheckbox) {
+                                        contributionCheckbox.checked = false;
+                                    }
+                                }
+                            }
+                        }
+                        triggerAutoSave();
+                    }
+                });
+            });
         }, 100);
     }
     
@@ -2636,6 +2664,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 formData[element.id] = element.value;
             }
         });
+        
+        // Save N/A states
+        document.querySelectorAll('.checklist-item.na-active').forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                formData[checkbox.id + '_na'] = true;
+            }
+        });
+        
+        // Save MDA N/A state
+        if (mdaDetailsTextarea.classList.contains('strikethrough')) {
+            formData['mdaDetails_na'] = true;
+        }
+        
+        // Save Pricing Calculator N/A state
+        const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
+        if (pricingCalculatorItem && pricingCalculatorItem.classList.contains('na-active')) {
+            formData['pricingCalculator_na'] = true;
+        }
+        
+        // Save product recommendation section visibility
+        document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
+            formData[section.id + '_visible'] = section.style.display === 'block';
+        });
+        
         return formData;
     }
     
@@ -2675,6 +2728,64 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // Restore N/A states after form is rebuilt
+        setTimeout(() => {
+            Object.keys(formData).forEach(key => {
+                if (key.endsWith('_na') && formData[key]) {
+                    const originalKey = key.replace('_na', '');
+                    const element = document.getElementById(originalKey);
+                    if (element) {
+                        const item = element.closest('.checklist-item');
+                        if (item) {
+                            item.classList.add('na-active');
+                            element.checked = false;
+                            
+                            // Special handling for super research
+                            if (originalKey === 'superResearch') {
+                                const contributionHistoryItem = document.getElementById('contributionHistoryItem');
+                                if (contributionHistoryItem) {
+                                    contributionHistoryItem.style.display = 'none';
+                                    document.getElementById('contributionHistory').checked = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Restore MDA N/A state
+            if (formData['mdaDetails_na']) {
+                mdaDetailsTextarea.classList.add('strikethrough');
+                if (!mdaDetailsTextarea.value.includes('N/A')) {
+                    mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
+                }
+            }
+            
+            // Restore Pricing Calculator N/A state  
+            if (formData['pricingCalculator_na']) {
+                const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
+                if (pricingCalculatorItem) {
+                    pricingCalculatorItem.classList.add('na-active');
+                    const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
+                    if (pricingCalculatorCheckbox) {
+                        pricingCalculatorCheckbox.checked = false;
+                    }
+                }
+            }
+            
+            // Restore product recommendation section visibility
+            Object.keys(formData).forEach(key => {
+                if (key.endsWith('_visible') && formData[key]) {
+                    const sectionId = key.replace('_visible', '');
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.style.display = 'block';
+                    }
+                }
+            });
+        }, 500);
+        
         updateFormBasedOnSelections();
     }
     
