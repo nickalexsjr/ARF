@@ -404,6 +404,12 @@ textarea {
     cursor: pointer;
 }
 
+.checklist-item.crossed-out {
+    text-decoration: line-through;
+    opacity: 0.6;
+    background-color: #f0f0f0;
+}
+
 .sub-checklist {
     margin-left: 30px;
     margin-top: 10px;
@@ -1017,7 +1023,13 @@ input:checked + .slider:before {
             </div>
             
             <div class="form-group">
-                <label for="mdaDetails">MDA Personalisation:</label>
+                <label for="mdaDetails">
+                    MDA Personalisation:
+                    <span class="inline-checkbox">
+                        <input type="checkbox" id="mdaInFilenote" name="mdaInFilenote">
+                        <label for="mdaInFilenote">N/A</label>
+                    </span>
+                </label>
                 <textarea id="mdaDetails" name="mdaDetails" placeholder="Enter MDA personalisation details"></textarea>
             </div>
             
@@ -1200,9 +1212,12 @@ input:checked + .slider:before {
                     <label for="filenote">Filenote</label>
                 </div>
                 
-                <div class="checklist-item">
+                <div class="checklist-item" id="pricingCalculatorItem">
                     <input type="checkbox" id="pricingCalculator" name="requiredDocs" value="PricingCalculator">
                     <label for="pricingCalculator">Pricing Calculator</label>
+                    <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('pricingCalculatorItem')">
+                        N/A
+                    </button>
                 </div>
                 
                 <div class="checklist-item">
@@ -1259,6 +1274,77 @@ input:checked + .slider:before {
     </div>
 
     <script>
+// Compression function for share links
+function compressData(data) {
+    const jsonStr = JSON.stringify(data);
+    // Simple compression by removing common patterns and encoding
+    let compressed = jsonStr
+        .replace(/{"id":"/g, '1')
+        .replace(/","checked":true}/g, '2')
+        .replace(/","checked":false}/g, '3')
+        .replace(/","value":"/g, '4')
+        .replace(/"}/g, '5')
+        .replace(/,"/g, '6')
+        .replace(/"/g, '7');
+    
+    return btoa(compressed);
+}
+
+function decompressData(compressed) {
+    try {
+        let decompressed = atob(compressed)
+            .replace(/1/g, '{"id":"')
+            .replace(/2/g, '","checked":true}')
+            .replace(/3/g, '","checked":false}')
+            .replace(/4/g, '","value":"')
+            .replace(/5/g, '"}')
+            .replace(/6/g, ',"')
+            .replace(/7/g, '"');
+        
+        return JSON.parse(decompressed);
+    } catch (error) {
+        console.error('Decompression failed:', error);
+        return null;
+    }
+}
+
+// Global function for N/A buttons
+window.toggleNAItem = function(itemId) {
+    const item = document.getElementById(itemId);
+    if (item) {
+        item.classList.toggle('crossed-out');
+        triggerAutoSave();
+    }
+};
+
+// Function to fill joint sections with N/A
+window.fillJointNA = function() {
+    const jointRecommendations = document.getElementById('jointRecommendations');
+    if (jointRecommendations) {
+        jointRecommendations.value = 'N/A - No joint recommendations required';
+        triggerAutoSave();
+    }
+};
+
+window.fillJointProductNA = function() {
+    const jointProductCheckbox = document.getElementById('jointProductRecsCheckbox');
+    const jointProductSection = document.getElementById('jointProductRecommendationsSection');
+    
+    if (jointProductCheckbox && jointProductSection) {
+        jointProductCheckbox.checked = false;
+        jointProductSection.style.display = 'none';
+        triggerAutoSave();
+    }
+};
+
+window.fillJointRiskNA = function() {
+    const jointRiskProfile = document.getElementById('riskProfileJoint');
+    if (jointRiskProfile) {
+        jointRiskProfile.value = 'na';
+        triggerAutoSave();
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Client Status Radio Buttons
     const newClientRadio = document.getElementById('newClient');
@@ -1318,9 +1404,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const tmdInFilenoteCheckbox = document.getElementById('tmdInFilenote');
     const tmdDetailsTextarea = document.getElementById('tmdDetails');
     
+    // MDA checkbox
+    const mdaInFilenoteCheckbox = document.getElementById('mdaInFilenote');
+    const mdaDetailsTextarea = document.getElementById('mdaDetails');
+    
     // Ongoing Fee checkbox
     const ongoingFeeReferCheckbox = document.getElementById('ongoingFeeRefer');
     const ongoingFeeInput = document.getElementById('ongoingFee');
+    const ongoingPcmFeeInput = document.getElementById('ongoingPcmFee');
     
     // Product options
     const productOptions = [
@@ -1537,51 +1628,6 @@ document.addEventListener('DOMContentLoaded', function() {
             element.remove();
             triggerAutoSave();
         }
-    };
-    
-    // Function to fill Joint sections with N/A
-    window.fillJointNA = function() {
-        const jointRecommendations = document.getElementById('jointRecommendations');
-        if (jointRecommendations) {
-            jointRecommendations.value = 'N/A - No joint recommendations required';
-            triggerAutoSave();
-        }
-    };
-    
-    window.fillJointProductNA = function() {
-        // Hide the joint product section and mark as N/A
-        const jointProductCheckbox = document.getElementById('jointProductRecsCheckbox');
-        const jointProductSection = document.getElementById('jointProductRecommendationsSection');
-        
-        if (jointProductCheckbox && jointProductSection) {
-            jointProductCheckbox.checked = false;
-            jointProductSection.style.display = 'none';
-            triggerAutoSave();
-        }
-    };
-    
-    window.fillJointRiskNA = function() {
-        const jointRiskProfile = document.getElementById('riskProfileJoint');
-        if (jointRiskProfile) {
-            jointRiskProfile.value = 'na';
-            triggerAutoSave();
-        }
-    };
-    
-    // Function to add product
-    window.addProduct = function(clientId, clientName) {
-        const container = document.getElementById(`${clientId}_products`);
-        const productCount = container.querySelectorAll('.product-item').length;
-        
-        const newProductHTML = createProductRecommendation(clientId, clientName, productCount);
-        container.insertAdjacentHTML('beforeend', newProductHTML);
-        
-        // Initialize features for the new product
-        setTimeout(() => {
-            initializeProductFeatures();
-            setupAutoSaveForNewElements();
-            triggerAutoSave();
-        }, 100);
     };
     
     // Function to update recommendation sections based on selections
@@ -2130,14 +2176,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label for="finametricaReport">Finametrica Report to be uploaded to XPLAN</label>
                     </div>
                     
-                    <div class="checklist-item">
+                    <div class="checklist-item" id="superResearchItem">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('superResearchItem')">
+                            N/A
+                        </button>
                     </div>
                     
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('contributionHistoryItem')">
+                            N/A
+                        </button>
                     </div>
                     
                     <div class="checklist-item">
@@ -2176,14 +2228,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label for="submitJira">Submit JIRA for pricing/or PCR (if applicable)</label>
                     </div>
                     
-                    <div class="checklist-item">
+                    <div class="checklist-item" id="superResearchItem">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('superResearchItem')">
+                            N/A
+                        </button>
                     </div>
                     
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('contributionHistoryItem')">
+                            N/A
+                        </button>
                     </div>
                 </div>
             `;
@@ -2353,15 +2411,43 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     
-    // Handle ongoing fee refer checkbox
-    ongoingFeeReferCheckbox.addEventListener('change', function() {
+    // Handle MDA N/A checkbox
+    mdaInFilenoteCheckbox.addEventListener('change', function() {
         if (this.checked) {
-            ongoingFeeInput.value = 'Refer to Pricing Calculator\n' + ongoingFeeInput.value;
+            mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
         } else {
-            ongoingFeeInput.value = ongoingFeeInput.value.replace('Refer to Pricing Calculator\n', '');
+            mdaDetailsTextarea.value = mdaDetailsTextarea.value.replace('N/A\n', '');
         }
         triggerAutoSave();
     });
+    
+    // Handle ongoing fee refer checkbox
+    ongoingFeeReferCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            ongoingFeeInput.value = 'Refer to Pricing Calculator';
+            ongoingPcmFeeInput.value = 'Refer to Pricing Calculator';
+        } else {
+            ongoingFeeInput.value = '';
+            ongoingPcmFeeInput.value = '';
+        }
+        triggerAutoSave();
+    });
+    
+    // Function to add product
+    window.addProduct = function(clientId, clientName) {
+        const container = document.getElementById(`${clientId}_products`);
+        const productCount = container.querySelectorAll('.product-item').length;
+        
+        const newProductHTML = createProductRecommendation(clientId, clientName, productCount);
+        container.insertAdjacentHTML('beforeend', newProductHTML);
+        
+        // Initialize features for the new product
+        setTimeout(() => {
+            initializeProductFeatures();
+            setupAutoSaveForNewElements();
+            triggerAutoSave();
+        }, 100);
+    };
     
     // Draft Functionality
     function initializeDraftFunctionality() {
@@ -2471,15 +2557,15 @@ document.addEventListener('DOMContentLoaded', function() {
         showAutoSaveIndicator('Draft deleted successfully!');
     }
     
-    // Share as Link functionality
+    // Share as Link functionality with improved compression
     function shareAsLink() {
         const formData = collectFormData();
         const clientName = document.getElementById('clientName').value || 'Shared Form';
         
         try {
-            // Encode form data as base64 to make it URL-safe
-            const encodedData = btoa(JSON.stringify(formData));
-            const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(encodedData)}`;
+            // Use improved compression
+            const compressedData = compressData(formData);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(compressedData)}`;
             
             // Copy to clipboard
             navigator.clipboard.writeText(shareUrl).then(() => {
@@ -2494,7 +2580,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
                         <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
                         <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
                             ${shareUrl}
                         </div>
                         <div class="modal-buttons">
@@ -2520,7 +2606,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
                         <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
                         <p>Copy this link to share the form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
                             ${shareUrl}
                         </div>
                         <div class="modal-buttons">
@@ -2548,8 +2634,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (sharedData) {
             try {
-                // Decode the shared data
-                const decodedData = JSON.parse(atob(decodeURIComponent(sharedData)));
+                // Try new compression method first
+                let decodedData = decompressData(decodeURIComponent(sharedData));
+                
+                // Fall back to old method if new method fails
+                if (!decodedData) {
+                    decodedData = JSON.parse(atob(decodeURIComponent(sharedData)));
+                }
                 
                 // Show notification about shared form
                 const clientName = decodedData.clientName || 'Unknown Client';
@@ -2627,42 +2718,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 formData[element.id] = element.value;
             }
         });
+        
+        // Also collect visual states like crossed-out items
+        document.querySelectorAll('.checklist-item.crossed-out').forEach(item => {
+            const id = item.id || item.querySelector('input').id + '_crossedOut';
+            formData[id + '_crossedOut'] = true;
+        });
+        
         return formData;
     }
     
     function populateFormData(formData) {
         Object.keys(formData).forEach(key => {
-            const element = document.getElementById(key);
-            if (element) {
-                if (element.type === 'checkbox' || element.type === 'radio') {
-                    element.checked = formData[key];
-                    if (element.type === 'checkbox') {
-                        const item = element.closest('.checkbox-item');
-                        if (item) {
-                            item.classList.toggle('selected', element.checked);
-                        }
-                        
-                        // Handle product recommendation checkboxes
-                        if (key.endsWith('ProductRecsCheckbox')) {
-                            const checkboxToSectionMap = {
-                                'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                                'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                                'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                                'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                                'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                                'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                                'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                            };
+            if (key.endsWith('_crossedOut')) {
+                // Handle crossed-out items
+                const itemId = key.replace('_crossedOut', '');
+                const item = document.getElementById(itemId);
+                if (item && formData[key]) {
+                    item.classList.add('crossed-out');
+                }
+            } else {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.type === 'checkbox' || element.type === 'radio') {
+                        element.checked = formData[key];
+                        if (element.type === 'checkbox') {
+                            const item = element.closest('.checkbox-item');
+                            if (item) {
+                                item.classList.toggle('selected', element.checked);
+                            }
                             
-                            const sectionId = checkboxToSectionMap[key];
-                            const section = document.getElementById(sectionId);
-                            if (section) {
-                                section.style.display = element.checked ? 'block' : 'none';
+                            // Handle product recommendation checkboxes
+                            if (key.endsWith('ProductRecsCheckbox')) {
+                                const checkboxToSectionMap = {
+                                    'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                                    'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                                    'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                                    'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                                    'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                                    'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                                    'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                                };
+                                
+                                const sectionId = checkboxToSectionMap[key];
+                                const section = document.getElementById(sectionId);
+                                if (section) {
+                                    section.style.display = element.checked ? 'block' : 'none';
+                                }
                             }
                         }
+                    } else {
+                        element.value = formData[key];
                     }
-                } else {
-                    element.value = formData[key];
                 }
             }
         });
@@ -2871,7 +2978,8 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                 const checkbox = item.querySelector('input[type="checkbox"]');
                                 const checkboxLabel = item.querySelector('label');
                                 if (checkbox && checkboxLabel) {
-                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
+                                    const crossedOut = item.classList.contains('crossed-out') ? ' (N/A)' : '';
+                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}${crossedOut}</p>`;
                                 }
                             }
                         });
@@ -3098,6 +3206,11 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             // Reset client type selection
             document.querySelectorAll('.checkbox-item').forEach(item => {
                 item.classList.remove('selected');
+            });
+            
+            // Reset crossed-out items
+            document.querySelectorAll('.checklist-item').forEach(item => {
+                item.classList.remove('crossed-out');
             });
             
             // Hide conditional sections
