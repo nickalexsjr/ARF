@@ -2646,16 +2646,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const clientName = decodedData.clientName || 'Unknown Client';
                 showAutoSaveIndicator(`Loading shared form: ${clientName}`);
                 
-                // Populate the form with shared data
-                setTimeout(() => {
-                    populateFormData(decodedData);
-                    
-                    // Clean URL after loading (optional)
-                    const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-                    window.history.replaceState({}, document.title, cleanUrl);
-                    
-                    showAutoSaveIndicator('Shared form loaded successfully!');
-                }, 500);
+                // Store shared data to load after form is fully initialized
+                window.pendingSharedData = decodedData;
+                
+                // Clean URL after loading (optional)
+                const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
                 
             } catch (error) {
                 console.error('Error loading shared data:', error);
@@ -2711,24 +2707,46 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function collectFormData() {
         const formData = {};
+        
+        // Collect all form elements
         document.querySelectorAll('input, textarea, select').forEach(element => {
-            if (element.type === 'checkbox' || element.type === 'radio') {
-                formData[element.id] = element.checked;
-            } else {
-                formData[element.id] = element.value;
+            if (element.id) { // Only collect elements with IDs
+                if (element.type === 'checkbox' || element.type === 'radio') {
+                    formData[element.id] = element.checked;
+                } else {
+                    formData[element.id] = element.value;
+                }
             }
         });
         
-        // Also collect visual states like crossed-out items
+        // Collect visual states like crossed-out items
         document.querySelectorAll('.checklist-item.crossed-out').forEach(item => {
-            const id = item.id || item.querySelector('input').id + '_crossedOut';
-            formData[id + '_crossedOut'] = true;
+            const id = item.id || (item.querySelector('input') ? item.querySelector('input').id + '_crossedOut' : null);
+            if (id) {
+                formData[id + '_crossedOut'] = true;
+            }
+        });
+        
+        // Collect checkbox visual selection states
+        document.querySelectorAll('.checkbox-item.selected').forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox && checkbox.id) {
+                formData[checkbox.id + '_selected'] = true;
+            }
+        });
+        
+        // Store which dynamic sections are visible
+        document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
+            if (section.style.display === 'block') {
+                formData[section.id + '_visible'] = true;
+            }
         });
         
         return formData;
     }
     
     function populateFormData(formData) {
+        // First pass - set basic form values and checkboxes
         Object.keys(formData).forEach(key => {
             if (key.endsWith('_crossedOut')) {
                 // Handle crossed-out items
@@ -2737,43 +2755,127 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (item && formData[key]) {
                     item.classList.add('crossed-out');
                 }
+            } else if (key.endsWith('_selected')) {
+                // Handle checkbox visual selections - will be processed later
+                return;
+            } else if (key.endsWith('_visible')) {
+                // Handle visible sections - will be processed later
+                return;
             } else {
                 const element = document.getElementById(key);
                 if (element) {
                     if (element.type === 'checkbox' || element.type === 'radio') {
                         element.checked = formData[key];
+                        
+                        // Trigger change event to ensure all dependent functionality works
+                        if (element.checked !== formData[key]) {
+                            element.checked = formData[key];
+                        }
+                        element.dispatchEvent(new Event('change'));
+                        
                         if (element.type === 'checkbox') {
                             const item = element.closest('.checkbox-item');
                             if (item) {
                                 item.classList.toggle('selected', element.checked);
                             }
-                            
-                            // Handle product recommendation checkboxes
-                            if (key.endsWith('ProductRecsCheckbox')) {
-                                const checkboxToSectionMap = {
-                                    'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                                    'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                                    'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                                    'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                                    'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                                    'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                                    'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                                };
-                                
-                                const sectionId = checkboxToSectionMap[key];
-                                const section = document.getElementById(sectionId);
-                                if (section) {
-                                    section.style.display = element.checked ? 'block' : 'none';
-                                }
-                            }
                         }
                     } else {
                         element.value = formData[key];
+                        // Trigger input event for text fields
+                        element.dispatchEvent(new Event('input'));
                     }
                 }
             }
         });
+        
+        // Update form structure based on selections (this creates dynamic sections)
         updateFormBasedOnSelections();
+        
+        // Wait for dynamic sections to be created, then populate them
+        setTimeout(() => {
+            // Second pass - populate any dynamically created elements
+            Object.keys(formData).forEach(key => {
+                if (key.endsWith('_selected')) {
+                    // Handle checkbox visual selections
+                    const checkboxId = key.replace('_selected', '');
+                    const checkbox = document.getElementById(checkboxId);
+                    if (checkbox && formData[key]) {
+                        const item = checkbox.closest('.checkbox-item');
+                        if (item) {
+                            item.classList.add('selected');
+                        }
+                    }
+                } else if (key.endsWith('_visible')) {
+                    // Handle visible sections
+                    const sectionId = key.replace('_visible', '');
+                    const section = document.getElementById(sectionId);
+                    if (section && formData[key]) {
+                        section.style.display = 'block';
+                    }
+                } else {
+                    const element = document.getElementById(key);
+                    if (element && !element.hasAttribute('data-populated')) {
+                        element.setAttribute('data-populated', 'true');
+                        
+                        if (element.type === 'checkbox' || element.type === 'radio') {
+                            element.checked = formData[key];
+                            element.dispatchEvent(new Event('change'));
+                            
+                            if (element.type === 'checkbox') {
+                                const item = element.closest('.checkbox-item');
+                                if (item) {
+                                    item.classList.toggle('selected', element.checked);
+                                }
+                                
+                                // Handle product recommendation checkboxes specifically
+                                if (key.endsWith('ProductRecsCheckbox')) {
+                                    const checkboxToSectionMap = {
+                                        'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                                        'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                                        'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                                        'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                                        'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                                        'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                                        'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                                    };
+                                    
+                                    const sectionId = checkboxToSectionMap[key];
+                                    const section = document.getElementById(sectionId);
+                                    if (section) {
+                                        section.style.display = element.checked ? 'block' : 'none';
+                                    }
+                                }
+                            }
+                        } else {
+                            element.value = formData[key];
+                        }
+                    }
+                }
+            });
+            
+            // Clear the populated flags for future use
+            setTimeout(() => {
+                document.querySelectorAll('[data-populated]').forEach(el => {
+                    el.removeAttribute('data-populated');
+                });
+            }, 100);
+            
+        }, 200);
+    }
+    
+    // Function to load pending shared data after form is initialized
+    function loadPendingSharedData() {
+        if (window.pendingSharedData) {
+            const data = window.pendingSharedData;
+            delete window.pendingSharedData;
+            
+            showAutoSaveIndicator('Loading shared form data...');
+            
+            setTimeout(() => {
+                populateFormData(data);
+                showAutoSaveIndicator('Shared form loaded successfully!');
+            }, 300);
+        }
     }
     
     // Email Document functionality - simplified approach
@@ -3253,6 +3355,11 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
     
     // Setup auto-save for existing elements
     setupAutoSave();
+    
+    // Load any pending shared data after everything is initialized
+    setTimeout(() => {
+        loadPendingSharedData();
+    }, 500);
 });
     </script>
 </body>
