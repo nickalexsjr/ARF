@@ -1303,14 +1303,48 @@ input:checked + .slider:before {
     </div>
 
     <script>
-// Compression function for share links - SIMPLIFIED for reliability
+// Compression function for share links - MORE ROBUST
 function compressData(data) {
-    return btoa(JSON.stringify(data));
+    try {
+        const jsonStr = JSON.stringify(data);
+        // Use btoa but handle Unicode properly
+        const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+        return encoded;
+    } catch (error) {
+        console.error('Compression failed:', error);
+        return null;
+    }
 }
 
 function decompressData(compressed) {
     try {
-        return JSON.parse(atob(compressed));
+        // Try multiple decompression methods
+        let decompressed;
+        
+        // Method 1: New robust method
+        try {
+            decompressed = decodeURIComponent(escape(atob(compressed)));
+            return JSON.parse(decompressed);
+        } catch (e) {
+            console.log('Method 1 failed, trying method 2');
+        }
+        
+        // Method 2: Simple method
+        try {
+            decompressed = atob(compressed);
+            return JSON.parse(decompressed);
+        } catch (e) {
+            console.log('Method 2 failed, trying method 3');
+        }
+        
+        // Method 3: Direct JSON parse (for old links)
+        try {
+            return JSON.parse(compressed);
+        } catch (e) {
+            console.log('All decompression methods failed');
+        }
+        
+        return null;
     } catch (error) {
         console.error('Decompression failed:', error);
         return null;
@@ -2577,15 +2611,26 @@ document.addEventListener('DOMContentLoaded', function() {
         showAutoSaveIndicator('Draft deleted successfully!');
     }
     
-    // Share as Link functionality with improved compression
+    // Share as Link functionality with improved compression and error handling
     function shareAsLink() {
         const formData = collectFormData();
         const clientName = document.getElementById('clientName').value || 'Shared Form';
         
+        console.log('Sharing form data:', formData); // Debug log
+        
         try {
             // Use improved compression
             const compressedData = compressData(formData);
+            
+            if (!compressedData) {
+                throw new Error('Failed to compress form data');
+            }
+            
+            console.log('Compressed data length:', compressedData.length); // Debug log
+            
             const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(compressedData)}`;
+            
+            console.log('Share URL:', shareUrl); // Debug log
             
             // Copy to clipboard
             navigator.clipboard.writeText(shareUrl).then(() => {
@@ -2603,6 +2648,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
                             ${shareUrl}
                         </div>
+                        <p><small>Note: Large forms may have long URLs. If the link doesn't work, try saving as a draft instead.</small></p>
                         <div class="modal-buttons">
                             <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
                                 <i class="fas fa-copy"></i> Copy Again
@@ -2629,6 +2675,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
                             ${shareUrl}
                         </div>
+                        <p><small>Note: Large forms may have long URLs. If the link doesn't work, try saving as a draft instead.</small></p>
                         <div class="modal-buttons">
                             <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
                                 <i class="fas fa-copy"></i> Copy Link
@@ -2643,23 +2690,45 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         } catch (error) {
             console.error('Error creating share link:', error);
-            showAutoSaveIndicator('Error creating share link - form too large');
+            showAutoSaveIndicator('Error creating share link - try saving as draft instead');
+            
+            // Show error modal with more info
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h3><i class="fas fa-exclamation-triangle"></i> Share Link Error</h3>
+                    <p>Unable to create share link. This can happen when the form has too much data.</p>
+                    <p><strong>Alternative:</strong> Use "Save as Draft" instead, which works reliably for large forms.</p>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="fas fa-check"></i> Got it
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
     }
     
-    // Check for shared data in URL - SIMPLIFIED
+    // Check for shared data in URL - IMPROVED ERROR HANDLING
     function checkForSharedData() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('shared');
         
         if (sharedData) {
+            console.log('Found shared data in URL, length:', sharedData.length); // Debug log
+            
             try {
-                // Use simple decompression
+                // Try to decode the shared data
                 const decodedData = decompressData(decodeURIComponent(sharedData));
                 
-                if (decodedData) {
+                if (decodedData && typeof decodedData === 'object') {
                     // Show notification about shared form
                     const clientName = decodedData.clientName || 'Unknown Client';
+                    console.log('Successfully decoded shared data for:', clientName); // Debug log
                     showAutoSaveIndicator(`Loading shared form: ${clientName}`);
                     
                     // Store shared data to load after form is fully initialized
@@ -2669,12 +2738,63 @@ document.addEventListener('DOMContentLoaded', function() {
                     const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
                     window.history.replaceState({}, document.title, cleanUrl);
                 } else {
-                    showAutoSaveIndicator('Error: Could not decode shared form data');
+                    console.error('Decoded data is null or invalid:', decodedData);
+                    showAutoSaveIndicator('Error: Invalid shared form data');
+                    
+                    // Show error modal
+                    setTimeout(() => {
+                        const modal = document.createElement('div');
+                        modal.className = 'modal';
+                        modal.style.display = 'block';
+                        modal.innerHTML = `
+                            <div class="modal-content">
+                                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                                <h3><i class="fas fa-exclamation-triangle"></i> Share Link Error</h3>
+                                <p>The shared link appears to be corrupted or invalid.</p>
+                                <p>This can happen if:</p>
+                                <ul style="text-align: left; margin: 10px 0; padding-left: 20px;">
+                                    <li>The link was copied incorrectly</li>
+                                    <li>The form data is too large for URL sharing</li>
+                                    <li>The link got truncated in email/messaging</li>
+                                </ul>
+                                <p><strong>Solution:</strong> Ask the sender to use "Save as Draft" instead.</p>
+                                <div class="modal-buttons">
+                                    <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                        <i class="fas fa-check"></i> Got it
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                    }, 1000);
                 }
                 
             } catch (error) {
                 console.error('Error loading shared data:', error);
-                showAutoSaveIndicator('Error loading shared form data');
+                showAutoSaveIndicator('Error: Could not load shared form');
+                
+                // Show detailed error modal
+                setTimeout(() => {
+                    const modal = document.createElement('div');
+                    modal.className = 'modal';
+                    modal.style.display = 'block';
+                    modal.innerHTML = `
+                        <div class="modal-content">
+                            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                            <h3><i class="fas fa-exclamation-triangle"></i> Share Link Error</h3>
+                            <p>Failed to load the shared form data.</p>
+                            <p><strong>Error:</strong> ${error.message}</p>
+                            <p>This usually means the share link is corrupted or too long.</p>
+                            <p><strong>Alternative:</strong> Ask the sender to save as a draft and share that instead.</p>
+                            <div class="modal-buttons">
+                                <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                    <i class="fas fa-check"></i> Got it
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }, 1000);
             }
         }
     }
