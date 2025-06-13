@@ -1,190 +1,4 @@
-// Share as Link functionality with improved compression and error handling
-    function shareAsLink() {
-        const formData = collectFormData();
-        const clientName = document.getElementById('clientName').value || 'Shared Form';
-        
-        console.log('Sharing form data:', formData); // Debug log
-        
-        try {
-            // Use improved compression
-            const compressedData = compressData(formData);
-            
-            if (!compressedData) {
-                throw new Error('Failed to compress form data');
-            }
-            
-            console.log('Compressed data length:', compressedData.length); // Debug log
-            
-            const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(compressedData)}`;
-            
-            console.log('Share URL:', shareUrl); // Debug log
-            
-            // Copy to clipboard
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showAutoSaveIndicator('Share link copied to clipboard!');
-                
-                // Also show a modal with the link for manual copying if needed
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.style.display = 'block';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                        <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
-                            ${shareUrl}
-                        </div>
-                        <p><small>Note: Large forms may have long URLs. If the link doesn't work, try saving as a draft instead.</small></p>
-                        <div class="modal-buttons">
-                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
-                                <i class="fas fa-copy"></i> Copy Again
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                <i class="fas fa-check"></i> Done
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }).catch(() => {
-                // Fallback if clipboard API fails
-                showAutoSaveIndicator('Share link ready - check the modal');
-                
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.style.display = 'block';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                        <p>Copy this link to share the form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto;">
-                            ${shareUrl}
-                        </div>
-                        <p><small>Note: Large forms may have long URLs. If the link doesn't work, try saving as a draft instead.</small></p>
-                        <div class="modal-buttons">
-                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
-                                <i class="fas fa-copy"></i> Copy Link
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                <i class="fas fa-check"></i> Done
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            });
-        } catch (error) {
-            console.error('Error creating share link:', error);
-            showAutoSaveIndicator('Error creating share link - try saving as draft instead');
-            
-            // Show error modal with more info
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.style.display = 'block';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <h3><i class="fas fa-exclamation-triangle"></i> Share Link Error</h3>
-                    <p>Unable to create share link. This can happen when the form has too much data.</p>
-                    <p><strong>Alternative:</strong> Use "Save as Draft" instead, which works reliably for large forms.</p>
-                    <div class="modal-buttons">
-                        <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                            <i class="fas fa-check"></i> Got it
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-    }
-    
-    // Check for shared data in URL - IMPROVED ERROR HANDLING
-    function checkForSharedData() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sharedData = urlParams.get('shared');
-        
-        if (sharedData) {
-            console.log('Found shared data in URL, length:', sharedData.length); // Debug log
-            
-            try {
-                // Try to decode the shared data
-                const decodedData = decompressData(decodeURIComponent(sharedData));
-                
-                if (decodedData && typeof decodedData === 'object') {
-                    // Show notification about shared form
-                    const clientName = decodedData.clientName || 'Unknown Client';
-                    console.log('Successfully decoded shared data for:', clientName); // Debug log
-                    showAutoSaveIndicator(`Loading shared form: ${clientName}`);
-                    
-                    // Store shared data to load after form is fully initialized
-                    window.pendingSharedData = decodedData;
-                    
-                    // Clean URL after loading
-                    const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-                    window.history.replaceState({}, document.title, cleanUrl);
-                } else {
-                    console.error('Decoded data is null or invalid:', decodedData);
-                    showAutoSaveIndicator('Error: Invalid shared form data');
-                    
-                    // Show error modal
-                    setTimeout(() => {
-                        const modal = document.createElement('div');
-                        modal.className = 'modal';
-                        modal.style.display = 'block';
-                        modal.innerHTML = `
-                            <div class="modal-content">
-                                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                                <h3><i class="fas fa-exclamation-triangle"></i> Share Link Error</h3>
-                                <p>The shared link appears to be corrupted or invalid.</p>
-                                <p>This can happen if:</p>
-                                <ul style="text-align: left; margin: 10px 0; padding-left: 20px;">
-                                    <li>The link was copied incorrectly</li>
-                                    <li>The form data is too large for URL sharing</li>
-                                    <li>The link got truncated in email/messaging</li>
-                                </ul>
-                                <p><strong>Solution:</strong> Ask the sender to use "Save as Draft" instead.</p>
-                                <div class="modal-buttons">
-                                    <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                        <i class="fas fa-check"></i> Got it
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        document.body.appendChild(modal);
-                    }, 1000);
-                }
-                
-            } catch (error) {
-                console.error('Error loading shared data:', error);
-                showAutoSaveIndicator('Error: Could not load shared form');
-                
-                // Show detailed error modal
-                setTimeout(() => {
-                    const modal = document.createElement('div');
-                    modal.className = 'modal';
-                    modal.style.display = 'block';
-                    modal.innerHTML = `
-                        <div class="modal-content">
-                            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                            <h3><i class="fas fa-exclamation-triangle"></i> Share Link Error</h3>
-                            <p>Failed to load the shared form data.</p>
-                            <p><strong>Error:</strong> ${error.message}</p>
-                            <p>This usually means the share link is corrupted or too long.</p>
-                            <p><strong>Alternative:</strong> Ask the sender to save as a draft and share that instead.</p>
-                            <div class="modal-buttons">
-                                <button type="button" class="btn btn-primary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                    <i class="fas fa-check"></i> Got it
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    document.body.appendChild(modal);
-                }, 1000);
-            }
-        }
-    }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -237,7 +51,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    max-width: 450px;
+    max-width: 550px;
 }
 
 .draft-selector .btn {
@@ -588,26 +402,6 @@ textarea {
     margin-bottom: 0;
     margin-left: 10px;
     cursor: pointer;
-}
-
-.checklist-item.crossed-out {
-    text-decoration: line-through;
-    opacity: 0.6;
-    background-color: #f0f0f0;
-}
-
-.form-group.crossed-out {
-    text-decoration: line-through;
-    opacity: 0.6;
-    background-color: #f0f0f0;
-    padding: 10px;
-    border-radius: var(--border-radius);
-}
-
-.form-group.crossed-out textarea,
-.form-group.crossed-out input {
-    text-decoration: line-through;
-    opacity: 0.6;
 }
 
 .sub-checklist {
@@ -1060,6 +854,7 @@ input:checked + .slider:before {
             <option value="">Select a saved draft...</option>
         </select>
         <button type="button" class="btn btn-sm" id="loadDraftBtn">Load</button>
+        <button type="button" class="btn btn-success btn-sm" id="shareAsLinkBtn">Share as Link</button>
         <button type="button" class="btn btn-danger btn-sm" id="deleteDraftBtn">Delete</button>
     </div>
 
@@ -1222,17 +1017,8 @@ input:checked + .slider:before {
             </div>
             
             <div class="form-group">
-                <label for="mdaDetails">
-                    MDA Personalisation:
-                    <span class="inline-checkbox">
-                        <input type="checkbox" id="mdaInFilenote" name="mdaInFilenote">
-                        <label for="mdaInFilenote">N/A</label>
-                    </span>
-                </label>
+                <label for="mdaDetails">MDA Personalisation:</label>
                 <textarea id="mdaDetails" name="mdaDetails" placeholder="Enter MDA personalisation details"></textarea>
-                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('mdaDetails')">
-                    N/A
-                </button>
             </div>
             
             <div class="form-group">
@@ -1244,25 +1030,16 @@ input:checked + .slider:before {
                     </span>
                 </label>
                 <textarea id="tmdDetails" name="tmdDetails" placeholder="Enter TMD details"></textarea>
-                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('tmdDetails')">
-                    N/A
-                </button>
             </div>
             
             <div class="form-group">
                 <label for="inaccurateInfo">Any potentially inaccurate or incomplete information:</label>
                 <textarea id="inaccurateInfo" name="inaccurateInfo" placeholder="Include reasons why information may be inaccurate or was not provided"></textarea>
-                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('inaccurateInfo')">
-                    N/A
-                </button>
             </div>
             
             <div class="form-group">
                 <label for="alternativeStrategies">Alternatives - strategies:</label>
                 <textarea id="alternativeStrategies" name="alternativeStrategies" placeholder="Enter alternative strategies"></textarea>
-                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('alternativeStrategies')">
-                    N/A
-                </button>
             </div>
             
             <div class="form-group">
@@ -1274,9 +1051,6 @@ input:checked + .slider:before {
                     </span>
                 </label>
                 <textarea id="alternativePlatforms" name="alternativePlatforms" placeholder="Enter alternative platforms"></textarea>
-                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('alternativePlatforms')">
-                    N/A
-                </button>
             </div>
         </section>
         
@@ -1426,12 +1200,9 @@ input:checked + .slider:before {
                     <label for="filenote">Filenote</label>
                 </div>
                 
-                <div class="checklist-item" id="pricingCalculatorItem">
+                <div class="checklist-item">
                     <input type="checkbox" id="pricingCalculator" name="requiredDocs" value="PricingCalculator">
                     <label for="pricingCalculator">Pricing Calculator</label>
-                    <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('pricingCalculatorItem')">
-                        N/A
-                    </button>
                 </div>
                 
                 <div class="checklist-item">
@@ -1488,54 +1259,6 @@ input:checked + .slider:before {
     </div>
 
     <script>
-// Global function for N/A buttons - improved to handle different element types
-window.toggleNAItem = function(itemId) {
-    const item = document.getElementById(itemId);
-    if (item) {
-        item.classList.toggle('crossed-out');
-        triggerAutoSave();
-        return;
-    }
-    
-    // If not found by ID, try to find textarea and cross out its form group
-    const textarea = document.getElementById(itemId);
-    if (textarea) {
-        const formGroup = textarea.closest('.form-group');
-        if (formGroup) {
-            formGroup.classList.toggle('crossed-out');
-            triggerAutoSave();
-        }
-    }
-};
-
-// Function to fill joint sections with N/A
-window.fillJointNA = function() {
-    const jointRecommendations = document.getElementById('jointRecommendations');
-    if (jointRecommendations) {
-        jointRecommendations.value = 'N/A - No joint recommendations required';
-        triggerAutoSave();
-    }
-};
-
-window.fillJointProductNA = function() {
-    const jointProductCheckbox = document.getElementById('jointProductRecsCheckbox');
-    const jointProductSection = document.getElementById('jointProductRecommendationsSection');
-    
-    if (jointProductCheckbox && jointProductSection) {
-        jointProductCheckbox.checked = false;
-        jointProductSection.style.display = 'none';
-        triggerAutoSave();
-    }
-};
-
-window.fillJointRiskNA = function() {
-    const jointRiskProfile = document.getElementById('riskProfileJoint');
-    if (jointRiskProfile) {
-        jointRiskProfile.value = 'na';
-        triggerAutoSave();
-    }
-};
-
 document.addEventListener('DOMContentLoaded', function() {
     // Client Status Radio Buttons
     const newClientRadio = document.getElementById('newClient');
@@ -1578,6 +1301,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Draft functionality
     const draftSelector = document.getElementById('draftSelector');
     const loadDraftBtn = document.getElementById('loadDraftBtn');
+    const shareAsLinkBtn = document.getElementById('shareAsLinkBtn');
     const deleteDraftBtn = document.getElementById('deleteDraftBtn');
     const saveDraftModal = document.getElementById('saveDraftModal');
     const draftNameInput = document.getElementById('draftName');
@@ -1594,14 +1318,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const tmdInFilenoteCheckbox = document.getElementById('tmdInFilenote');
     const tmdDetailsTextarea = document.getElementById('tmdDetails');
     
-    // MDA checkbox
-    const mdaInFilenoteCheckbox = document.getElementById('mdaInFilenote');
-    const mdaDetailsTextarea = document.getElementById('mdaDetails');
-    
     // Ongoing Fee checkbox
     const ongoingFeeReferCheckbox = document.getElementById('ongoingFeeRefer');
     const ongoingFeeInput = document.getElementById('ongoingFee');
-    const ongoingPcmFeeInput = document.getElementById('ongoingPcmFee');
     
     // Product options
     const productOptions = [
@@ -1634,6 +1353,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize draft functionality
     initializeDraftFunctionality();
+    
+    // Check for shared form data in URL
+    checkForSharedData();
     
     // Set up auto-save
     setupAutoSave();
@@ -1815,6 +1537,51 @@ document.addEventListener('DOMContentLoaded', function() {
             element.remove();
             triggerAutoSave();
         }
+    };
+    
+    // Function to fill Joint sections with N/A
+    window.fillJointNA = function() {
+        const jointRecommendations = document.getElementById('jointRecommendations');
+        if (jointRecommendations) {
+            jointRecommendations.value = 'N/A - No joint recommendations required';
+            triggerAutoSave();
+        }
+    };
+    
+    window.fillJointProductNA = function() {
+        // Hide the joint product section and mark as N/A
+        const jointProductCheckbox = document.getElementById('jointProductRecsCheckbox');
+        const jointProductSection = document.getElementById('jointProductRecommendationsSection');
+        
+        if (jointProductCheckbox && jointProductSection) {
+            jointProductCheckbox.checked = false;
+            jointProductSection.style.display = 'none';
+            triggerAutoSave();
+        }
+    };
+    
+    window.fillJointRiskNA = function() {
+        const jointRiskProfile = document.getElementById('riskProfileJoint');
+        if (jointRiskProfile) {
+            jointRiskProfile.value = 'na';
+            triggerAutoSave();
+        }
+    };
+    
+    // Function to add product
+    window.addProduct = function(clientId, clientName) {
+        const container = document.getElementById(`${clientId}_products`);
+        const productCount = container.querySelectorAll('.product-item').length;
+        
+        const newProductHTML = createProductRecommendation(clientId, clientName, productCount);
+        container.insertAdjacentHTML('beforeend', newProductHTML);
+        
+        // Initialize features for the new product
+        setTimeout(() => {
+            initializeProductFeatures();
+            setupAutoSaveForNewElements();
+            triggerAutoSave();
+        }, 100);
     };
     
     // Function to update recommendation sections based on selections
@@ -2363,20 +2130,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label for="finametricaReport">Finametrica Report to be uploaded to XPLAN</label>
                     </div>
                     
-                    <div class="checklist-item" id="superResearchItem">
+                    <div class="checklist-item">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
-                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('superResearchItem')">
-                            N/A
-                        </button>
                     </div>
                     
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
-                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('contributionHistoryItem')">
-                            N/A
-                        </button>
                     </div>
                     
                     <div class="checklist-item">
@@ -2415,20 +2176,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label for="submitJira">Submit JIRA for pricing/or PCR (if applicable)</label>
                     </div>
                     
-                    <div class="checklist-item" id="superResearchItem">
+                    <div class="checklist-item">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
-                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('superResearchItem')">
-                            N/A
-                        </button>
                     </div>
                     
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
-                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('contributionHistoryItem')">
-                            N/A
-                        </button>
                     </div>
                 </div>
             `;
@@ -2598,43 +2353,15 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     
-    // Handle MDA N/A checkbox
-    mdaInFilenoteCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
-        } else {
-            mdaDetailsTextarea.value = mdaDetailsTextarea.value.replace('N/A\n', '');
-        }
-        triggerAutoSave();
-    });
-    
     // Handle ongoing fee refer checkbox
     ongoingFeeReferCheckbox.addEventListener('change', function() {
         if (this.checked) {
-            ongoingFeeInput.value = 'Refer to Pricing Calculator';
-            ongoingPcmFeeInput.value = 'Refer to Pricing Calculator';
+            ongoingFeeInput.value = 'Refer to Pricing Calculator\n' + ongoingFeeInput.value;
         } else {
-            ongoingFeeInput.value = '';
-            ongoingPcmFeeInput.value = '';
+            ongoingFeeInput.value = ongoingFeeInput.value.replace('Refer to Pricing Calculator\n', '');
         }
         triggerAutoSave();
     });
-    
-    // Function to add product
-    window.addProduct = function(clientId, clientName) {
-        const container = document.getElementById(`${clientId}_products`);
-        const productCount = container.querySelectorAll('.product-item').length;
-        
-        const newProductHTML = createProductRecommendation(clientId, clientName, productCount);
-        container.insertAdjacentHTML('beforeend', newProductHTML);
-        
-        // Initialize features for the new product
-        setTimeout(() => {
-            initializeProductFeatures();
-            setupAutoSaveForNewElements();
-            triggerAutoSave();
-        }, 100);
-    };
     
     // Draft Functionality
     function initializeDraftFunctionality() {
@@ -2693,6 +2420,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Please select a draft to delete.');
             }
         });
+        
+        // Share as Link functionality
+        shareAsLinkBtn.addEventListener('click', function() {
+            shareAsLink();
+        });
     }
     
     function loadDraftList() {
@@ -2737,6 +2469,108 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDraftList();
         draftSelector.value = '';
         showAutoSaveIndicator('Draft deleted successfully!');
+    }
+    
+    // Share as Link functionality
+    function shareAsLink() {
+        const formData = collectFormData();
+        const clientName = document.getElementById('clientName').value || 'Shared Form';
+        
+        try {
+            // Encode form data as base64 to make it URL-safe
+            const encodedData = btoa(JSON.stringify(formData));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(encodedData)}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showAutoSaveIndicator('Share link copied to clipboard!');
+                
+                // Also show a modal with the link for manual copying if needed
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
+                        <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
+                            ${shareUrl}
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
+                                <i class="fas fa-copy"></i> Copy Again
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                <i class="fas fa-check"></i> Done
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }).catch(() => {
+                // Fallback if clipboard API fails
+                showAutoSaveIndicator('Share link ready - check the modal');
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
+                        <p>Copy this link to share the form:</p>
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
+                            ${shareUrl}
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
+                                <i class="fas fa-copy"></i> Copy Link
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                <i class="fas fa-check"></i> Done
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            });
+        } catch (error) {
+            console.error('Error creating share link:', error);
+            showAutoSaveIndicator('Error creating share link - form too large');
+        }
+    }
+    
+    // Check for shared data in URL
+    function checkForSharedData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedData = urlParams.get('shared');
+        
+        if (sharedData) {
+            try {
+                // Decode the shared data
+                const decodedData = JSON.parse(atob(decodeURIComponent(sharedData)));
+                
+                // Show notification about shared form
+                const clientName = decodedData.clientName || 'Unknown Client';
+                showAutoSaveIndicator(`Loading shared form: ${clientName}`);
+                
+                // Populate the form with shared data
+                setTimeout(() => {
+                    populateFormData(decodedData);
+                    
+                    // Clean URL after loading (optional)
+                    const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                    
+                    showAutoSaveIndicator('Shared form loaded successfully!');
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error loading shared data:', error);
+                showAutoSaveIndicator('Error loading shared form data');
+            }
+        }
     }
     
     // Auto-save functionality
@@ -2786,149 +2620,53 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function collectFormData() {
         const formData = {};
-        
-        // Collect all form elements with IDs
-        const allElements = document.querySelectorAll('input[id], textarea[id], select[id]');
-        allElements.forEach(element => {
+        document.querySelectorAll('input, textarea, select').forEach(element => {
             if (element.type === 'checkbox' || element.type === 'radio') {
                 formData[element.id] = element.checked;
             } else {
                 formData[element.id] = element.value;
             }
         });
-        
-        // Collect ALL crossed-out items 
-        document.querySelectorAll('.checklist-item.crossed-out').forEach(item => {
-            const itemId = item.id;
-            if (itemId) {
-                formData[itemId + '_CROSSED'] = true;
-            }
-        });
-        
-        // Collect crossed-out textareas and form groups
-        document.querySelectorAll('.form-group.crossed-out').forEach(item => {
-            const textarea = item.querySelector('textarea[id]');
-            if (textarea) {
-                formData[textarea.id + '_CROSSED'] = true;
-            }
-        });
-        
-        // Collect checkbox visual states
-        document.querySelectorAll('.checkbox-item.selected').forEach(item => {
-            const checkbox = item.querySelector('input[type="checkbox"][id]');
-            if (checkbox) {
-                formData[checkbox.id + '_SELECTED'] = true;
-            }
-        });
-        
-        // Store which product recommendation sections are visible
-        const visibleSections = [];
-        document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
-            if (section.style.display === 'block') {
-                visibleSections.push(section.id);
-            }
-        });
-        if (visibleSections.length > 0) {
-            formData['_VISIBLE_SECTIONS'] = visibleSections;
-        }
-        
         return formData;
     }
     
     function populateFormData(formData) {
-        // First, populate basic form fields and trigger their change events
         Object.keys(formData).forEach(key => {
-            if (key.endsWith('_CROSSED') || key.endsWith('_SELECTED') || key === '_VISIBLE_SECTIONS') {
-                return; // Handle these later
-            }
-            
             const element = document.getElementById(key);
             if (element) {
                 if (element.type === 'checkbox' || element.type === 'radio') {
                     element.checked = formData[key];
-                    // Trigger change event immediately
-                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (element.type === 'checkbox') {
+                        const item = element.closest('.checkbox-item');
+                        if (item) {
+                            item.classList.toggle('selected', element.checked);
+                        }
+                        
+                        // Handle product recommendation checkboxes
+                        if (key.endsWith('ProductRecsCheckbox')) {
+                            const checkboxToSectionMap = {
+                                'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
+                                'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
+                                'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
+                                'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
+                                'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
+                                'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
+                                'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
+                            };
+                            
+                            const sectionId = checkboxToSectionMap[key];
+                            const section = document.getElementById(sectionId);
+                            if (section) {
+                                section.style.display = element.checked ? 'block' : 'none';
+                            }
+                        }
+                    }
                 } else {
                     element.value = formData[key];
-                    // Trigger input event for text fields
-                    element.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }
         });
-        
-        // Update form structure - this creates dynamic sections
         updateFormBasedOnSelections();
-        
-        // Wait for DOM updates, then handle visual states and dynamic content
-        setTimeout(() => {
-            // Handle crossed-out items
-            Object.keys(formData).forEach(key => {
-                if (key.endsWith('_CROSSED')) {
-                    const itemId = key.replace('_CROSSED', '');
-                    const item = document.getElementById(itemId);
-                    if (item && formData[key]) {
-                        item.classList.add('crossed-out');
-                    } else {
-                        // Try to find by textarea ID
-                        const textarea = document.getElementById(itemId);
-                        if (textarea) {
-                            const formGroup = textarea.closest('.form-group');
-                            if (formGroup) {
-                                formGroup.classList.add('crossed-out');
-                            }
-                        }
-                    }
-                }
-                
-                if (key.endsWith('_SELECTED')) {
-                    const checkboxId = key.replace('_SELECTED', '');
-                    const checkbox = document.getElementById(checkboxId);
-                    if (checkbox && formData[key]) {
-                        const item = checkbox.closest('.checkbox-item');
-                        if (item) {
-                            item.classList.add('selected');
-                        }
-                    }
-                }
-            });
-            
-            // Handle visible sections
-            if (formData['_VISIBLE_SECTIONS']) {
-                formData['_VISIBLE_SECTIONS'].forEach(sectionId => {
-                    const section = document.getElementById(sectionId);
-                    if (section) {
-                        section.style.display = 'block';
-                    }
-                });
-            }
-            
-            // Final pass - populate any remaining dynamic elements
-            setTimeout(() => {
-                Object.keys(formData).forEach(key => {
-                    if (!key.endsWith('_CROSSED') && !key.endsWith('_SELECTED') && key !== '_VISIBLE_SECTIONS') {
-                        const element = document.getElementById(key);
-                        if (element && !element.hasAttribute('data-populated')) {
-                            element.setAttribute('data-populated', 'true');
-                            
-                            if (element.type === 'checkbox' || element.type === 'radio') {
-                                element.checked = formData[key];
-                                element.dispatchEvent(new Event('change', { bubbles: true }));
-                            } else if (element.value !== formData[key]) {
-                                element.value = formData[key];
-                            }
-                        }
-                    }
-                });
-                
-                // Clean up populated flags
-                setTimeout(() => {
-                    document.querySelectorAll('[data-populated]').forEach(el => {
-                        el.removeAttribute('data-populated');
-                    });
-                }, 100);
-            }, 200);
-            
-        }, 300);
     }
     
     // Email Document functionality - simplified approach
@@ -3133,8 +2871,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                 const checkbox = item.querySelector('input[type="checkbox"]');
                                 const checkboxLabel = item.querySelector('label');
                                 if (checkbox && checkboxLabel) {
-                                    const crossedOut = item.classList.contains('crossed-out') ? ' (N/A)' : '';
-                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}${crossedOut}</p>`;
+                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
                                 }
                             }
                         });
@@ -3361,11 +3098,6 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             // Reset client type selection
             document.querySelectorAll('.checkbox-item').forEach(item => {
                 item.classList.remove('selected');
-            });
-            
-            // Reset crossed-out items
-            document.querySelectorAll('.checklist-item').forEach(item => {
-                item.classList.remove('crossed-out');
             });
             
             // Hide conditional sections
