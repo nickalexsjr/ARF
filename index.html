@@ -410,6 +410,20 @@ textarea {
     background-color: #f0f0f0;
 }
 
+.form-group.crossed-out {
+    text-decoration: line-through;
+    opacity: 0.6;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: var(--border-radius);
+}
+
+.form-group.crossed-out textarea,
+.form-group.crossed-out input {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
 .sub-checklist {
     margin-left: 30px;
     margin-top: 10px;
@@ -1031,6 +1045,9 @@ input:checked + .slider:before {
                     </span>
                 </label>
                 <textarea id="mdaDetails" name="mdaDetails" placeholder="Enter MDA personalisation details"></textarea>
+                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('mdaDetails')">
+                    N/A
+                </button>
             </div>
             
             <div class="form-group">
@@ -1042,16 +1059,25 @@ input:checked + .slider:before {
                     </span>
                 </label>
                 <textarea id="tmdDetails" name="tmdDetails" placeholder="Enter TMD details"></textarea>
+                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('tmdDetails')">
+                    N/A
+                </button>
             </div>
             
             <div class="form-group">
                 <label for="inaccurateInfo">Any potentially inaccurate or incomplete information:</label>
                 <textarea id="inaccurateInfo" name="inaccurateInfo" placeholder="Include reasons why information may be inaccurate or was not provided"></textarea>
+                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('inaccurateInfo')">
+                    N/A
+                </button>
             </div>
             
             <div class="form-group">
                 <label for="alternativeStrategies">Alternatives - strategies:</label>
                 <textarea id="alternativeStrategies" name="alternativeStrategies" placeholder="Enter alternative strategies"></textarea>
+                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('alternativeStrategies')">
+                    N/A
+                </button>
             </div>
             
             <div class="form-group">
@@ -1063,6 +1089,9 @@ input:checked + .slider:before {
                     </span>
                 </label>
                 <textarea id="alternativePlatforms" name="alternativePlatforms" placeholder="Enter alternative platforms"></textarea>
+                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="toggleNAItem('alternativePlatforms')">
+                    N/A
+                </button>
             </div>
         </section>
         
@@ -1274,46 +1303,37 @@ input:checked + .slider:before {
     </div>
 
     <script>
-// Compression function for share links
+// Compression function for share links - SIMPLIFIED for reliability
 function compressData(data) {
-    const jsonStr = JSON.stringify(data);
-    // Simple compression by removing common patterns and encoding
-    let compressed = jsonStr
-        .replace(/{"id":"/g, '1')
-        .replace(/","checked":true}/g, '2')
-        .replace(/","checked":false}/g, '3')
-        .replace(/","value":"/g, '4')
-        .replace(/"}/g, '5')
-        .replace(/,"/g, '6')
-        .replace(/"/g, '7');
-    
-    return btoa(compressed);
+    return btoa(JSON.stringify(data));
 }
 
 function decompressData(compressed) {
     try {
-        let decompressed = atob(compressed)
-            .replace(/1/g, '{"id":"')
-            .replace(/2/g, '","checked":true}')
-            .replace(/3/g, '","checked":false}')
-            .replace(/4/g, '","value":"')
-            .replace(/5/g, '"}')
-            .replace(/6/g, ',"')
-            .replace(/7/g, '"');
-        
-        return JSON.parse(decompressed);
+        return JSON.parse(atob(compressed));
     } catch (error) {
         console.error('Decompression failed:', error);
         return null;
     }
 }
 
-// Global function for N/A buttons
+// Global function for N/A buttons - improved to handle different element types
 window.toggleNAItem = function(itemId) {
     const item = document.getElementById(itemId);
     if (item) {
         item.classList.toggle('crossed-out');
         triggerAutoSave();
+        return;
+    }
+    
+    // If not found by ID, try to find textarea and cross out its form group
+    const textarea = document.getElementById(itemId);
+    if (textarea) {
+        const formGroup = textarea.closest('.form-group');
+        if (formGroup) {
+            formGroup.classList.toggle('crossed-out');
+            triggerAutoSave();
+        }
     }
 };
 
@@ -2627,31 +2647,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Check for shared data in URL
+    // Check for shared data in URL - SIMPLIFIED
     function checkForSharedData() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedData = urlParams.get('shared');
         
         if (sharedData) {
             try {
-                // Try new compression method first
-                let decodedData = decompressData(decodeURIComponent(sharedData));
+                // Use simple decompression
+                const decodedData = decompressData(decodeURIComponent(sharedData));
                 
-                // Fall back to old method if new method fails
-                if (!decodedData) {
-                    decodedData = JSON.parse(atob(decodeURIComponent(sharedData)));
+                if (decodedData) {
+                    // Show notification about shared form
+                    const clientName = decodedData.clientName || 'Unknown Client';
+                    showAutoSaveIndicator(`Loading shared form: ${clientName}`);
+                    
+                    // Store shared data to load after form is fully initialized
+                    window.pendingSharedData = decodedData;
+                    
+                    // Clean URL after loading
+                    const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                } else {
+                    showAutoSaveIndicator('Error: Could not decode shared form data');
                 }
-                
-                // Show notification about shared form
-                const clientName = decodedData.clientName || 'Unknown Client';
-                showAutoSaveIndicator(`Loading shared form: ${clientName}`);
-                
-                // Store shared data to load after form is fully initialized
-                window.pendingSharedData = decodedData;
-                
-                // Clean URL after loading (optional)
-                const cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
-                window.history.replaceState({}, document.title, cleanUrl);
                 
             } catch (error) {
                 console.error('Error loading shared data:', error);
@@ -2708,96 +2727,104 @@ document.addEventListener('DOMContentLoaded', function() {
     function collectFormData() {
         const formData = {};
         
-        // Collect all form elements
-        document.querySelectorAll('input, textarea, select').forEach(element => {
-            if (element.id) { // Only collect elements with IDs
-                if (element.type === 'checkbox' || element.type === 'radio') {
-                    formData[element.id] = element.checked;
-                } else {
-                    formData[element.id] = element.value;
-                }
+        // Collect all form elements with IDs
+        const allElements = document.querySelectorAll('input[id], textarea[id], select[id]');
+        allElements.forEach(element => {
+            if (element.type === 'checkbox' || element.type === 'radio') {
+                formData[element.id] = element.checked;
+            } else if (element.value !== '') {
+                formData[element.id] = element.value;
             }
         });
         
-        // Collect visual states like crossed-out items
+        // Collect ALL crossed-out items 
         document.querySelectorAll('.checklist-item.crossed-out').forEach(item => {
-            const id = item.id || (item.querySelector('input') ? item.querySelector('input').id + '_crossedOut' : null);
-            if (id) {
-                formData[id + '_crossedOut'] = true;
+            const itemId = item.id;
+            if (itemId) {
+                formData[itemId + '_CROSSED'] = true;
             }
         });
         
-        // Collect checkbox visual selection states
+        // Collect crossed-out textareas and form groups
+        document.querySelectorAll('.form-group.crossed-out').forEach(item => {
+            const textarea = item.querySelector('textarea[id]');
+            if (textarea) {
+                formData[textarea.id + '_CROSSED'] = true;
+            }
+        });
+        
+        // Collect checkbox visual states
         document.querySelectorAll('.checkbox-item.selected').forEach(item => {
-            const checkbox = item.querySelector('input[type="checkbox"]');
-            if (checkbox && checkbox.id) {
-                formData[checkbox.id + '_selected'] = true;
+            const checkbox = item.querySelector('input[type="checkbox"][id]');
+            if (checkbox) {
+                formData[checkbox.id + '_SELECTED'] = true;
             }
         });
         
-        // Store which dynamic sections are visible
+        // Store which product recommendation sections are visible
+        const visibleSections = [];
         document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
             if (section.style.display === 'block') {
-                formData[section.id + '_visible'] = true;
+                visibleSections.push(section.id);
             }
         });
+        if (visibleSections.length > 0) {
+            formData['_VISIBLE_SECTIONS'] = visibleSections;
+        }
         
+        console.log('Collecting form data:', formData); // Debug log
         return formData;
     }
     
     function populateFormData(formData) {
-        // First pass - set basic form values and checkboxes
+        console.log('Populating form with data:', formData); // Debug log
+        
+        // First, populate basic form fields and trigger their change events
         Object.keys(formData).forEach(key => {
-            if (key.endsWith('_crossedOut')) {
-                // Handle crossed-out items
-                const itemId = key.replace('_crossedOut', '');
-                const item = document.getElementById(itemId);
-                if (item && formData[key]) {
-                    item.classList.add('crossed-out');
-                }
-            } else if (key.endsWith('_selected')) {
-                // Handle checkbox visual selections - will be processed later
-                return;
-            } else if (key.endsWith('_visible')) {
-                // Handle visible sections - will be processed later
-                return;
-            } else {
-                const element = document.getElementById(key);
-                if (element) {
-                    if (element.type === 'checkbox' || element.type === 'radio') {
-                        element.checked = formData[key];
-                        
-                        // Trigger change event to ensure all dependent functionality works
-                        if (element.checked !== formData[key]) {
-                            element.checked = formData[key];
-                        }
-                        element.dispatchEvent(new Event('change'));
-                        
-                        if (element.type === 'checkbox') {
-                            const item = element.closest('.checkbox-item');
-                            if (item) {
-                                item.classList.toggle('selected', element.checked);
-                            }
-                        }
-                    } else {
-                        element.value = formData[key];
-                        // Trigger input event for text fields
-                        element.dispatchEvent(new Event('input'));
-                    }
+            if (key.endsWith('_CROSSED') || key.endsWith('_SELECTED') || key === '_VISIBLE_SECTIONS') {
+                return; // Handle these later
+            }
+            
+            const element = document.getElementById(key);
+            if (element) {
+                if (element.type === 'checkbox' || element.type === 'radio') {
+                    element.checked = formData[key];
+                    // Trigger change event immediately
+                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    element.value = formData[key];
+                    // Trigger input event for text fields
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }
         });
         
-        // Update form structure based on selections (this creates dynamic sections)
+        // Update form structure - this creates dynamic sections
         updateFormBasedOnSelections();
         
-        // Wait for dynamic sections to be created, then populate them
+        // Wait for DOM updates, then handle visual states and dynamic content
         setTimeout(() => {
-            // Second pass - populate any dynamically created elements
+            // Handle crossed-out items
             Object.keys(formData).forEach(key => {
-                if (key.endsWith('_selected')) {
-                    // Handle checkbox visual selections
-                    const checkboxId = key.replace('_selected', '');
+                if (key.endsWith('_CROSSED')) {
+                    const itemId = key.replace('_CROSSED', '');
+                    const item = document.getElementById(itemId);
+                    if (item && formData[key]) {
+                        item.classList.add('crossed-out');
+                    } else {
+                        // Try to find by textarea ID
+                        const textarea = document.getElementById(itemId);
+                        if (textarea) {
+                            const formGroup = textarea.closest('.form-group');
+                            if (formGroup) {
+                                formGroup.classList.add('crossed-out');
+                            }
+                        }
+                    }
+                }
+                
+                if (key.endsWith('_SELECTED')) {
+                    const checkboxId = key.replace('_SELECTED', '');
                     const checkbox = document.getElementById(checkboxId);
                     if (checkbox && formData[key]) {
                         const item = checkbox.closest('.checkbox-item');
@@ -2805,62 +2832,46 @@ document.addEventListener('DOMContentLoaded', function() {
                             item.classList.add('selected');
                         }
                     }
-                } else if (key.endsWith('_visible')) {
-                    // Handle visible sections
-                    const sectionId = key.replace('_visible', '');
-                    const section = document.getElementById(sectionId);
-                    if (section && formData[key]) {
-                        section.style.display = 'block';
-                    }
-                } else {
-                    const element = document.getElementById(key);
-                    if (element && !element.hasAttribute('data-populated')) {
-                        element.setAttribute('data-populated', 'true');
-                        
-                        if (element.type === 'checkbox' || element.type === 'radio') {
-                            element.checked = formData[key];
-                            element.dispatchEvent(new Event('change'));
-                            
-                            if (element.type === 'checkbox') {
-                                const item = element.closest('.checkbox-item');
-                                if (item) {
-                                    item.classList.toggle('selected', element.checked);
-                                }
-                                
-                                // Handle product recommendation checkboxes specifically
-                                if (key.endsWith('ProductRecsCheckbox')) {
-                                    const checkboxToSectionMap = {
-                                        'client1ProductRecsCheckbox': 'client1ProductRecommendationsSection',
-                                        'client2ProductRecsCheckbox': 'client2ProductRecommendationsSection', 
-                                        'jointProductRecsCheckbox': 'jointProductRecommendationsSection',
-                                        'smsfProductRecsCheckbox': 'smsfProductRecommendationsSection',
-                                        'trustProductRecsCheckbox': 'trustProductRecommendationsSection',
-                                        'companyProductRecsCheckbox': 'companyProductRecommendationsSection',
-                                        'dependantsProductRecsCheckbox': 'dependantsProductRecommendationsSection'
-                                    };
-                                    
-                                    const sectionId = checkboxToSectionMap[key];
-                                    const section = document.getElementById(sectionId);
-                                    if (section) {
-                                        section.style.display = element.checked ? 'block' : 'none';
-                                    }
-                                }
-                            }
-                        } else {
-                            element.value = formData[key];
-                        }
-                    }
                 }
             });
             
-            // Clear the populated flags for future use
-            setTimeout(() => {
-                document.querySelectorAll('[data-populated]').forEach(el => {
-                    el.removeAttribute('data-populated');
+            // Handle visible sections
+            if (formData['_VISIBLE_SECTIONS']) {
+                formData['_VISIBLE_SECTIONS'].forEach(sectionId => {
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.style.display = 'block';
+                    }
                 });
-            }, 100);
+            }
             
-        }, 200);
+            // Final pass - populate any remaining dynamic elements
+            setTimeout(() => {
+                Object.keys(formData).forEach(key => {
+                    if (!key.endsWith('_CROSSED') && !key.endsWith('_SELECTED') && key !== '_VISIBLE_SECTIONS') {
+                        const element = document.getElementById(key);
+                        if (element && !element.hasAttribute('data-populated')) {
+                            element.setAttribute('data-populated', 'true');
+                            
+                            if (element.type === 'checkbox' || element.type === 'radio') {
+                                element.checked = formData[key];
+                                element.dispatchEvent(new Event('change', { bubbles: true }));
+                            } else if (element.value !== formData[key]) {
+                                element.value = formData[key];
+                            }
+                        }
+                    }
+                });
+                
+                // Clean up populated flags
+                setTimeout(() => {
+                    document.querySelectorAll('[data-populated]').forEach(el => {
+                        el.removeAttribute('data-populated');
+                    });
+                }, 100);
+            }, 200);
+            
+        }, 300);
     }
     
     // Function to load pending shared data after form is initialized
@@ -2869,12 +2880,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = window.pendingSharedData;
             delete window.pendingSharedData;
             
+            console.log('Loading pending shared data:', data); // Debug log
             showAutoSaveIndicator('Loading shared form data...');
             
+            // Give the form more time to fully initialize
             setTimeout(() => {
                 populateFormData(data);
                 showAutoSaveIndicator('Shared form loaded successfully!');
-            }, 300);
+            }, 800); // Increased timeout for better reliability
         }
     }
     
@@ -3356,10 +3369,10 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
     // Setup auto-save for existing elements
     setupAutoSave();
     
-    // Load any pending shared data after everything is initialized
+    // Load any pending shared data after everything is fully initialized
     setTimeout(() => {
         loadPendingSharedData();
-    }, 500);
+    }, 1000); // Increased timeout to ensure everything is ready
 });
     </script>
 </body>
