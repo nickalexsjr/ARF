@@ -3612,11 +3612,11 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         }, 3000);
     }
     
-    // Export to Word functionality - FIXED to match visible content exactly
+    // Export to Word functionality - FIXED to match visible content exactly and be clean
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Build clean Word document content - only include what's actually visible
+        // Build clean Word document content - only include what's actually visible and has content
         let wordContent = `
         <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
         `;
@@ -3637,45 +3637,42 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                         // Process radio groups
                         const radioGroup = group.querySelector('.radio-group');
                         if (radioGroup) {
-                            if (label) {
+                            const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
+                            if (checkedRadio && label) {
                                 wordContent += `<p><strong>${label.textContent}</strong></p>`;
-                            }
-                            radioGroup.querySelectorAll('input[type="radio"]').forEach(radio => {
-                                if (radio.checked) {
-                                    const radioLabel = radio.nextElementSibling;
-                                    if (radioLabel) {
-                                        wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
-                                    }
+                                const radioLabel = checkedRadio.nextElementSibling;
+                                if (radioLabel) {
+                                    wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
                                 }
-                            });
+                            }
                         }
                         
                         // Process checkbox groups
                         const checkboxGroup = group.querySelector('.checkbox-group');
                         if (checkboxGroup) {
-                            if (label) {
+                            const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
+                            if (checkedBoxes.length > 0 && label) {
                                 wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                checkedBoxes.forEach(checkbox => {
+                                    const checkboxLabel = checkbox.nextElementSibling;
+                                    if (checkboxLabel) {
+                                        wordContent += `<p style="margin-left: 20px;">☑ ${checkboxLabel.textContent}</p>`;
+                                    }
+                                });
                             }
-                            checkboxGroup.querySelectorAll('.checkbox-item').forEach(item => {
-                                const checkbox = item.querySelector('input[type="checkbox"]');
-                                const checkboxLabel = item.querySelector('label');
-                                if (checkbox && checkboxLabel) {
-                                    wordContent += `<p style="margin-left: 20px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
-                                }
-                            });
                         }
                         
                         // Process regular inputs (avoid duplicates)
                         group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header')) {
+                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header') && input.value && input.value.trim() !== '') {
                                 const inputLabel = input.closest('.form-group').querySelector('label');
-                                if (inputLabel && input.value) {
+                                if (inputLabel) {
                                     let value = input.value;
                                     if (input.tagName === 'SELECT') {
                                         const selected = input.options[input.selectedIndex];
                                         value = selected ? selected.text : '';
                                     }
-                                    if (value) {
+                                    if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
                                         wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
                                         wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
                                     }
@@ -3688,7 +3685,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                             if (item.style.display !== 'none') {
                                 const checkbox = item.querySelector('input[type="checkbox"]');
                                 const checkboxLabel = item.querySelector('label');
-                                if (checkbox && checkboxLabel) {
+                                if (checkbox && checkboxLabel && (checkbox.checked || item.classList.contains('na-active'))) {
                                     const isNA = item.classList.contains('na-active');
                                     const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
                                     const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
@@ -3722,15 +3719,15 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                 const textarea = textareaDiv.querySelector('textarea');
                                 const productCheckbox = textareaDiv.querySelector('input[type="checkbox"]');
                                 
-                                if (label && textarea && textarea.value) {
+                                if (label && textarea && textarea.value && textarea.value.trim() !== '') {
                                     wordContent += `<p><strong>${label.textContent}</strong></p>`;
                                     wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
                                 }
                                 
-                                if (productCheckbox) {
+                                if (productCheckbox && productCheckbox.checked) {
                                     const productLabel = productCheckbox.nextElementSibling;
                                     if (productLabel) {
-                                        wordContent += `<p style="margin-left: 20px;">${productCheckbox.checked ? '☑' : '☐'} ${productLabel.textContent}</p>`;
+                                        wordContent += `<p style="margin-left: 20px;">☑ ${productLabel.textContent}</p>`;
                                     }
                                 }
                             }
@@ -3739,9 +3736,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                 const riskLabel = riskDiv.querySelector('label');
                                 const riskSelect = riskDiv.querySelector('select');
                                 
-                                if (riskLabel && riskSelect && riskSelect.value) {
+                                if (riskLabel && riskSelect && riskSelect.value && riskSelect.value.trim() !== '') {
                                     const selected = riskSelect.options[riskSelect.selectedIndex];
-                                    if (selected && selected.text) {
+                                    if (selected && selected.text && selected.text !== 'Select Risk Profile') {
                                         wordContent += `<p><strong>${riskLabel.textContent}</strong> ${selected.text}</p>`;
                                     }
                                 }
@@ -3761,13 +3758,12 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                             productSection.querySelectorAll('.product-item').forEach(product => {
                                 if (product.style.display !== 'none') {
                                     const productHeader = product.querySelector('h5');
-                                    if (productHeader) {
-                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
-                                    }
+                                    let hasProductContent = false;
+                                    let productContentHTML = '';
                                     
-                                    // Process product fields with values
+                                    // Check if this product has any content first
                                     product.querySelectorAll('input, textarea, select').forEach(input => {
-                                        if (input.value && input.style.display !== 'none') {
+                                        if (input.value && input.value.trim() !== '' && input.style.display !== 'none') {
                                             const inputGroup = input.closest('.form-group');
                                             const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
                                             
@@ -3782,12 +3778,19 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                                     const statusSpan = input.parentElement.nextElementSibling;
                                                     value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
                                                 }
-                                                if (value && value !== 'Select investment option' && value !== '') {
-                                                    wordContent += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
+                                                if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
+                                                    hasProductContent = true;
+                                                    productContentHTML += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
                                                 }
                                             }
                                         }
                                     });
+                                    
+                                    // Only add product header and content if there's actual content
+                                    if (hasProductContent && productHeader) {
+                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
+                                        wordContent += productContentHTML;
+                                    }
                                 }
                             });
                         }
@@ -3834,12 +3837,12 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - FIXED to show full textarea content
+    // Export to PDF functionality - FIXED to show ALL textarea content properly
     exportPdfBtn.addEventListener('click', function() {
         console.log('=== STARTING PDF EXPORT ===');
         
         // Step 1: Hide elements that shouldn't be in PDF
-        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
+        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group, .no-print');
         const originalDisplays = [];
         
         elementsToHide.forEach(el => {
@@ -3847,34 +3850,87 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             el.style.display = 'none';
         });
         
-        // Step 2: EXPAND ALL TEXTAREAS to show full content (NO SCROLLING)
+        // Step 2: AGGRESSIVE TEXTAREA EXPANSION - Make ALL textareas show full content
         const allTextareas = document.querySelectorAll('textarea');
-        const originalTextareaHeights = [];
+        const originalTextareaStyles = [];
         
         console.log('Found', allTextareas.length, 'textareas to expand');
         
         allTextareas.forEach((textarea, index) => {
-            // Save original height
-            originalTextareaHeights[index] = {
+            // Save ALL original styles
+            originalTextareaStyles[index] = {
                 height: textarea.style.height,
-                minHeight: textarea.style.minHeight
+                minHeight: textarea.style.minHeight,
+                maxHeight: textarea.style.maxHeight,
+                overflow: textarea.style.overflow,
+                resize: textarea.style.resize,
+                boxSizing: textarea.style.boxSizing,
+                padding: textarea.style.padding,
+                border: textarea.style.border,
+                lineHeight: textarea.style.lineHeight
             };
             
-            // Reset height to auto to measure content
+            // FORCE reset to auto for accurate measurement
             textarea.style.height = 'auto';
             textarea.style.minHeight = 'auto';
+            textarea.style.maxHeight = 'none';
+            textarea.style.overflow = 'visible';
+            textarea.style.resize = 'none';
+            textarea.style.boxSizing = 'border-box';
             
-            // Get the full content height
+            // Force a reflow to get accurate measurements
+            textarea.offsetHeight;
+            
+            // Calculate the required height with extra padding for safety
             const scrollHeight = textarea.scrollHeight;
+            const computedStyle = window.getComputedStyle(textarea);
+            const paddingTop = parseInt(computedStyle.paddingTop);
+            const paddingBottom = parseInt(computedStyle.paddingBottom);
+            const borderTop = parseInt(computedStyle.borderTopWidth);
+            const borderBottom = parseInt(computedStyle.borderBottomWidth);
             
-            // Set height to show all content (add some padding)
-            textarea.style.height = (scrollHeight + 10) + 'px';
-            textarea.style.minHeight = (scrollHeight + 10) + 'px';
+            // Calculate total height needed (content + padding + borders + extra space)
+            const totalHeight = scrollHeight + paddingTop + paddingBottom + borderTop + borderBottom + 20;
             
-            console.log(`Expanded textarea ${index}: original height unknown, new height: ${scrollHeight + 10}px`);
+            // Set the calculated height
+            textarea.style.height = totalHeight + 'px';
+            textarea.style.minHeight = totalHeight + 'px';
+            
+            console.log(`Expanded textarea ${index}: scrollHeight: ${scrollHeight}, totalHeight: ${totalHeight}px`);
         });
         
-        // Step 3: Add PDF-specific styles
+        // Step 3: Hide empty form groups and sections to clean up the export
+        const allFormGroups = document.querySelectorAll('.form-group');
+        const hiddenFormGroups = [];
+        
+        allFormGroups.forEach((group, index) => {
+            const inputs = group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select');
+            const checkboxes = group.querySelectorAll('input[type="checkbox"]:checked');
+            const radios = group.querySelectorAll('input[type="radio"]:checked');
+            
+            let hasContent = false;
+            
+            // Check if any inputs have values
+            inputs.forEach(input => {
+                if (input.value && input.value.trim() !== '' && input.value !== 'Select a saved draft...') {
+                    hasContent = true;
+                }
+            });
+            
+            // Check if any checkboxes are checked
+            if (checkboxes.length > 0) hasContent = true;
+            
+            // Check if any radios are checked  
+            if (radios.length > 0) hasContent = true;
+            
+            // Hide empty form groups (but keep important structural ones)
+            if (!hasContent && !group.querySelector('.radio-group') && !group.querySelector('.checkbox-group') && !group.querySelector('h3, h4')) {
+                hiddenFormGroups.push({element: group, originalDisplay: group.style.display});
+                group.style.display = 'none';
+            }
+        });
+        
+        // Step 4: Add enhanced PDF-specific styles
         const pdfStyle = document.createElement('style');
         pdfStyle.id = 'pdf-export-style';
         pdfStyle.textContent = `
@@ -3883,55 +3939,84 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                     background: white !important; 
                     padding: 0 !important; 
                     font-size: 12pt !important;
+                    color: black !important;
                 }
                 .container { 
                     box-shadow: none !important; 
                     max-width: 100% !important; 
                     margin: 0 !important; 
                     padding: 15px !important;
+                    background: white !important;
                 }
                 .section { 
                     page-break-inside: avoid !important; 
                     margin-bottom: 15pt !important;
+                    background: white !important;
+                    box-shadow: none !important;
                 }
                 textarea {
-                    border: 1px solid #ccc !important;
+                    border: 1px solid #333 !important;
                     background: white !important;
                     overflow: visible !important;
                     resize: none !important;
                     page-break-inside: avoid !important;
+                    font-family: inherit !important;
+                    font-size: 11pt !important;
+                    line-height: 1.3 !important;
+                    color: black !important;
+                    white-space: pre-wrap !important;
+                    word-wrap: break-word !important;
                 }
                 input[type="text"], input[type="date"], input[type="number"] {
-                    border: 1px solid #ccc !important;
+                    border: 1px solid #333 !important;
                     background: white !important;
+                    color: black !important;
+                    font-size: 11pt !important;
                 }
-                * { 
-                    print-color-adjust: exact !important; 
+                select {
+                    border: 1px solid #333 !important;
+                    background: white !important;
+                    color: black !important;
+                    font-size: 11pt !important;
                 }
                 .product-item {
                     page-break-inside: avoid !important;
                     margin-bottom: 10pt !important;
+                    border: 1px solid #333 !important;
+                    background: white !important;
                 }
                 .checklist-item {
                     page-break-inside: avoid !important;
+                    background: #f5f5f5 !important;
+                }
+                .no-print, .btn-group, .draft-selector, .auto-save-indicator {
+                    display: none !important;
+                }
+                h1, h2, h3, h4 {
+                    color: black !important;
+                    page-break-after: avoid !important;
+                }
+                label {
+                    color: black !important;
+                    font-weight: bold !important;
                 }
             }
         `;
         document.head.appendChild(pdfStyle);
         
-        // Step 4: Set document title for PDF filename
+        // Step 5: Set document title for PDF filename
         const originalTitle = document.title;
         const clientName = document.getElementById('clientName').value || 'Client';
         document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
         
         console.log('PDF setup complete - triggering print dialog');
         
-        // Step 5: Trigger print dialog after a short delay to ensure rendering
+        // Step 6: Trigger print dialog with longer delay to ensure all rendering is complete
         setTimeout(() => {
             window.print();
-        }, 500);
+        }, 1000);
         
-        // Step 6: Clean up after print
+        // Step 7: Comprehensive cleanup after print
         const cleanupAfterPrint = () => {
             console.log('=== CLEANING UP AFTER PDF EXPORT ===');
             
@@ -3949,24 +4034,37 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                 el.style.display = originalDisplays[index];
             });
             
-            // RESTORE ALL TEXTAREA HEIGHTS
+            // RESTORE ALL TEXTAREA STYLES
             allTextareas.forEach((textarea, index) => {
-                if (originalTextareaHeights[index]) {
-                    textarea.style.height = originalTextareaHeights[index].height || '';
-                    textarea.style.minHeight = originalTextareaHeights[index].minHeight || '';
+                if (originalTextareaStyles[index]) {
+                    const originalStyles = originalTextareaStyles[index];
+                    textarea.style.height = originalStyles.height || '';
+                    textarea.style.minHeight = originalStyles.minHeight || '';
+                    textarea.style.maxHeight = originalStyles.maxHeight || '';
+                    textarea.style.overflow = originalStyles.overflow || '';
+                    textarea.style.resize = originalStyles.resize || '';
+                    textarea.style.boxSizing = originalStyles.boxSizing || '';
+                    textarea.style.padding = originalStyles.padding || '';
+                    textarea.style.border = originalStyles.border || '';
+                    textarea.style.lineHeight = originalStyles.lineHeight || '';
                 }
-                console.log(`Restored textarea ${index} to original height`);
+                console.log(`Restored textarea ${index} to original styles`);
+            });
+            
+            // Restore hidden form groups
+            hiddenFormGroups.forEach(({element, originalDisplay}) => {
+                element.style.display = originalDisplay;
             });
             
             console.log('=== PDF EXPORT CLEANUP COMPLETE ===');
-            showAutoSaveIndicator('PDF export complete - textareas restored!');
+            showAutoSaveIndicator('PDF export complete - all elements restored!');
         };
         
         // Listen for print events
         window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
         
-        // Fallback cleanup after 15 seconds (in case print dialog is cancelled)
-        setTimeout(cleanupAfterPrint, 15000);
+        // Fallback cleanup after 20 seconds (in case print dialog is cancelled)
+        setTimeout(cleanupAfterPrint, 20000);
     });
     
     // Reset Form functionality
