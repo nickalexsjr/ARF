@@ -1342,9 +1342,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const ongoingFeeInput = document.getElementById('ongoingFee');
     const ongoingPcmFeeInput = document.getElementById('ongoingPcmFee');
     
-    // MDA N/A button
-    const mdaNABtn = document.getElementById('mdaNABtn');
-    const mdaDetailsTextarea = document.getElementById('mdaDetails');
+    // MDA N/A button will be handled by setupMDANAButton function
     
     // Pricing Calculator N/A button
     const pricingCalculatorNABtn = document.getElementById('pricingCalculatorNABtn');
@@ -2430,18 +2428,26 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Handle MDA N/A button
-    mdaNABtn.addEventListener('click', function() {
-        if (mdaDetailsTextarea.classList.contains('strikethrough')) {
-            mdaDetailsTextarea.value = mdaDetailsTextarea.value.replace('N/A\n', '').replace('N/A', '');
-            mdaDetailsTextarea.classList.remove('strikethrough');
-        } else {
-            if (!mdaDetailsTextarea.value.includes('N/A')) {
-                mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
-            }
-            mdaDetailsTextarea.classList.add('strikethrough');
+    function setupMDANAButton() {
+        const mdaNAButton = document.getElementById('mdaNABtn');
+        const mdaTextarea = document.getElementById('mdaDetails');
+        
+        if (mdaNAButton && mdaTextarea && !mdaNAButton.hasAttribute('data-initialized')) {
+            mdaNAButton.setAttribute('data-initialized', 'true');
+            mdaNAButton.addEventListener('click', function() {
+                if (mdaTextarea.classList.contains('strikethrough')) {
+                    mdaTextarea.value = mdaTextarea.value.replace('N/A\n', '').replace('N/A', '');
+                    mdaTextarea.classList.remove('strikethrough');
+                } else {
+                    if (!mdaTextarea.value.includes('N/A')) {
+                        mdaTextarea.value = 'N/A\n' + mdaTextarea.value;
+                    }
+                    mdaTextarea.classList.add('strikethrough');
+                }
+                triggerAutoSave();
+            });
         }
-        triggerAutoSave();
-    });
+    }
     
     // Handle Pricing Calculator N/A button - FIXED
     if (pricingCalculatorNABtn && pricingCalculatorItem) {
@@ -2550,6 +2556,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (drafts[draftName]) {
             populateFormData(drafts[draftName].data);
             showAutoSaveIndicator('Draft loaded successfully!');
+            
+            // Ensure MDA button is properly initialized after loading
+            setTimeout(() => {
+                setupMDANAButton();
+            }, 100);
         }
     }
     
@@ -2654,6 +2665,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             console.log('Setup auto-save for', newElements.length, 'new elements and', newNAButtons.length, 'new N/A buttons');
+            
+            // Also re-setup MDA N/A button in case it needs refreshing
+            setupMDANAButton();
         }, 100);
     }
     
@@ -2699,7 +2713,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Save MDA N/A state
-        if (mdaDetailsTextarea && mdaDetailsTextarea.classList.contains('strikethrough')) {
+        const mdaTextarea = document.getElementById('mdaDetails'); 
+        if (mdaTextarea && mdaTextarea.classList.contains('strikethrough')) {
             formData['mdaDetails_na_active'] = true;
         }
         
@@ -2827,10 +2842,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Restore MDA N/A state
             if (formData['mdaDetails_na_active']) {
-                if (mdaDetailsTextarea) {
-                    mdaDetailsTextarea.classList.add('strikethrough');
-                    if (!mdaDetailsTextarea.value.includes('N/A')) {
-                        mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
+                const mdaTextarea = document.getElementById('mdaDetails');
+                if (mdaTextarea) {
+                    mdaTextarea.classList.add('strikethrough');
+                    if (!mdaTextarea.value.includes('N/A')) {
+                        mdaTextarea.value = 'N/A\n' + mdaTextarea.value;
                     }
                 }
             }
@@ -2861,6 +2877,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Re-setup event listeners for all dynamic content
             setupAutoSaveForNewElements();
             setupProductRecommendationToggles();
+            setupMDANAButton(); // Re-initialize MDA N/A button
             
         }, 750); // Increased timeout to ensure all dynamic content is rendered
     }
@@ -3330,6 +3347,12 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             paraplannerCompareCheckbox.checked = false;
             alternativePlatformsTextarea.value = '';
             
+            // Reset MDA N/A state
+            const mdaTextarea = document.getElementById('mdaDetails');
+            if (mdaTextarea) {
+                mdaTextarea.classList.remove('strikethrough');
+            }
+            
             showAutoSaveIndicator('Form has been reset!');
         }
     });
@@ -3339,6 +3362,9 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
     
     // Setup auto-save for existing elements
     setupAutoSave();
+    
+    // Initialize MDA N/A button
+    setupMDANAButton();
 });
     </script>
 </body>
