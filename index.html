@@ -1995,7 +1995,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Initialize tranching toggles
+        // Initialize tranching toggles with ROBUST handling
         document.querySelectorAll('[id$="_tranching"]').forEach(toggle => {
             if (!toggle.hasAttribute('data-initialized')) {
                 toggle.setAttribute('data-initialized', 'true');
@@ -2007,6 +2007,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (status) status.textContent = this.checked ? 'Yes' : 'No';
                     if (details) {
                         details.style.display = this.checked ? 'block' : 'none';
+                        console.log('Tranching details visibility changed for', productId, 'to', this.checked ? 'visible' : 'hidden');
                     }
                     triggerAutoSave();
                 });
@@ -2557,9 +2558,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function saveDraft(draftName, isAutoSave = false) {
-        // Ensure we capture the current state properly
+        // FORCE collection of ALL tranching textareas with verbose logging
         setTimeout(() => {
             const formData = collectFormData();
+            
+            // SUPER FORCE - manually collect ALL tranching data with detailed logging
+            const allTrancingElements = document.querySelectorAll('textarea[id*="_tranching_text"], input[id*="_tranching"], [id*="_tranching_details"]');
+            console.log('FORCE COLLECTING ALL TRANCHING ELEMENTS:', allTrancingElements.length);
+            
+            allTrancingElements.forEach(element => {
+                if (element.id) {
+                    if (element.type === 'checkbox') {
+                        formData[element.id] = element.checked;
+                        console.log('FORCE SAVED tranching checkbox:', element.id, '=', element.checked);
+                    } else if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
+                        formData[element.id] = element.value;
+                        console.log('FORCE SAVED tranching field:', element.id, '=', element.value);
+                    } else {
+                        // For divs, save visibility
+                        formData[element.id + '_visible'] = (element.style.display !== 'none');
+                        console.log('FORCE SAVED tranching visibility:', element.id, '=', (element.style.display !== 'none'));
+                    }
+                }
+            });
+            
             const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
             drafts[draftName] = {
                 data: formData,
@@ -2570,9 +2592,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Only refresh dropdown if it's not an auto-save
             if (!isAutoSave) {
                 loadDraftList();
-                console.log('Draft saved:', draftName, 'Data keys:', Object.keys(formData).length);
+                console.log('Draft saved:', draftName, 'Total fields:', Object.keys(formData).length);
             }
-        }, 100); // Small delay to ensure all dynamic elements are captured
+        }, 150); // Increased delay to ensure all dynamic content is captured
     }
     
     function loadDraft(draftName) {
@@ -2715,7 +2737,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function collectFormData() {
         const formData = {};
         
-        // Wait a moment to ensure all dynamic elements are rendered
+        // HYPER FORCE - Wait longer and collect more aggressively
         const allInputs = document.querySelectorAll('input, textarea, select');
         
         allInputs.forEach(element => {
@@ -2728,31 +2750,44 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // ULTRA FORCE - Find ALL tranching textareas anywhere in the document
-        const allTrancingTextareas = document.querySelectorAll('textarea[id*="_tranching_text"]');
-        allTrancingTextareas.forEach(textarea => {
-            if (textarea.id) {
-                formData[textarea.id] = textarea.value;
-                console.log('ULTRA FORCE saving tranching text:', textarea.id, '=', textarea.value);
-            }
-        });
+        // MEGA FORCE - Find ALL tranching-related elements with ultra-aggressive search
+        console.log('MEGA FORCE SEARCH for tranching elements...');
         
-        // ULTRA FORCE - Find ALL cash preference inputs anywhere in the document  
-        const allCashInputs = document.querySelectorAll('input[id*="_cash"]');
-        allCashInputs.forEach(input => {
-            if (input.id) {
-                formData[input.id] = input.value;
-                console.log('ULTRA FORCE saving cash preference:', input.id, '=', input.value);
-            }
-        });
+        // Search for ALL possible tranching element patterns
+        const tranchingPatterns = [
+            'textarea[id*="_tranching_text"]',
+            'input[id*="_tranching"]',
+            'span[id*="_tranching_status"]',
+            'div[id*="_tranching_details"]'
+        ];
         
-        // ULTRA FORCE - Find ALL product investment textareas anywhere in the document
-        const allInvestmentTextareas = document.querySelectorAll('textarea[id*="_investment"]');
-        allInvestmentTextareas.forEach(textarea => {
-            if (textarea.id && !textarea.id.includes('_investment_option')) {
-                formData[textarea.id] = textarea.value;
-                console.log('ULTRA FORCE saving investment textarea:', textarea.id, '=', textarea.value);
-            }
+        tranchingPatterns.forEach(pattern => {
+            const elements = document.querySelectorAll(pattern);
+            console.log(`Found ${elements.length} elements for pattern: ${pattern}`);
+            
+            elements.forEach(element => {
+                if (element.id) {
+                    if (element.type === 'checkbox') {
+                        formData[element.id] = element.checked;
+                        console.log('MEGA FORCE saved checkbox:', element.id, '=', element.checked);
+                    } else if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
+                        formData[element.id] = element.value;
+                        console.log('MEGA FORCE saved input/textarea:', element.id, '=', element.value);
+                        
+                        // Special handling for tranching text - make EXTRA sure it's saved
+                        if (element.id.includes('_tranching_text')) {
+                            formData[element.id + '_BACKUP'] = element.value;
+                            console.log('MEGA FORCE backup save:', element.id + '_BACKUP', '=', element.value);
+                        }
+                    } else if (element.tagName === 'SPAN') {
+                        formData[element.id + '_text'] = element.textContent;
+                        console.log('MEGA FORCE saved span text:', element.id, '=', element.textContent);
+                    } else if (element.tagName === 'DIV') {
+                        formData[element.id + '_visible'] = (element.style.display !== 'none');
+                        console.log('MEGA FORCE saved div visibility:', element.id, '=', (element.style.display !== 'none'));
+                    }
+                }
+            });
         });
         
         // EXPLICITLY save ALL entity recommendations and risk profiles
@@ -2809,10 +2844,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Save tranching details visibility
+        // Save tranching details visibility - TRIPLE CHECK
         document.querySelectorAll('[id$="_tranching_details"]').forEach(section => {
             if (section.id) {
                 formData[section.id + '_visible'] = (section.style.display !== 'none');
+                console.log('TRIPLE CHECK - Saving tranching details visibility:', section.id, '=', (section.style.display !== 'none'));
             }
         });
         
@@ -2866,7 +2902,12 @@ document.addEventListener('DOMContentLoaded', function() {
             existing: existingClientRadio.checked
         };
         
-        console.log('Saving form data with', Object.keys(formData).length, 'fields'); // Debug logging
+        console.log('FINAL - Saving form data with', Object.keys(formData).length, 'fields total');
+        
+        // Log all tranching-related keys for debugging
+        const tranchingKeys = Object.keys(formData).filter(key => key.includes('tranching'));
+        console.log('FINAL - Tranching-related keys:', tranchingKeys);
+        
         return formData;
     }
     
@@ -2875,7 +2916,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // First restore basic form fields
         Object.keys(formData).forEach(key => {
-            if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible')) {
+            if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_BACKUP')) {
                 const element = document.getElementById(key);
                 if (element) {
                     if (element.type === 'checkbox' || element.type === 'radio') {
@@ -2896,11 +2937,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Rebuild form structure based on saved client types and status
         updateFormBasedOnSelections();
         
-        // Wait for dynamic content to be rebuilt, then restore states
+        // Wait for dynamic content to be rebuilt, then restore states in MULTIPLE phases
         setTimeout(() => {
-            // First restore all basic form fields (except investment options)
+            console.log('PHASE 1 - Basic restoration');
+            
+            // Phase 1: Restore all basic form fields (except investment options)
             Object.keys(formData).forEach(key => {
-                if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text') && !key.endsWith('_investment_option')) {
+                if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text') && !key.endsWith('_investment_option') && !key.endsWith('_BACKUP')) {
                     const element = document.getElementById(key);
                     if (element) {
                         if (element.type === 'checkbox' || element.type === 'radio') {
@@ -2917,9 +2960,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Wait a bit more, then restore all states again including investment options
             setTimeout(() => {
+                console.log('PHASE 2 - Complete restoration with special handling');
+                
                 // Restore form fields again (for any that were missed)
                 Object.keys(formData).forEach(key => {
-                    if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text')) {
+                    if (!key.startsWith('_') && !key.endsWith('_na_active') && !key.endsWith('_visible') && !key.endsWith('_text') && !key.endsWith('_BACKUP')) {
                         const element = document.getElementById(key);
                         if (element) {
                             if (element.type === 'checkbox' || element.type === 'radio') {
@@ -2977,167 +3022,191 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
                 
-                // Now restore toggle states and their visual effects
-                Object.keys(formData).forEach(key => {
-                    // Handle MDA toggles in products
-                    if (key.endsWith('_mda') && formData[key]) {
-                        const element = document.getElementById(key);
-                        if (element) {
-                            element.checked = true;
-                            const productId = key.replace('_mda', '');
-                            const status = document.getElementById(`${productId}_mda_status`);
-                            const investmentOptions = document.getElementById(`${productId}_investment_options`);
-                            const investmentField = document.getElementById(`${productId}_investment`);
-                            
-                            if (status) status.textContent = 'Yes';
-                            if (investmentOptions) {
-                                investmentOptions.style.display = 'block';
-                                console.log('Showing investment options for:', productId);
-                                
-                                // Populate investment options first
-                                updateInvestmentOptions(productId);
-                                
-                                // Then restore the selected investment option value
-                                setTimeout(() => {
-                                    const investmentOptionKey = `${productId}_investment_option`;
-                                    if (formData[investmentOptionKey]) {
-                                        const investmentSelect = document.getElementById(investmentOptionKey);
-                                        if (investmentSelect) {
-                                            investmentSelect.value = formData[investmentOptionKey];
-                                            console.log('Restored investment option:', productId, formData[investmentOptionKey]);
-                                        }
-                                    }
-                                }, 100);
-                            }
-                            
-                            // Restore investment field
-                            if (investmentField && investmentField.value === 'Refer to Investment option below') {
-                                updateInvestmentOptions(productId);
-                            }
-                        }
-                    }
-                    
-                    // Handle tranching toggles in products
-                    if (key.endsWith('_tranching') && formData[key]) {
-                        const element = document.getElementById(key);
-                        if (element) {
-                            element.checked = true;
-                            const productId = key.replace('_tranching', '');
-                            const status = document.getElementById(`${productId}_tranching_status`);
-                            const details = document.getElementById(`${productId}_tranching_details`);
-                            
-                            if (status) status.textContent = 'Yes';
-                            if (details) {
-                                details.style.display = 'block';
-                            }
-                        }
-                    }
-                });
-                
-                // Restore all investment option values (final pass)
+                // ULTRA PHASE - Special handling for tranching elements
                 setTimeout(() => {
+                    console.log('ULTRA PHASE - Tranching restoration');
+                    
+                    // Force restore all tranching states
                     Object.keys(formData).forEach(key => {
-                        if (key.endsWith('_investment_option') && formData[key]) {
+                        // Handle tranching toggles
+                        if (key.endsWith('_tranching') && formData[key]) {
                             const element = document.getElementById(key);
                             if (element) {
-                                element.value = formData[key];
-                                console.log('Final restore of investment option:', key, formData[key]);
+                                element.checked = true;
+                                const productId = key.replace('_tranching', '');
+                                const status = document.getElementById(`${productId}_tranching_status`);
+                                const details = document.getElementById(`${productId}_tranching_details`);
+                                
+                                if (status) status.textContent = 'Yes';
+                                if (details) {
+                                    details.style.display = 'block';
+                                    console.log('ULTRA PHASE - Showing tranching details for:', productId);
+                                }
+                            }
+                        }
+                        
+                        // Handle MDA toggles
+                        if (key.endsWith('_mda') && formData[key]) {
+                            const element = document.getElementById(key);
+                            if (element) {
+                                element.checked = true;
+                                const productId = key.replace('_mda', '');
+                                const status = document.getElementById(`${productId}_mda_status`);
+                                const investmentOptions = document.getElementById(`${productId}_investment_options`);
+                                const investmentField = document.getElementById(`${productId}_investment`);
+                                
+                                if (status) status.textContent = 'Yes';
+                                if (investmentOptions) {
+                                    investmentOptions.style.display = 'block';
+                                    console.log('Showing investment options for:', productId);
+                                    
+                                    // Populate investment options first
+                                    updateInvestmentOptions(productId);
+                                    
+                                    // Then restore the selected investment option value
+                                    setTimeout(() => {
+                                        const investmentOptionKey = `${productId}_investment_option`;
+                                        if (formData[investmentOptionKey]) {
+                                            const investmentSelect = document.getElementById(investmentOptionKey);
+                                            if (investmentSelect) {
+                                                investmentSelect.value = formData[investmentOptionKey];
+                                                console.log('Restored investment option:', productId, formData[investmentOptionKey]);
+                                            }
+                                        }
+                                    }, 100);
+                                }
+                                
+                                // Restore investment field
+                                if (investmentField && investmentField.value === 'Refer to Investment option below') {
+                                    updateInvestmentOptions(productId);
+                                }
+                            }
+                        }
+                        
+                        // FORCE restore tranching text with backup handling
+                        if (key.endsWith('_tranching_text')) {
+                            let textValue = formData[key];
+                            
+                            // Try backup if main value is empty
+                            if (!textValue && formData[key + '_BACKUP']) {
+                                textValue = formData[key + '_BACKUP'];
+                                console.log('Using backup value for:', key);
+                            }
+                            
+                            const element = document.getElementById(key);
+                            if (element && textValue) {
+                                element.value = textValue;
+                                console.log('ULTRA PHASE - Restored tranching text:', key, '=', textValue);
                             }
                         }
                     });
-                }, 200);
-                
-                // Restore status text for toggle switches
-                Object.keys(formData).forEach(key => {
-                    if (key.endsWith('_text')) {
-                        const statusId = key.replace('_text', '');
-                        const statusElement = document.getElementById(statusId);
-                        if (statusElement) {
-                            statusElement.textContent = formData[key];
+                    
+                    // Restore all investment option values (final pass)
+                    setTimeout(() => {
+                        Object.keys(formData).forEach(key => {
+                            if (key.endsWith('_investment_option') && formData[key]) {
+                                const element = document.getElementById(key);
+                                if (element) {
+                                    element.value = formData[key];
+                                    console.log('Final restore of investment option:', key, formData[key]);
+                                }
+                            }
+                        });
+                    }, 200);
+                    
+                    // Restore status text for toggle switches
+                    Object.keys(formData).forEach(key => {
+                        if (key.endsWith('_text')) {
+                            const statusId = key.replace('_text', '');
+                            const statusElement = document.getElementById(statusId);
+                            if (statusElement) {
+                                statusElement.textContent = formData[key];
+                            }
                         }
-                    }
-                });
-                
-                // Restore section visibility states
-                Object.keys(formData).forEach(key => {
-                    if (key.endsWith('_visible') && formData[key]) {
-                        const sectionId = key.replace('_visible', '');
-                        const section = document.getElementById(sectionId);
-                        if (section) {
-                            section.style.display = 'block';
-                            console.log('Restoring visibility for:', sectionId);
+                    });
+                    
+                    // Restore section visibility states
+                    Object.keys(formData).forEach(key => {
+                        if (key.endsWith('_visible') && formData[key]) {
+                            const sectionId = key.replace('_visible', '');
+                            const section = document.getElementById(sectionId);
+                            if (section) {
+                                section.style.display = 'block';
+                                console.log('Restoring visibility for:', sectionId);
+                            }
                         }
-                    }
-                });
-                
-                // Restore N/A states
-                Object.keys(formData).forEach(key => {
-                    if (key.endsWith('_na_active') && formData[key]) {
-                        const originalKey = key.replace('_na_active', '');
-                        const element = document.getElementById(originalKey);
-                        if (element) {
-                            const item = element.closest('.checklist-item');
-                            if (item) {
-                                item.classList.add('na-active');
-                                element.checked = false;
-                                
-                                // Special handling for super research
-                                if (originalKey === 'superResearch') {
-                                    const contributionHistoryItem = document.getElementById('contributionHistoryItem');
-                                    if (contributionHistoryItem) {
-                                        contributionHistoryItem.style.display = 'none';
-                                        const contributionCheckbox = document.getElementById('contributionHistory');
-                                        if (contributionCheckbox) {
-                                            contributionCheckbox.checked = false;
+                    });
+                    
+                    // Restore N/A states
+                    Object.keys(formData).forEach(key => {
+                        if (key.endsWith('_na_active') && formData[key]) {
+                            const originalKey = key.replace('_na_active', '');
+                            const element = document.getElementById(originalKey);
+                            if (element) {
+                                const item = element.closest('.checklist-item');
+                                if (item) {
+                                    item.classList.add('na-active');
+                                    element.checked = false;
+                                    
+                                    // Special handling for super research
+                                    if (originalKey === 'superResearch') {
+                                        const contributionHistoryItem = document.getElementById('contributionHistoryItem');
+                                        if (contributionHistoryItem) {
+                                            contributionHistoryItem.style.display = 'none';
+                                            const contributionCheckbox = document.getElementById('contributionHistory');
+                                            if (contributionCheckbox) {
+                                                contributionCheckbox.checked = false;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                });
-                
-                // Restore MDA N/A state
-                if (formData['mdaDetails_na_active']) {
-                    const mdaTextarea = document.getElementById('mdaDetails');
-                    if (mdaTextarea) {
-                        mdaTextarea.classList.add('strikethrough');
-                        if (!mdaTextarea.value.includes('N/A')) {
-                            mdaTextarea.value = 'N/A\n' + mdaTextarea.value;
+                    });
+                    
+                    // Restore MDA N/A state
+                    if (formData['mdaDetails_na_active']) {
+                        const mdaTextarea = document.getElementById('mdaDetails');
+                        if (mdaTextarea) {
+                            mdaTextarea.classList.add('strikethrough');
+                            if (!mdaTextarea.value.includes('N/A')) {
+                                mdaTextarea.value = 'N/A\n' + mdaTextarea.value;
+                            }
                         }
                     }
-                }
-                
-                // Restore Pricing Calculator N/A state  
-                if (formData['pricingCalculator_na_active']) {
-                    const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
-                    if (pricingCalculatorItem) {
-                        pricingCalculatorItem.classList.add('na-active');
-                        const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
-                        if (pricingCalculatorCheckbox) {
-                            pricingCalculatorCheckbox.checked = false;
+                    
+                    // Restore Pricing Calculator N/A state  
+                    if (formData['pricingCalculator_na_active']) {
+                        const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
+                        if (pricingCalculatorItem) {
+                            pricingCalculatorItem.classList.add('na-active');
+                            const pricingCalculatorCheckbox = document.getElementById('pricingCalculator');
+                            if (pricingCalculatorCheckbox) {
+                                pricingCalculatorCheckbox.checked = false;
+                            }
                         }
                     }
-                }
-                
-                // Restore Beneficiary Nomination N/A state  
-                if (formData['beneficiaryNomination_na_active']) {
-                    const beneficiaryNominationItem = document.getElementById('beneficiaryNominationItem');
-                    if (beneficiaryNominationItem) {
-                        beneficiaryNominationItem.classList.add('na-active');
-                        const beneficiaryNominationCheckbox = document.getElementById('beneficiaryNomination');
-                        if (beneficiaryNominationCheckbox) {
-                            beneficiaryNominationCheckbox.checked = false;
+                    
+                    // Restore Beneficiary Nomination N/A state  
+                    if (formData['beneficiaryNomination_na_active']) {
+                        const beneficiaryNominationItem = document.getElementById('beneficiaryNominationItem');
+                        if (beneficiaryNominationItem) {
+                            beneficiaryNominationItem.classList.add('na-active');
+                            const beneficiaryNominationCheckbox = document.getElementById('beneficiaryNomination');
+                            if (beneficiaryNominationCheckbox) {
+                                beneficiaryNominationCheckbox.checked = false;
+                            }
                         }
                     }
-                }
-                
-                // Re-setup event listeners for all dynamic content
-                setupAutoSaveForNewElements();
-                setupProductRecommendationToggles();
-                setupMDANAButton(); // Re-initialize MDA N/A button
-                
-                console.log('Form data restoration complete - all product toggles should be working');
+                    
+                    // Re-setup event listeners for all dynamic content
+                    setupAutoSaveForNewElements();
+                    setupProductRecommendationToggles();
+                    setupMDANAButton(); // Re-initialize MDA N/A button
+                    
+                    console.log('Form data restoration complete - all product toggles should be working');
+                    
+                }, 300); // Ultra phase restoration
                 
             }, 200); // Second phase restoration
             
