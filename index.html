@@ -51,7 +51,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    max-width: 550px;
+    max-width: 400px;
 }
 
 .draft-selector .btn {
@@ -731,6 +731,10 @@ input:checked + .slider:before {
     margin-left: 10px;
 }
 
+.na-button:hover {
+    background: #5a6268;
+}
+
 .recommendation-section {
     display: flex;
     gap: 20px;
@@ -748,6 +752,17 @@ input:checked + .slider:before {
 
 .risk-profile-inline .form-group {
     margin-bottom: 0;
+}
+
+/* Strikethrough styling for N/A items */
+.strikethrough {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.checklist-item.na-active {
+    text-decoration: line-through;
+    opacity: 0.6;
 }
 
 @media print {
@@ -847,14 +862,13 @@ input:checked + .slider:before {
     </style>
 </head>
 <body>
-    <!-- Draft Selector -->
+    <!-- Draft Selector (Share as Link button removed) -->
     <div class="draft-selector">
         <label for="draftSelector">Load Draft:</label>
         <select id="draftSelector">
             <option value="">Select a saved draft...</option>
         </select>
         <button type="button" class="btn btn-sm" id="loadDraftBtn">Load</button>
-        <button type="button" class="btn btn-success btn-sm" id="shareAsLinkBtn">Share as Link</button>
         <button type="button" class="btn btn-danger btn-sm" id="deleteDraftBtn">Delete</button>
     </div>
 
@@ -1017,7 +1031,12 @@ input:checked + .slider:before {
             </div>
             
             <div class="form-group">
-                <label for="mdaDetails">MDA Personalisation:</label>
+                <label for="mdaDetails">
+                    MDA Personalisation:
+                    <button type="button" class="btn btn-secondary btn-sm na-button" id="mdaNABtn">
+                        N/A
+                    </button>
+                </label>
                 <textarea id="mdaDetails" name="mdaDetails" placeholder="Enter MDA personalisation details"></textarea>
             </div>
             
@@ -1200,9 +1219,10 @@ input:checked + .slider:before {
                     <label for="filenote">Filenote</label>
                 </div>
                 
-                <div class="checklist-item">
+                <div class="checklist-item" id="pricingCalculatorItem">
                     <input type="checkbox" id="pricingCalculator" name="requiredDocs" value="PricingCalculator">
                     <label for="pricingCalculator">Pricing Calculator</label>
+                    <button type="button" class="btn btn-secondary btn-sm na-button" id="pricingCalculatorNABtn">N/A</button>
                 </div>
                 
                 <div class="checklist-item">
@@ -1301,7 +1321,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Draft functionality
     const draftSelector = document.getElementById('draftSelector');
     const loadDraftBtn = document.getElementById('loadDraftBtn');
-    const shareAsLinkBtn = document.getElementById('shareAsLinkBtn');
     const deleteDraftBtn = document.getElementById('deleteDraftBtn');
     const saveDraftModal = document.getElementById('saveDraftModal');
     const draftNameInput = document.getElementById('draftName');
@@ -1321,6 +1340,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Ongoing Fee checkbox
     const ongoingFeeReferCheckbox = document.getElementById('ongoingFeeRefer');
     const ongoingFeeInput = document.getElementById('ongoingFee');
+    const ongoingPcmFeeInput = document.getElementById('ongoingPcmFee');
+    
+    // MDA N/A button
+    const mdaNABtn = document.getElementById('mdaNABtn');
+    const mdaDetailsTextarea = document.getElementById('mdaDetails');
+    
+    // Pricing Calculator N/A button
+    const pricingCalculatorNABtn = document.getElementById('pricingCalculatorNABtn');
+    const pricingCalculatorItem = document.getElementById('pricingCalculatorItem');
     
     // Product options
     const productOptions = [
@@ -2130,14 +2158,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label for="finametricaReport">Finametrica Report to be uploaded to XPLAN</label>
                     </div>
                     
-                    <div class="checklist-item">
+                    <div class="checklist-item" id="superResearchItem">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" id="superResearchNABtn">N/A</button>
                     </div>
                     
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" id="contributionHistoryNABtn">N/A</button>
                     </div>
                     
                     <div class="checklist-item">
@@ -2176,14 +2206,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label for="submitJira">Submit JIRA for pricing/or PCR (if applicable)</label>
                     </div>
                     
-                    <div class="checklist-item">
+                    <div class="checklist-item" id="superResearchItem">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" id="superResearchNABtn">N/A</button>
                     </div>
                     
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
+                        <button type="button" class="btn btn-secondary btn-sm na-button" id="contributionHistoryNABtn">N/A</button>
                     </div>
                 </div>
             `;
@@ -2203,10 +2235,13 @@ document.addEventListener('DOMContentLoaded', function() {
             container.insertAdjacentHTML('beforeend', smsfHTML);
         }
         
-        // Add event listener for super research checkbox
+        // Add event listener for super research checkbox and N/A buttons
         setTimeout(() => {
             const superResearchCheckbox = document.getElementById('superResearch');
             const contributionHistoryItem = document.getElementById('contributionHistoryItem');
+            const superResearchNABtn = document.getElementById('superResearchNABtn');
+            const contributionHistoryNABtn = document.getElementById('contributionHistoryNABtn');
+            const superResearchItem = document.getElementById('superResearchItem');
             
             if (superResearchCheckbox && contributionHistoryItem) {
                 superResearchCheckbox.addEventListener('change', function() {
@@ -2217,6 +2252,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     triggerAutoSave();
                 });
             }
+            
+            // Super Research N/A button
+            if (superResearchNABtn && superResearchItem) {
+                superResearchNABtn.addEventListener('click', function() {
+                    superResearchItem.classList.toggle('na-active');
+                    if (superResearchItem.classList.contains('na-active')) {
+                        superResearchCheckbox.checked = false;
+                        contributionHistoryItem.style.display = 'none';
+                        document.getElementById('contributionHistory').checked = false;
+                    }
+                    triggerAutoSave();
+                });
+            }
+            
+            // Contribution History N/A button
+            if (contributionHistoryNABtn && contributionHistoryItem) {
+                contributionHistoryNABtn.addEventListener('click', function() {
+                    contributionHistoryItem.classList.toggle('na-active');
+                    if (contributionHistoryItem.classList.contains('na-active')) {
+                        document.getElementById('contributionHistory').checked = false;
+                    }
+                    triggerAutoSave();
+                });
+            }
+            
             setupAutoSaveForNewElements();
         }, 100);
     }
@@ -2353,12 +2413,36 @@ document.addEventListener('DOMContentLoaded', function() {
         triggerAutoSave();
     });
     
-    // Handle ongoing fee refer checkbox
+    // Handle ongoing fee refer checkbox - UPDATED LOGIC
     ongoingFeeReferCheckbox.addEventListener('change', function() {
         if (this.checked) {
-            ongoingFeeInput.value = 'Refer to Pricing Calculator\n' + ongoingFeeInput.value;
+            ongoingFeeInput.value = 'Refer to Pricing Calculator';
+            ongoingPcmFeeInput.value = 'Refer to Pricing Calculator';
         } else {
-            ongoingFeeInput.value = ongoingFeeInput.value.replace('Refer to Pricing Calculator\n', '');
+            // Clear the fields when unchecked
+            ongoingFeeInput.value = '';
+            ongoingPcmFeeInput.value = '';
+        }
+        triggerAutoSave();
+    });
+    
+    // Handle MDA N/A button
+    mdaNABtn.addEventListener('click', function() {
+        if (mdaDetailsTextarea.value.includes('N/A')) {
+            mdaDetailsTextarea.value = mdaDetailsTextarea.value.replace('N/A\n', '').replace('N/A', '');
+            mdaDetailsTextarea.classList.remove('strikethrough');
+        } else {
+            mdaDetailsTextarea.value = 'N/A\n' + mdaDetailsTextarea.value;
+            mdaDetailsTextarea.classList.add('strikethrough');
+        }
+        triggerAutoSave();
+    });
+    
+    // Handle Pricing Calculator N/A button
+    pricingCalculatorNABtn.addEventListener('click', function() {
+        pricingCalculatorItem.classList.toggle('na-active');
+        if (pricingCalculatorItem.classList.contains('na-active')) {
+            document.getElementById('pricingCalculator').checked = false;
         }
         triggerAutoSave();
     });
@@ -2420,11 +2504,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Please select a draft to delete.');
             }
         });
-        
-        // Share as Link functionality
-        shareAsLinkBtn.addEventListener('click', function() {
-            shareAsLink();
-        });
     }
     
     function loadDraftList() {
@@ -2469,76 +2548,6 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDraftList();
         draftSelector.value = '';
         showAutoSaveIndicator('Draft deleted successfully!');
-    }
-    
-    // Share as Link functionality
-    function shareAsLink() {
-        const formData = collectFormData();
-        const clientName = document.getElementById('clientName').value || 'Shared Form';
-        
-        try {
-            // Encode form data as base64 to make it URL-safe
-            const encodedData = btoa(JSON.stringify(formData));
-            const shareUrl = `${window.location.origin}${window.location.pathname}?shared=${encodeURIComponent(encodedData)}`;
-            
-            // Copy to clipboard
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showAutoSaveIndicator('Share link copied to clipboard!');
-                
-                // Also show a modal with the link for manual copying if needed
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.style.display = 'block';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                        <p>The link has been copied to your clipboard. Anyone with this link can view and edit this form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
-                            ${shareUrl}
-                        </div>
-                        <div class="modal-buttons">
-                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied again!'))">
-                                <i class="fas fa-copy"></i> Copy Again
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                <i class="fas fa-check"></i> Done
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }).catch(() => {
-                // Fallback if clipboard API fails
-                showAutoSaveIndicator('Share link ready - check the modal');
-                
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.style.display = 'block';
-                modal.innerHTML = `
-                    <div class="modal-content">
-                        <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                        <h3><i class="fas fa-share"></i> Share Form: ${clientName}</h3>
-                        <p>Copy this link to share the form:</p>
-                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all; margin: 15px 0; font-family: monospace; font-size: 12px;">
-                            ${shareUrl}
-                        </div>
-                        <div class="modal-buttons">
-                            <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText('${shareUrl}').then(() => alert('Link copied!')).catch(() => alert('Please copy manually'))">
-                                <i class="fas fa-copy"></i> Copy Link
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                                <i class="fas fa-check"></i> Done
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            });
-        } catch (error) {
-            console.error('Error creating share link:', error);
-            showAutoSaveIndicator('Error creating share link - form too large');
-        }
     }
     
     // Check for shared data in URL
@@ -2871,7 +2880,10 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                                 const checkbox = item.querySelector('input[type="checkbox"]');
                                 const checkboxLabel = item.querySelector('label');
                                 if (checkbox && checkboxLabel) {
-                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px;">${checkbox.checked ? '☑' : '☐'} ${checkboxLabel.textContent}</p>`;
+                                    const isNA = item.classList.contains('na-active');
+                                    const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
+                                    const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
+                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px; ${textDecoration}">${checkStatus} ${checkboxLabel.textContent}</p>`;
                                 }
                             }
                         });
