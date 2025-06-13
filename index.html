@@ -3758,15 +3758,17 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
     // Reset Form functionality
     resetBtn.addEventListener('click', function() {
         if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
-            // Reset form fields
+            console.log('=== RESETTING FORM ===');
+            
+            // STEP 1: Reset ALL form fields
             document.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea').forEach(field => {
                 field.value = '';
-                // Reset textarea size
                 if (field.tagName === 'TEXTAREA') {
                     field.style.height = 'auto';
                 }
             });
             
+            // STEP 2: Reset ALL checkboxes and radios
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
             });
@@ -3775,52 +3777,81 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                 radio.checked = false;
             });
             
+            // STEP 3: Reset ALL selects
             document.querySelectorAll('select').forEach(select => {
                 select.selectedIndex = 0;
             });
             
-            // Reset client type selection
+            // STEP 4: Reset ALL checkbox visual states
             document.querySelectorAll('.checkbox-item').forEach(item => {
                 item.classList.remove('selected');
             });
             
-            // Hide conditional sections
-            partnerNameGroup.style.display = 'none';
-            entityNameGroup.style.display = 'none';
-            entitySelector.style.display = 'none';
-            
-            // Hide all product recommendation sections
-            document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
-                section.style.display = 'none';
+            // STEP 5: Reset ALL checklist N/A states
+            document.querySelectorAll('.checklist-item').forEach(item => {
+                item.classList.remove('na-active');
             });
             
-            // Clear dynamic content
-            document.getElementById('recommendationsSectionsContainer').innerHTML = '';
-            document.getElementById('dynamicFeesContainer').innerHTML = '';
-            document.getElementById('complianceRequirements').innerHTML = '';
-            
-            // Reset other UI elements
-            flowchartRequiredToggle.checked = false;
-            flowchartStatus.textContent = 'No';
-            projectionDateLength.value = 'lifeExpectancy';
-            otherProjectionLength.style.display = 'none';
-            
-            // Reset projection visibility
-            const customProjectionInstructions = document.getElementById('customProjectionInstructions');
-            const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
-            if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
-            if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
-            
-            // Reset paraplanner compare checkbox
-            paraplannerCompareCheckbox.checked = false;
-            alternativePlatformsTextarea.value = '';
-            
-            // Reset MDA N/A state
+            // STEP 6: Reset MDA N/A state
             const mdaTextarea = document.getElementById('mdaDetails');
             if (mdaTextarea) {
                 mdaTextarea.classList.remove('strikethrough');
             }
             
+            // STEP 7: Hide ALL conditional sections completely
+            partnerNameGroup.style.display = 'none';
+            entityNameGroup.style.display = 'none';
+            smsfNameGroup.style.display = 'none';
+            trustNameGroup.style.display = 'none';
+            companyNameGroup.style.display = 'none';
+            entitySelector.style.display = 'none';
+            
+            // STEP 8: Hide ALL product recommendation sections
+            document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // STEP 9: COMPLETELY clear ALL dynamic content containers
+            const recommendationsContainer = document.getElementById('recommendationsSectionsContainer');
+            const dynamicFeesContainer = document.getElementById('dynamicFeesContainer');
+            const complianceContainer = document.getElementById('complianceRequirements');
+            
+            if (recommendationsContainer) {
+                recommendationsContainer.innerHTML = '';
+                console.log('Cleared recommendations container');
+            }
+            if (dynamicFeesContainer) {
+                dynamicFeesContainer.innerHTML = '';
+                console.log('Cleared dynamic fees container');
+            }
+            if (complianceContainer) {
+                complianceContainer.innerHTML = '';
+                console.log('Cleared compliance container');
+            }
+            
+            // STEP 10: Reset specific UI elements to defaults
+            flowchartRequiredToggle.checked = false;
+            flowchartStatus.textContent = 'No';
+            projectionDateLength.value = 'lifeExpectancy';
+            otherProjectionLength.style.display = 'none';
+            
+            // STEP 11: Reset projection visibility to default state
+            const customProjectionInstructions = document.getElementById('customProjectionInstructions');
+            const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
+            if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
+            if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
+            
+            // STEP 12: Reset special checkboxes
+            paraplannerCompareCheckbox.checked = false;
+            alternativePlatformsTextarea.value = '';
+            tmdInFilenoteCheckbox.checked = false;
+            ongoingFeeReferCheckbox.checked = false;
+            
+            // STEP 13: Force update form to ensure clean state
+            // This will rebuild everything from scratch based on the reset selections
+            updateFormBasedOnSelections();
+            
+            console.log('=== FORM RESET COMPLETE ===');
             showAutoSaveIndicator('Form has been reset!');
         }
     });
