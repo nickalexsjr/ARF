@@ -3834,9 +3834,11 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Export to PDF functionality - SAVE AS PDF
+    // Export to PDF functionality - FIXED to show full textarea content
     exportPdfBtn.addEventListener('click', function() {
-        // Hide elements that shouldn't be in PDF
+        console.log('=== STARTING PDF EXPORT ===');
+        
+        // Step 1: Hide elements that shouldn't be in PDF
         const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group');
         const originalDisplays = [];
         
@@ -3845,31 +3847,94 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             el.style.display = 'none';
         });
         
-        // Add PDF-specific styles
+        // Step 2: EXPAND ALL TEXTAREAS to show full content (NO SCROLLING)
+        const allTextareas = document.querySelectorAll('textarea');
+        const originalTextareaHeights = [];
+        
+        console.log('Found', allTextareas.length, 'textareas to expand');
+        
+        allTextareas.forEach((textarea, index) => {
+            // Save original height
+            originalTextareaHeights[index] = {
+                height: textarea.style.height,
+                minHeight: textarea.style.minHeight
+            };
+            
+            // Reset height to auto to measure content
+            textarea.style.height = 'auto';
+            textarea.style.minHeight = 'auto';
+            
+            // Get the full content height
+            const scrollHeight = textarea.scrollHeight;
+            
+            // Set height to show all content (add some padding)
+            textarea.style.height = (scrollHeight + 10) + 'px';
+            textarea.style.minHeight = (scrollHeight + 10) + 'px';
+            
+            console.log(`Expanded textarea ${index}: original height unknown, new height: ${scrollHeight + 10}px`);
+        });
+        
+        // Step 3: Add PDF-specific styles
         const pdfStyle = document.createElement('style');
         pdfStyle.id = 'pdf-export-style';
         pdfStyle.textContent = `
             @media print {
-                body { background: white !important; padding: 0 !important; }
-                .container { box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
-                .section { page-break-inside: avoid !important; }
-                * { print-color-adjust: exact !important; }
+                body { 
+                    background: white !important; 
+                    padding: 0 !important; 
+                    font-size: 12pt !important;
+                }
+                .container { 
+                    box-shadow: none !important; 
+                    max-width: 100% !important; 
+                    margin: 0 !important; 
+                    padding: 15px !important;
+                }
+                .section { 
+                    page-break-inside: avoid !important; 
+                    margin-bottom: 15pt !important;
+                }
+                textarea {
+                    border: 1px solid #ccc !important;
+                    background: white !important;
+                    overflow: visible !important;
+                    resize: none !important;
+                    page-break-inside: avoid !important;
+                }
+                input[type="text"], input[type="date"], input[type="number"] {
+                    border: 1px solid #ccc !important;
+                    background: white !important;
+                }
+                * { 
+                    print-color-adjust: exact !important; 
+                }
+                .product-item {
+                    page-break-inside: avoid !important;
+                    margin-bottom: 10pt !important;
+                }
+                .checklist-item {
+                    page-break-inside: avoid !important;
+                }
             }
         `;
         document.head.appendChild(pdfStyle);
         
-        // Set document title for PDF filename
+        // Step 4: Set document title for PDF filename
         const originalTitle = document.title;
         const clientName = document.getElementById('clientName').value || 'Client';
         document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
         
-        // Trigger print dialog
+        console.log('PDF setup complete - triggering print dialog');
+        
+        // Step 5: Trigger print dialog after a short delay to ensure rendering
         setTimeout(() => {
             window.print();
-        }, 100);
+        }, 500);
         
-        // Clean up after print
+        // Step 6: Clean up after print
         const cleanupAfterPrint = () => {
+            console.log('=== CLEANING UP AFTER PDF EXPORT ===');
+            
             // Remove PDF styles
             const pdfStyleElement = document.getElementById('pdf-export-style');
             if (pdfStyleElement) {
@@ -3883,13 +3948,25 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             elementsToHide.forEach((el, index) => {
                 el.style.display = originalDisplays[index];
             });
+            
+            // RESTORE ALL TEXTAREA HEIGHTS
+            allTextareas.forEach((textarea, index) => {
+                if (originalTextareaHeights[index]) {
+                    textarea.style.height = originalTextareaHeights[index].height || '';
+                    textarea.style.minHeight = originalTextareaHeights[index].minHeight || '';
+                }
+                console.log(`Restored textarea ${index} to original height`);
+            });
+            
+            console.log('=== PDF EXPORT CLEANUP COMPLETE ===');
+            showAutoSaveIndicator('PDF export complete - textareas restored!');
         };
         
         // Listen for print events
         window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
         
-        // Fallback cleanup after 10 seconds
-        setTimeout(cleanupAfterPrint, 10000);
+        // Fallback cleanup after 15 seconds (in case print dialog is cancelled)
+        setTimeout(cleanupAfterPrint, 15000);
     });
     
     // Reset Form functionality
