@@ -1572,8 +1572,7 @@
     </div>
 
     <script>
-      // Export fixes: ensure recommendations and products appear before alignment text and include comments
-
+      // FIXED DRAFT SAVE/LOAD SYSTEM - Comprehensive solution for all dynamic elements
       document.addEventListener("DOMContentLoaded", function () {
         // Client Status Radio Buttons
         const newClientRadio = document.getElementById("newClient");
@@ -3113,10 +3112,6 @@
           console.log("=== N/A BUTTONS SETUP COMPLETE ===");
         }
 
-        // Handle Pricing Calculator N/A button - REMOVED OLD CODE
-
-        // Handle Beneficiary Nomination N/A button - REMOVED OLD CODE
-
         // Draft Functionality
         function initializeDraftFunctionality() {
           loadDraftList();
@@ -3196,80 +3191,83 @@
           });
         }
 
+        // FIXED COMPREHENSIVE SAVE FUNCTION - Saves EVERYTHING properly
         function saveDraft(draftName, isAutoSave = false) {
-          // IMMEDIATE collection - no timeout nonsense
-          console.log("=== IMMEDIATE SAVE STARTING ===");
+          console.log("=== FIXED COMPREHENSIVE SAVE STARTING ===");
 
           const formData = {};
 
-          // Get EVERY single form element in the entire document RIGHT NOW
-          const allElements = document.querySelectorAll(
-            "input, textarea, select",
-          );
-          console.log("Found total elements:", allElements.length);
+          // STEP 1: Save ALL form inputs without exception
+          const allInputs = document.querySelectorAll("input, textarea, select");
+          console.log("Total form elements found:", allInputs.length);
 
-          allElements.forEach((element) => {
+          allInputs.forEach((element) => {
             if (element.id && element.id.trim() !== "") {
               if (element.type === "checkbox" || element.type === "radio") {
                 formData[element.id] = element.checked;
-                if (element.id.includes("tranching")) {
-                  console.log(
-                    "CHECKBOX SAVED:",
-                    element.id,
-                    "=",
-                    element.checked,
-                  );
-                }
               } else {
-                formData[element.id] = element.value;
-                if (element.id.includes("tranching")) {
-                  console.log("VALUE SAVED:", element.id, "=", element.value);
-                }
-                if (element.id.includes("_custom")) {
-                  console.log(
-                    "CUSTOM PRODUCT SAVED:",
-                    element.id,
-                    "=",
-                    element.value,
-                  );
-                }
+                formData[element.id] = element.value || "";
               }
             }
           });
 
-          // FORCE save visibility states for ALL elements with IDs
-          document.querySelectorAll("[id]").forEach((element) => {
-            if (
-              element.id.includes("_details") ||
-              element.id.includes("_section") ||
-              element.id.includes("ProductRecommendationsSection") ||
-              element.id.includes("_custom_group")
-            ) {
-              formData[element.id + "_visible"] =
-                element.style.display !== "none" &&
-                element.style.display !== "";
-              if (element.id.includes("tranching")) {
-                console.log(
-                  "VISIBILITY SAVED:",
-                  element.id,
-                  "=",
-                  element.style.display !== "none" &&
-                    element.style.display !== "",
-                );
-              }
-              if (element.id.includes("_custom_group")) {
-                console.log(
-                  "CUSTOM GROUP VISIBILITY SAVED:",
-                  element.id,
-                  "=",
-                  element.style.display !== "none" &&
-                    element.style.display !== "",
-                );
+          // STEP 2: FORCE SAVE all product-related data with specific patterns
+          console.log("=== SAVING PRODUCT DATA ===");
+          
+          // Save ALL product names, investments, custom products, etc.
+          document.querySelectorAll('[id*="_name"], [id*="_investment"], [id*="_custom"], [id*="_cash"], [id*="_tranching_text"]').forEach((element) => {
+            if (element.id) {
+              formData[element.id] = element.value || "";
+              if (element.id.includes("_custom") || element.id.includes("_tranching_text")) {
+                console.log(`SAVED ${element.id} = "${element.value}"`);
               }
             }
           });
 
-          // Save client type states for rebuilding
+          // Save ALL MDA selections specifically
+          document.querySelectorAll('[id*="_investment_option"]').forEach((select) => {
+            if (select.id) {
+              formData[select.id] = select.value || "";
+              console.log(`SAVED MDA OPTION ${select.id} = "${select.value}"`);
+            }
+          });
+
+          // STEP 3: Save ALL toggle states and status spans
+          document.querySelectorAll('[id$="_mda"], [id$="_tranching"]').forEach((toggle) => {
+            if (toggle.id) {
+              formData[toggle.id] = toggle.checked;
+              
+              // Also save the status span text
+              const statusId = toggle.id + "_status";
+              const statusSpan = document.getElementById(statusId);
+              if (statusSpan) {
+                formData[statusId + "_text"] = statusSpan.textContent;
+              }
+              
+              console.log(`SAVED TOGGLE ${toggle.id} = ${toggle.checked}`);
+            }
+          });
+
+          // STEP 4: Save ALL visibility states for sections
+          const sectionsToSave = [
+            '_mda_section',
+            '_tranching_details', 
+            '_custom_group',
+            '_investment_options',
+            'ProductRecommendationsSection'
+          ];
+
+          sectionsToSave.forEach(pattern => {
+            document.querySelectorAll(`[id*="${pattern}"]`).forEach((section) => {
+              if (section.id) {
+                const isVisible = section.style.display !== "none" && section.style.display !== "";
+                formData[section.id + "_visible"] = isVisible;
+                console.log(`SAVED VISIBILITY ${section.id} = ${isVisible}`);
+              }
+            });
+          });
+
+          // STEP 5: Save client type states for rebuilding dynamic content
           formData["_clientTypes"] = {
             single: singleClientCheckbox.checked,
             couple: coupleClientCheckbox.checked,
@@ -3285,103 +3283,68 @@
             existing: existingClientRadio.checked,
           };
 
-          // Save N/A states for ALL checklist items (including static ones like Pricing Calculator and Beneficiary Nomination)
-          document
-            .querySelectorAll(".checklist-item.na-active")
-            .forEach((item) => {
-              const checkbox = item.querySelector('input[type="checkbox"]');
-              if (checkbox && checkbox.id) {
-                formData[checkbox.id + "_na_active"] = true;
-                console.log("SAVED N/A state for:", checkbox.id);
-              }
-            });
+          // STEP 6: Save N/A states
+          document.querySelectorAll(".checklist-item.na-active").forEach((item) => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox && checkbox.id) {
+              formData[checkbox.id + "_na_active"] = true;
+            }
+          });
 
           // Save MDA N/A state
           const mdaTextarea = document.getElementById("mdaDetails");
           if (mdaTextarea && mdaTextarea.classList.contains("strikethrough")) {
             formData["mdaDetails_na_active"] = true;
-            console.log("SAVED MDA N/A state");
           }
 
-          console.log("=== SAVING TO LOCALSTORAGE ===");
-          console.log("Total form fields saved:", Object.keys(formData).length);
+          // STEP 7: Count what we're saving for verification
+          const productFields = Object.keys(formData).filter(key => 
+            key.includes("_name") || key.includes("_investment") || 
+            key.includes("_custom") || key.includes("_mda") || 
+            key.includes("_tranching")
+          );
+          
+          console.log(`=== SAVE SUMMARY ===`);
+          console.log(`Total fields saved: ${Object.keys(formData).length}`);
+          console.log(`Product-related fields: ${productFields.length}`);
+          console.log(`MDA options: ${Object.keys(formData).filter(k => k.includes("_investment_option")).length}`);
+          console.log(`Custom products: ${Object.keys(formData).filter(k => k.includes("_custom") && !k.includes("_group")).length}`);
+          console.log(`Tranching fields: ${Object.keys(formData).filter(k => k.includes("_tranching")).length}`);
 
-          // Count tranching fields
-          const tranchingFields = Object.keys(formData).filter((key) =>
-            key.includes("tranching"),
-          );
-          console.log(
-            "Tranching fields saved:",
-            tranchingFields.length,
-            tranchingFields,
-          );
-
-          // Count custom product fields
-          const customFields = Object.keys(formData).filter((key) =>
-            key.includes("_custom"),
-          );
-          console.log(
-            "Custom product fields saved:",
-            customFields.length,
-            customFields,
-          );
-
-          const drafts = JSON.parse(
-            localStorage.getItem("financialAdviceFormDrafts") || "{}",
-          );
+          // STEP 8: Save to localStorage
+          const drafts = JSON.parse(localStorage.getItem("financialAdviceFormDrafts") || "{}");
           drafts[draftName] = {
             data: formData,
             timestamp: new Date().toISOString(),
           };
-          localStorage.setItem(
-            "financialAdviceFormDrafts",
-            JSON.stringify(drafts),
-          );
+          localStorage.setItem("financialAdviceFormDrafts", JSON.stringify(drafts));
 
           if (!isAutoSave) {
             loadDraftList();
           }
 
-          console.log("=== SAVE COMPLETE ===");
+          console.log("=== COMPREHENSIVE SAVE COMPLETE ===");
         }
 
+        // FIXED COMPREHENSIVE LOAD FUNCTION - Loads EVERYTHING properly 
         function loadDraft(draftName) {
-          const drafts = JSON.parse(
-            localStorage.getItem("financialAdviceFormDrafts") || "{}",
-          );
+          const drafts = JSON.parse(localStorage.getItem("financialAdviceFormDrafts") || "{}");
           if (!drafts[draftName]) return;
 
           const formData = drafts[draftName].data;
-          console.log("=== LOADING DRAFT ===");
-          console.log("Total fields to restore:", Object.keys(formData).length);
+          console.log("=== FIXED COMPREHENSIVE LOAD STARTING ===");
+          console.log(`Loading ${Object.keys(formData).length} fields total`);
 
-          // Count tranching fields in saved data
-          const tranchingFields = Object.keys(formData).filter(
-            (key) => key.includes("tranching") && !key.endsWith("_visible"),
-          );
-          console.log(
-            "Tranching fields to restore:",
-            tranchingFields.length,
-            tranchingFields,
-          );
-
-          // Count custom product fields in saved data
-          const customFields = Object.keys(formData).filter(
-            (key) => key.includes("_custom") && !key.endsWith("_visible"),
-          );
-          console.log(
-            "Custom product fields to restore:",
-            customFields.length,
-            customFields,
-          );
-
-          // STEP 1: Restore basic form state first
+          // PHASE 1: Restore basic form state first to trigger rebuilds
+          console.log("PHASE 1: Basic form restoration");
           Object.keys(formData).forEach((key) => {
-            if (!key.startsWith("_") && !key.endsWith("_visible")) {
+            if (!key.startsWith("_") && !key.endsWith("_visible") && !key.endsWith("_text") && !key.endsWith("_na_active")) {
               const element = document.getElementById(key);
               if (element) {
                 if (element.type === "checkbox" || element.type === "radio") {
                   element.checked = formData[key];
+                  
+                  // Update visual states for checkboxes
                   if (element.type === "checkbox") {
                     const item = element.closest(".checkbox-item");
                     if (item) {
@@ -3389,203 +3352,199 @@
                     }
                   }
                 } else {
-                  element.value = formData[key];
+                  element.value = formData[key] || "";
                 }
               }
             }
           });
 
-          // STEP 2: Rebuild the form structure based on saved client types
+          // Trigger form rebuild based on client selections
           updateFormBasedOnSelections();
 
-          // STEP 3: Wait for rebuild, then restore EVERYTHING again
+          // PHASE 2: Wait for rebuild, then restore ALL dynamic content
           setTimeout(() => {
-            console.log("=== STEP 3: RESTORING AFTER REBUILD ===");
+            console.log("PHASE 2: Dynamic content restoration");
 
-            // Restore ALL form values again (in case they were cleared during rebuild)
+            // Restore ALL form fields again (including newly created dynamic elements)
             Object.keys(formData).forEach((key) => {
-              if (!key.startsWith("_") && !key.endsWith("_visible")) {
+              if (!key.startsWith("_") && !key.endsWith("_visible") && !key.endsWith("_text") && !key.endsWith("_na_active")) {
                 const element = document.getElementById(key);
                 if (element) {
                   if (element.type === "checkbox" || element.type === "radio") {
                     element.checked = formData[key];
-
-                    // SPECIAL: If this is a tranching toggle, update its status and show details
-                    if (key.endsWith("_tranching") && element.checked) {
-                      const productId = key.replace("_tranching", "");
-                      const status = document.getElementById(
-                        `${productId}_tranching_status`,
-                      );
-                      const details = document.getElementById(
-                        `${productId}_tranching_details`,
-                      );
-
-                      if (status) status.textContent = "Yes";
-                      if (details) {
-                        details.style.display = "block";
-                        console.log(
-                          "ENABLED tranching details for:",
-                          productId,
-                        );
-                      }
-                    }
-
-                    // Handle product recommendation checkboxes
-                    if (
-                      key.endsWith("ProductRecsCheckbox") &&
-                      element.checked
-                    ) {
-                      const checkboxToSectionMap = {
-                        client1ProductRecsCheckbox:
-                          "client1ProductRecommendationsSection",
-                        client2ProductRecsCheckbox:
-                          "client2ProductRecommendationsSection",
-                        jointProductRecsCheckbox:
-                          "jointProductRecommendationsSection",
-                        smsfProductRecsCheckbox:
-                          "smsfProductRecommendationsSection",
-                        trustProductRecsCheckbox:
-                          "trustProductRecommendationsSection",
-                        companyProductRecsCheckbox:
-                          "companyProductRecommendationsSection",
-                        dependantsProductRecsCheckbox:
-                          "dependantsProductRecommendationsSection",
-                      };
-
-                      const sectionId = checkboxToSectionMap[key];
-                      const section = document.getElementById(sectionId);
-                      if (section) {
-                        section.style.display = "block";
-                      }
-                    }
                   } else {
-                    element.value = formData[key];
-                    if (key.includes("tranching_text")) {
-                      console.log(
-                        "RESTORED tranching text:",
-                        key,
-                        "=",
-                        formData[key],
-                      );
-                    }
-                    if (
-                      key.includes("_custom") &&
-                      !key.includes("_custom_group")
-                    ) {
-                      console.log(
-                        "RESTORED custom product:",
-                        key,
-                        "=",
-                        formData[key],
-                      );
-                    }
-
-                    // SPECIAL: Handle product name changes to trigger custom field visibility
-                    if (key.endsWith("_name") && element.value === "Custom") {
-                      const productId = key.replace("_name", "");
-                      const customGroup = document.getElementById(
-                        `${productId}_custom_group`,
-                      );
-                      if (customGroup) {
-                        customGroup.style.display = "block";
-                        console.log(
-                          "SHOWING custom group for product:",
-                          productId,
-                        );
-                      }
-                    }
+                    element.value = formData[key] || "";
                   }
-                } else if (key.includes("tranching_text")) {
-                  console.log("WARNING: Could not find element for:", key);
-                } else if (
-                  key.includes("_custom") &&
-                  !key.includes("_custom_group")
-                ) {
-                  console.log(
-                    "WARNING: Could not find custom product element for:",
-                    key,
-                  );
+                  
+                  // Special handling for product name changes
+                  if (key.endsWith("_name") && element.value) {
+                    console.log(`Triggering product selection for ${key} = ${element.value}`);
+                    // Simulate dropdown selection to trigger proper visibility changes
+                    element.dispatchEvent(new Event('input'));
+                  }
                 }
               }
             });
 
-            // STEP 4: Initialize all product features
+            // Initialize all product features to set up event handlers
             initializeProductFeatures();
             setupProductRecommendationToggles();
-            setupAutoSaveForNewElements();
 
-            // STEP 5: Restore visibility states
+            // PHASE 3: Restore toggles and their dependent sections
             setTimeout(() => {
-              console.log("=== RESTORING VISIBILITY STATES ===");
+              console.log("PHASE 3: Toggle and section restoration");
+
+              // Restore product recommendation checkboxes and show their sections
               Object.keys(formData).forEach((key) => {
-                if (key.endsWith("_visible") && formData[key]) {
-                  const elementId = key.replace("_visible", "");
-                  const element = document.getElementById(elementId);
-                  if (element) {
-                    element.style.display = "block";
-                    if (elementId.includes("_custom_group")) {
-                      console.log(
-                        "RESTORED custom group visibility:",
-                        elementId,
-                      );
+                if (key.endsWith("ProductRecsCheckbox") && formData[key]) {
+                  const checkbox = document.getElementById(key);
+                  if (checkbox) {
+                    checkbox.checked = true;
+                    
+                    // Show the corresponding product section
+                    const sectionMap = {
+                      client1ProductRecsCheckbox: "client1ProductRecommendationsSection",
+                      client2ProductRecsCheckbox: "client2ProductRecommendationsSection", 
+                      jointProductRecsCheckbox: "jointProductRecommendationsSection",
+                      smsfProductRecsCheckbox: "smsfProductRecommendationsSection",
+                      trustProductRecsCheckbox: "trustProductRecommendationsSection",
+                      companyProductRecsCheckbox: "companyProductRecommendationsSection",
+                      dependantsProductRecsCheckbox: "dependantsProductRecommendationsSection"
+                    };
+                    
+                    const sectionId = sectionMap[key];
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                      section.style.display = "block";
+                      console.log(`Showed product section: ${sectionId}`);
+                    }
+                  }
+                }
+
+                // Restore MDA toggles and their sections
+                if (key.endsWith("_mda") && formData[key]) {
+                  const toggle = document.getElementById(key);
+                  if (toggle) {
+                    toggle.checked = true;
+                    
+                    const productId = key.replace("_mda", "");
+                    const status = document.getElementById(`${productId}_mda_status`);
+                    const investmentOptions = document.getElementById(`${productId}_investment_options`);
+                    
+                    if (status) status.textContent = "Yes";
+                    if (investmentOptions) {
+                      investmentOptions.style.display = "block";
+                      
+                      // Populate and restore investment options
+                      updateInvestmentOptions(productId);
+                      
+                      // Restore selected investment option
+                      const optionKey = `${productId}_investment_option`;
+                      if (formData[optionKey]) {
+                        setTimeout(() => {
+                          const select = document.getElementById(optionKey);
+                          if (select) {
+                            select.value = formData[optionKey];
+                            console.log(`Restored MDA option: ${optionKey} = ${formData[optionKey]}`);
+                          }
+                        }, 100);
+                      }
+                    }
+                    
+                    console.log(`Restored MDA toggle: ${key}`);
+                  }
+                }
+
+                // Restore tranching toggles and their sections
+                if (key.endsWith("_tranching") && formData[key]) {
+                  const toggle = document.getElementById(key);
+                  if (toggle) {
+                    toggle.checked = true;
+                    
+                    const productId = key.replace("_tranching", "");
+                    const status = document.getElementById(`${productId}_tranching_status`);
+                    const details = document.getElementById(`${productId}_tranching_details`);
+                    
+                    if (status) status.textContent = "Yes";
+                    if (details) {
+                      details.style.display = "block";
+                      console.log(`Showed tranching details: ${productId}`);
                     }
                   }
                 }
               });
-            }, 100);
 
-            // STEP 6: One final check for custom product and tranching fields
-            setTimeout(() => {
-              console.log("=== FINAL CUSTOM PRODUCT & TRANCHING CHECK ===");
+              // PHASE 4: Final restoration of all visibility states and special content
+              setTimeout(() => {
+                console.log("PHASE 4: Final visibility and content restoration");
 
-              // Final restore of custom product fields
-              const finalCustomElements = document.querySelectorAll(
-                '[id*="_custom"]:not([id*="_custom_group"])',
-              );
-              console.log(
-                "Found custom product elements in DOM:",
-                finalCustomElements.length,
-              );
+                // Restore custom product group visibility
+                Object.keys(formData).forEach((key) => {
+                  if (key.endsWith("_visible") && formData[key]) {
+                    const elementId = key.replace("_visible", "");
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                      element.style.display = "block";
+                      if (elementId.includes("_custom_group")) {
+                        console.log(`Restored custom group visibility: ${elementId}`);
+                      }
+                    }
+                  }
+                });
 
-              finalCustomElements.forEach((element) => {
-                if (formData[element.id]) {
-                  element.value = formData[element.id];
-                  console.log(
-                    "FINAL CUSTOM RESTORE:",
-                    element.id,
-                    "=",
-                    formData[element.id],
-                  );
-                }
-              });
+                // Restore status text for toggles
+                Object.keys(formData).forEach((key) => {
+                  if (key.endsWith("_text")) {
+                    const statusId = key.replace("_text", "");
+                    const statusElement = document.getElementById(statusId);
+                    if (statusElement && formData[key]) {
+                      statusElement.textContent = formData[key];
+                    }
+                  }
+                });
 
-              // Final restore of tranching text fields
-              const finalTrancingElements = document.querySelectorAll(
-                '[id*="tranching_text"]',
-              );
-              console.log(
-                "Found tranching text elements in DOM:",
-                finalTrancingElements.length,
-              );
+                // Restore N/A states
+                Object.keys(formData).forEach((key) => {
+                  if (key.endsWith("_na_active") && formData[key]) {
+                    const originalKey = key.replace("_na_active", "");
+                    
+                    if (originalKey === "mdaDetails") {
+                      const mdaTextarea = document.getElementById("mdaDetails");
+                      if (mdaTextarea) {
+                        mdaTextarea.classList.add("strikethrough");
+                        if (!mdaTextarea.value.includes("N/A")) {
+                          mdaTextarea.value = "N/A\n" + mdaTextarea.value;
+                        }
+                      }
+                    } else {
+                      const element = document.getElementById(originalKey);
+                      if (element) {
+                        const item = element.closest(".checklist-item");
+                        if (item) {
+                          item.classList.add("na-active");
+                          element.checked = false;
+                        }
+                      }
+                    }
+                  }
+                });
 
-              finalTrancingElements.forEach((element) => {
-                if (formData[element.id]) {
-                  element.value = formData[element.id];
-                  console.log(
-                    "FINAL TRANCHING RESTORE:",
-                    element.id,
-                    "=",
-                    formData[element.id],
-                  );
-                }
-              });
+                // Final setup of auto-save and event listeners
+                setupAutoSaveForNewElements();
+                setupMDANAButton();
 
-              console.log("=== LOAD COMPLETE ===");
-            }, 200);
-          }, 300);
-
-          showAutoSaveIndicator("Draft loaded successfully!");
-          setupMDANAButton();
+                console.log("=== COMPREHENSIVE LOAD COMPLETE ===");
+                showAutoSaveIndicator("Draft loaded successfully!");
+                
+                // Verify what was loaded
+                const loadedProducts = document.querySelectorAll('[id*="_name"]').length;
+                const loadedMDA = document.querySelectorAll('[id*="_mda"]:checked').length;
+                const loadedTranching = document.querySelectorAll('[id*="_tranching"]:checked').length;
+                console.log(`Verification - Products: ${loadedProducts}, MDA toggles: ${loadedMDA}, Tranching: ${loadedTranching}`);
+                
+              }, 200); // Phase 4
+            }, 300); // Phase 3  
+          }, 500); // Phase 2
         }
 
         function deleteDraft(draftName) {
