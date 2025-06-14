@@ -2700,7 +2700,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Count custom product fields
         const customFields = Object.keys(formData).filter(key => key.includes('_custom'));
         console.log('Custom product fields saved:', customFields.length, customFields);
-        
+        // FORCE save investment option dropdowns
+document.querySelectorAll('[id$="_investment_option"]').forEach(select => {
+    if (select.id && select.value && select.value.trim() !== '') {
+        formData[select.id] = select.value;
+        console.log('INVESTMENT OPTION SAVED:', select.id, '=', select.value);
+    }
+});
         const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
         drafts[draftName] = {
             data: formData,
@@ -2869,6 +2875,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (formData[element.id]) {
                         element.value = formData[element.id];
                         console.log('FINAL TRANCHING RESTORE:', element.id, '=', formData[element.id]);
+
+                        // MEGA FORCE restore investment options
+const finalInvestmentElements = document.querySelectorAll('[id*="_investment_option"]');
+console.log('Found investment option elements in DOM:', finalInvestmentElements.length);
+
+finalInvestmentElements.forEach(element => {
+    if (formData[element.id]) {
+        element.value = formData[element.id];
+        console.log('FINAL INVESTMENT OPTION RESTORE:', element.id, '=', formData[element.id]);
+    }
+});
                     }
                 });
                 
@@ -3798,7 +3815,7 @@ exportWordBtn.addEventListener('click', function() {
                             }
                         }
                         
-                        // Process regular inputs (avoid duplicates)
+                        // Process regular inputs and textareas (FIXED for Additional Comments)
                         group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
                             if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header') && input.value && input.value.trim() !== '') {
                                 const inputLabel = input.closest('.form-group').querySelector('label');
@@ -3808,8 +3825,14 @@ exportWordBtn.addEventListener('click', function() {
                                         const selected = input.options[input.selectedIndex];
                                         value = selected ? selected.text : '';
                                     }
-                                    if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
-                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${inputLabel.textContent}</h4>`;
+                                    if (value && value.trim() !== '' && value !== 'Select a saved draft...' && value !== 'Select a saved draft...') {
+                                        // Clean up the label text (remove extra elements)
+                                        let labelText = inputLabel.textContent;
+                                        if (inputLabel.querySelector('.inline-checkbox')) {
+                                            labelText = inputLabel.childNodes[0].textContent.trim();
+                                        }
+                                        
+                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${labelText}</h4>`;
                                         wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${value}</div>`;
                                     }
                                 }
