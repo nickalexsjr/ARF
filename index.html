@@ -1822,7 +1822,7 @@
                     <h5>Product ${productIndex + 1}</h5>
                     ${productIndex > 0 ? `<button type="button" class="btn btn-danger btn-sm" onclick="removeProduct('${productId}')">Remove</button>` : ""}
                 </div>
-                
+
                 <div class="grid-3-custom">
                     <div class="form-group">
                         <label for="${productId}_name">Product Name:</label>
@@ -1833,7 +1833,7 @@
                         <input type="text" id="${productId}_custom" name="${productId}_custom" placeholder="Enter custom product name">
                     </div>
                 </div>
-                
+
                 <div class="grid-2">
                     <div class="form-group">
                         <label for="${productId}_investment">Product Investment/s:</label>
@@ -1844,7 +1844,7 @@
                         <input type="text" id="${productId}_cash" name="${productId}_cash" placeholder="Enter cash preference amount">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <div class="yes-no-label">
                         <label for="${productId}_tranching">Tranching:</label>
@@ -1855,14 +1855,14 @@
                         <span id="${productId}_tranching_status">No</span>
                     </div>
                 </div>
-                
+
                 <div class="tranching-details" id="${productId}_tranching_details" style="display: none;">
                     <div class="form-group">
                         <label for="${productId}_tranching_text">Tranching Details:</label>
                         <textarea id="${productId}_tranching_text" name="${productId}_tranching_text" placeholder="Enter tranching details"></textarea>
                     </div>
                 </div>
-                
+
                 <div class="mda-section" id="${productId}_mda_section" style="display: none;">
                     <div class="form-group">
                         <div class="yes-no-label">
@@ -1874,7 +1874,7 @@
                             <span id="${productId}_mda_status">No</span>
                         </div>
                     </div>
-                    
+
                     <div class="form-group" id="${productId}_investment_options" style="display: none;">
                         <label for="${productId}_investment_option">Investment Option:</label>
                         <select id="${productId}_investment_option" name="${productId}_investment_option">
@@ -1979,7 +1979,7 @@
                                 <label for="client1ProductRecsCheckbox">Product Recommendations?</label>
                             </div>
                         </div>
-                        <textarea id="clientRecommendations" name="clientRecommendations" 
+                        <textarea id="clientRecommendations" name="clientRecommendations"
                             placeholder="Enter recommendations for ${clientName}"></textarea>
                     </div>
                     <div class="risk-profile-inline">
@@ -1999,7 +1999,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="product-recommendations" id="client1ProductRecommendationsSection" style="display: none;">
                     <h4>Product Recommendations - ${clientName}</h4>
                     <div id="client1_products">
@@ -2026,7 +2026,7 @@
                                 <label for="client2ProductRecsCheckbox">Product Recommendations?</label>
                             </div>
                         </div>
-                        <textarea id="partnerRecommendations" name="partnerRecommendations" 
+                        <textarea id="partnerRecommendations" name="partnerRecommendations"
                             placeholder="Enter recommendations for ${partnerName}"></textarea>
                     </div>
                     <div class="risk-profile-inline">
@@ -2046,7 +2046,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="product-recommendations" id="client2ProductRecommendationsSection" style="display: none;">
                     <h4>Product Recommendations - ${partnerName}</h4>
                     <div id="client2_products">
@@ -2056,7 +2056,7 @@
                         <i class="fas fa-plus"></i> Add Product
                     </button>
                 </div>
-                
+
                 <div class="recommendation-section">
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
@@ -2066,7 +2066,7 @@
                                 <label for="jointProductRecsCheckbox">Product Recommendations?</label>
                             </div>
                         </div>
-                        <textarea id="jointRecommendations" name="jointRecommendations" 
+                        <textarea id="jointRecommendations" name="jointRecommendations"
                             placeholder="Enter joint recommendations"></textarea>
                         <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointNA()">
                             N/A
@@ -2093,7 +2093,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="product-recommendations" id="jointProductRecommendationsSection" style="display: none;">
                     <h4>Product Recommendations - Joint</h4>
                     <div id="joint_products">
@@ -2147,7 +2147,7 @@
                                 <label for="dependantsProductRecsCheckbox">Product Recommendations?</label>
                             </div>
                         </div>
-                        <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
+                        <textarea id="dependantsRecommendations" name="dependantsRecommendations"
                             placeholder="Enter recommendations for dependants"></textarea>
                     </div>
                     <div class="risk-profile-inline">
@@ -2167,7 +2167,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="product-recommendations" id="dependantsProductRecommendationsSection" style="display: none;">
                     <h4>Product Recommendations - Dependants</h4>
                     <div id="dependants_products">
@@ -2289,7 +2289,7 @@
                             <label for="${entityId}ProductRecsCheckbox">Product Recommendations?</label>
                         </div>
                     </div>
-                    <textarea id="${entityId}Recommendations" name="${entityId}Recommendations" 
+                    <textarea id="${entityId}Recommendations" name="${entityId}Recommendations"
                         placeholder="Enter recommendations for ${entityType}"></textarea>
                 </div>
                 <div class="risk-profile-inline">
@@ -2309,7 +2309,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="product-recommendations" id="${entityId}ProductRecommendationsSection" style="display: none;">
                 <h4>Product Recommendations - ${entityType} - ${entityName}</h4>
                 <div id="${entityId}_products">
@@ -2662,59 +2662,59 @@
                         <input type="checkbox" id="clientIdUploaded" name="compliance" value="ClientID">
                         <label for="clientIdUploaded">Upload copy of ID to XPLAN</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="amlCompletion" name="compliance" value="AML">
                         <label for="amlCompletion">AML to be completed per entity/individual save to XPLAN</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="taskXGreenID" name="compliance" value="GreenID">
                         <label for="taskXGreenID">TaskX - Green ID to be completed</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="initialFN" name="compliance" value="InitialFN">
                         <label for="initialFN">Initial FN</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="riskProfilingEvidence" name="riskProfiling" value="Evidence">
                         <label for="riskProfilingEvidence">Evidence of Risk profiling outcome in filenote</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="clientFFQ" name="compliance" value="ClientFFQ">
                         <label for="clientFFQ">Completed FFQ to XPLAN</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="scopeOfAdvice" name="compliance" value="ScopeOfAdvice">
                         <label for="scopeOfAdvice">Scope of Advice to XPLAN</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="finametricaSigned" name="compliance" value="FinametricaDoc">
                         <label for="finametricaSigned">Signed Finametrica Document to be uploaded to XPLAN</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="finametricaReport" name="compliance" value="FinametricaReport">
                         <label for="finametricaReport">Finametrica Report to be uploaded to XPLAN</label>
                     </div>
-                    
+
                     <div class="checklist-item" id="superResearchItem">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
                         <button type="button" class="btn btn-secondary btn-sm na-button" id="superResearchNABtn">N/A</button>
                     </div>
-                    
+
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
                         <button type="button" class="btn btn-secondary btn-sm na-button" id="contributionHistoryNABtn">N/A</button>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="taskXNewAdvice" name="compliance" value="TaskXNewAdvice">
                         <label for="taskXNewAdvice">TaskX - New Advice Request</label>
@@ -2730,33 +2730,33 @@
                         <input type="checkbox" id="strategicFN" name="compliance" value="StrategicFN">
                         <label for="strategicFN">Strategic FN / Other relevant FN</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="riskProfilingEvidence" name="riskProfiling" value="Evidence">
                         <label for="riskProfilingEvidence">Evidence of Risk profiling outcome in filenote</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="uploadPricingCalc" name="compliance" value="UploadPricing">
                         <label for="uploadPricingCalc">Upload Pricing Calculator</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="workingsResearch" name="compliance" value="WorkingsResearch">
                         <label for="workingsResearch">Workings / Research etc to be uploaded</label>
                     </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="submitJira" name="compliance" value="SubmitJira">
                         <label for="submitJira">Submit JIRA for pricing/or PCR (if applicable)</label>
                     </div>
-                    
+
                     <div class="checklist-item" id="superResearchItem">
                         <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
                         <label for="superResearch">Super research confirmation</label>
                         <button type="button" class="btn btn-secondary btn-sm na-button" id="superResearchNABtn">N/A</button>
                     </div>
-                    
+
                     <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
                         <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
                         <label for="contributionHistory">Contribution history obtained</label>
@@ -4869,11 +4869,11 @@ ${document.getElementById("formCompletedBy").value || "[Your Name]"}`;
                 <meta charset="utf-8">
                 <title>Financial Advice Request Form - ${clientName}</title>
                 <style>
-                    body { 
-                        font-family: Calibri, Arial, sans-serif; 
-                        line-height: 1.5; 
-                        color: #000; 
-                        margin: 20px; 
+                    body {
+                        font-family: Calibri, Arial, sans-serif;
+                        line-height: 1.5;
+                        color: #000;
+                        margin: 20px;
                         background: white;
                     }
                     h1 { font-size: 24pt; margin-bottom: 20pt; }
@@ -5026,21 +5026,21 @@ ${document.getElementById("formCompletedBy").value || "[Your Name]"}`;
           pdfStyle.id = "pdf-export-style";
           pdfStyle.textContent = `
             @media print {
-                body { 
-                    background: white !important; 
-                    padding: 0 !important; 
+                body {
+                    background: white !important;
+                    padding: 0 !important;
                     font-size: 12pt !important;
                     color: black !important;
                 }
-                .container { 
-                    box-shadow: none !important; 
-                    max-width: 100% !important; 
-                    margin: 0 !important; 
+                .container {
+                    box-shadow: none !important;
+                    max-width: 100% !important;
+                    margin: 0 !important;
                     padding: 15px !important;
                     background: white !important;
                 }
-                .section { 
-                    page-break-inside: avoid !important; 
+                .section {
+                    page-break-inside: avoid !important;
                     margin-bottom: 15pt !important;
                     background: white !important;
                     box-shadow: none !important;
