@@ -2541,10 +2541,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('=== N/A BUTTONS SETUP COMPLETE ===');
     }
     
-    // Handle Pricing Calculator N/A button - REMOVED OLD CODE
-    
-    // Handle Beneficiary Nomination N/A button - REMOVED OLD CODE
-    
     // Draft Functionality
     function initializeDraftFunctionality() {
         loadDraftList();
@@ -3612,258 +3608,257 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         }, 3000);
     }
     
-    // Export to Word functionality - COMPLETELY REWRITTEN FOR PROPER ORDER
+    // Export to Word functionality - COMPLETELY REWRITTEN for proper ordering and complete content
     exportWordBtn.addEventListener('click', function() {
+        console.log('=== STARTING WORD EXPORT ===');
+        
         const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Build Word document content in CORRECT ORDER - IGNORING DOM ORDER
+        // Build Word document content with PROPER ordering and complete content
         let wordContent = `
         <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
         `;
         
-        // SECTION 1: Client Details (Always first)
-        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px;">Client Details</h2>`;
+        // ===== SECTION 1: CLIENT DETAILS =====
+        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">Client Details</h2>`;
         
         // Client Status
-        const newClient = document.getElementById('newClient');
-        const existingClient = document.getElementById('existingClient');
-        if (newClient && newClient.checked) {
-            wordContent += `<p><strong>Client Status:</strong> New Client</p>`;
-        } else if (existingClient && existingClient.checked) {
-            wordContent += `<p><strong>Client Status:</strong> Existing Client</p>`;
+        const clientStatus = document.querySelector('input[name="clientStatus"]:checked');
+        if (clientStatus) {
+            wordContent += `<p><strong>Client Status:</strong> ${clientStatus.nextElementSibling.textContent}</p>`;
         }
         
         // Client Types
-        const clientTypes = [];
-        if (singleClientCheckbox.checked) clientTypes.push('Single Client');
-        if (coupleClientCheckbox.checked) clientTypes.push('Couple');
-        if (dependantsClientCheckbox.checked) clientTypes.push('Dependants');
-        if (entityClientCheckbox.checked) {
-            const entitySubTypes = [];
-            if (entitySMSFCheckbox.checked) entitySubTypes.push('SMSF');
-            if (entityTrustCheckbox.checked) entitySubTypes.push('Trust');
-            if (entityCompanyCheckbox.checked) entitySubTypes.push('Company');
-            if (entitySubTypes.length > 0) {
-                clientTypes.push(`Entity (${entitySubTypes.join(', ')})`);
-            } else {
-                clientTypes.push('Entity');
-            }
-        }
-        if (clientTypes.length > 0) {
-            wordContent += `<p><strong>Client Types:</strong> ${clientTypes.join(', ')}</p>`;
+        const selectedClientTypes = document.querySelectorAll('input[name="clientType"]:checked');
+        if (selectedClientTypes.length > 0) {
+            wordContent += `<p><strong>Client Type:</strong></p>`;
+            selectedClientTypes.forEach(checkbox => {
+                wordContent += `<p style="margin-left: 20px;">☑ ${checkbox.nextElementSibling.textContent}</p>`;
+            });
         }
         
-        // SECTION 2: Strategy Details
-        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px;">Strategy Details</h2>`;
+        // Entity Types (if applicable)
+        const selectedEntityTypes = document.querySelectorAll('input[name="entityType"]:checked');
+        if (selectedEntityTypes.length > 0) {
+            wordContent += `<p><strong>Entity Type:</strong></p>`;
+            selectedEntityTypes.forEach(checkbox => {
+                wordContent += `<p style="margin-left: 20px;">☑ ${checkbox.nextElementSibling.textContent}</p>`;
+            });
+        }
         
-        // Basic client info
-        const basicFields = [
-            {id: 'clientName', label: 'Client 1 Name'},
-            {id: 'partnerName', label: 'Client 2 Name (Spouse)'},
-            {id: 'smsfName', label: 'SMSF Name'},
-            {id: 'trustName', label: 'Trust Name'},
-            {id: 'companyName', label: 'Company Name'},
-            {id: 'xplanId', label: 'Xplan ID'},
-            {id: 'adviserName', label: 'Adviser Name'},
-            {id: 'clientMeetingDate', label: 'Client Meeting Date'},
-            {id: 'formCompletedBy', label: 'Form Completed by'}
-        ];
+        // ===== SECTION 2: STRATEGY DETAILS =====
+        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">Strategy Details</h2>`;
         
-        basicFields.forEach(field => {
-            const element = document.getElementById(field.id);
-            if (element && element.value && element.value.trim() !== '') {
-                wordContent += `<p><strong>${field.label}:</strong> ${element.value}</p>`;
+        // Helper function to add field if it has content
+        function addFieldIfContent(fieldId, labelText) {
+            const field = document.getElementById(fieldId);
+            if (field && field.value && field.value.trim() !== '') {
+                wordContent += `<p><strong>${labelText}:</strong></p>`;
+                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${field.value}</p>`;
             }
-        });
+        }
         
-        // SECTION 3: Strategy Recommendations - WITH PROPER ORDER
-        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px;">Strategy Recommendations</h2>`;
+        addFieldIfContent('clientName', 'Client 1 Name');
+        addFieldIfContent('partnerName', 'Client 2 Name (Spouse)');
+        addFieldIfContent('smsfName', 'SMSF Name');
+        addFieldIfContent('trustName', 'Trust Name');
+        addFieldIfContent('companyName', 'Company Name');
+        addFieldIfContent('xplanId', 'Xplan ID');
+        addFieldIfContent('adviserName', 'Adviser Name');
+        addFieldIfContent('clientMeetingDate', 'Client Meeting Date');
+        addFieldIfContent('formCompletedBy', 'Form Completed by');
         
-        // CLIENT 1 RECOMMENDATIONS + PRODUCTS + RISK PROFILE
+        // ===== SECTION 3: STRATEGY RECOMMENDATIONS (PROPER ORDER) =====
+        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">Strategy Recommendations</h2>`;
+        
+        // Function to process client recommendations and their products
+        function processClientRecommendations(clientId, clientLabel) {
+            // Get recommendation text
+            const recTextarea = document.getElementById(`${clientId}Recommendations`);
+            const riskSelect = document.getElementById(`riskProfile${clientId === 'client1' ? '1' : clientId === 'client2' ? '2' : clientId}`);
+            const productCheckbox = document.getElementById(`${clientId}ProductRecsCheckbox`);
+            
+            if (recTextarea && recTextarea.value && recTextarea.value.trim() !== '') {
+                wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${clientLabel} Recommendations</h3>`;
+                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${recTextarea.value}</p>`;
+                
+                // Add risk profile
+                if (riskSelect && riskSelect.value && riskSelect.value.trim() !== '') {
+                    const selectedOption = riskSelect.options[riskSelect.selectedIndex];
+                    if (selectedOption && selectedOption.text !== 'Select Risk Profile') {
+                        wordContent += `<p><strong>Risk Profile - ${clientLabel}:</strong> ${selectedOption.text}</p>`;
+                    }
+                }
+                
+                // Add product recommendations checkbox status
+                if (productCheckbox && productCheckbox.checked) {
+                    wordContent += `<p style="margin-left: 20px;">☑ Product Recommendations Required</p>`;
+                }
+                
+                // NOW ADD PRODUCT RECOMMENDATIONS IMMEDIATELY AFTER
+                const productSection = document.getElementById(`${clientId}ProductRecommendationsSection`);
+                if (productSection && productSection.style.display === 'block') {
+                    wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">Product Recommendations - ${clientLabel}</h4>`;
+                    
+                    const products = productSection.querySelectorAll('.product-item');
+                    products.forEach((product, index) => {
+                        let hasProductContent = false;
+                        let productContentHTML = '';
+                        
+                        // Process product fields
+                        product.querySelectorAll('input, textarea, select').forEach(input => {
+                            if (input.value && input.value.trim() !== '' && input.style.display !== 'none') {
+                                const inputGroup = input.closest('.form-group');
+                                const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
+                                
+                                if (inputLabel) {
+                                    let value = input.value;
+                                    if (input.tagName === 'SELECT') {
+                                        const selected = input.options[input.selectedIndex];
+                                        value = selected ? selected.text : '';
+                                    }
+                                    if (input.type === 'checkbox') {
+                                        const statusSpan = input.parentElement.nextElementSibling;
+                                        value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
+                                    }
+                                    if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
+                                        hasProductContent = true;
+                                        productContentHTML += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
+                                    }
+                                }
+                            }
+                        });
+                        
+                        if (hasProductContent) {
+                            wordContent += `<h5 style="color: #34495e; margin-top: 10px; margin-bottom: 5px;">Product ${index + 1}</h5>`;
+                            wordContent += productContentHTML;
+                        }
+                    });
+                }
+            }
+        }
+        
+        // Process each client type in proper order
         if (singleClientCheckbox.checked || coupleClientCheckbox.checked) {
-            const client1Name = document.getElementById('clientName').value || 'Client 1';
-            const client1Recs = document.getElementById('clientRecommendations');
-            const client1Risk = document.getElementById('riskProfile1');
-            const client1ProductCheckbox = document.getElementById('client1ProductRecsCheckbox');
-            
-            wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${client1Name} Recommendations</h3>`;
-            
-            if (client1Recs && client1Recs.value && client1Recs.value.trim() !== '') {
-                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${client1Recs.value}</p>`;
-            }
-            
-            // Risk Profile for Client 1
-            if (client1Risk && client1Risk.value && client1Risk.value.trim() !== '') {
-                const riskSelected = client1Risk.options[client1Risk.selectedIndex];
-                if (riskSelected && riskSelected.text && riskSelected.text !== 'Select Risk Profile') {
-                    wordContent += `<p><strong>Risk Profile - ${client1Name}:</strong> ${riskSelected.text}</p>`;
-                }
-            }
-            
-            // Product Recommendations for Client 1 (if enabled)
-            if (client1ProductCheckbox && client1ProductCheckbox.checked) {
-                wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">Product Recommendations - ${client1Name}</h4>`;
-                const client1Products = document.querySelectorAll('#client1_products .product-item');
-                client1Products.forEach((product, index) => {
-                    const productContent = extractProductContent(product, index + 1);
-                    if (productContent) {
-                        wordContent += productContent;
-                    }
-                });
-            }
+            processClientRecommendations('client1', document.getElementById('clientName').value || 'Client 1');
         }
         
-        // CLIENT 2 RECOMMENDATIONS + PRODUCTS + RISK PROFILE
         if (coupleClientCheckbox.checked) {
-            const client2Name = document.getElementById('partnerName').value || 'Client 2';
-            const client2Recs = document.getElementById('partnerRecommendations');
-            const client2Risk = document.getElementById('riskProfile2');
-            const client2ProductCheckbox = document.getElementById('client2ProductRecsCheckbox');
-            
-            wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${client2Name} Recommendations</h3>`;
-            
-            if (client2Recs && client2Recs.value && client2Recs.value.trim() !== '') {
-                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${client2Recs.value}</p>`;
-            }
-            
-            // Risk Profile for Client 2
-            if (client2Risk && client2Risk.value && client2Risk.value.trim() !== '') {
-                const riskSelected = client2Risk.options[client2Risk.selectedIndex];
-                if (riskSelected && riskSelected.text && riskSelected.text !== 'Select Risk Profile') {
-                    wordContent += `<p><strong>Risk Profile - ${client2Name}:</strong> ${riskSelected.text}</p>`;
-                }
-            }
-            
-            // Product Recommendations for Client 2 (if enabled)
-            if (client2ProductCheckbox && client2ProductCheckbox.checked) {
-                wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">Product Recommendations - ${client2Name}</h4>`;
-                const client2Products = document.querySelectorAll('#client2_products .product-item');
-                client2Products.forEach((product, index) => {
-                    const productContent = extractProductContent(product, index + 1);
-                    if (productContent) {
-                        wordContent += productContent;
-                    }
-                });
-            }
-            
-            // JOINT RECOMMENDATIONS + PRODUCTS + RISK PROFILE
-            const jointRecs = document.getElementById('jointRecommendations');
-            const jointRisk = document.getElementById('riskProfileJoint');
-            const jointProductCheckbox = document.getElementById('jointProductRecsCheckbox');
-            
-            wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">Joint Recommendations</h3>`;
-            
-            if (jointRecs && jointRecs.value && jointRecs.value.trim() !== '') {
-                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${jointRecs.value}</p>`;
-            }
-            
-            // Risk Profile for Joint
-            if (jointRisk && jointRisk.value && jointRisk.value.trim() !== '') {
-                const riskSelected = jointRisk.options[jointRisk.selectedIndex];
-                if (riskSelected && riskSelected.text && riskSelected.text !== 'Select Risk Profile') {
-                    wordContent += `<p><strong>Risk Profile - Joint:</strong> ${riskSelected.text}</p>`;
-                }
-            }
-            
-            // Product Recommendations for Joint (if enabled)
-            if (jointProductCheckbox && jointProductCheckbox.checked) {
-                wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">Product Recommendations - Joint</h4>`;
-                const jointProducts = document.querySelectorAll('#joint_products .product-item');
-                jointProducts.forEach((product, index) => {
-                    const productContent = extractProductContent(product, index + 1);
-                    if (productContent) {
-                        wordContent += productContent;
-                    }
-                });
-            }
+            processClientRecommendations('client2', document.getElementById('partnerName').value || 'Client 2');
+            processClientRecommendations('joint', 'Joint');
         }
         
-        // ENTITY RECOMMENDATIONS + PRODUCTS + RISK PROFILES
-        const entityTypes = ['smsf', 'trust', 'company'];
-        entityTypes.forEach(entityType => {
-            const entityRecs = document.getElementById(`${entityType}Recommendations`);
-            const entityRisk = document.getElementById(`riskProfile${entityType}`);
-            const entityProductCheckbox = document.getElementById(`${entityType}ProductRecsCheckbox`);
-            
-            if (entityRecs && entityRecs.value && entityRecs.value.trim() !== '') {
-                const entityName = entityType.toUpperCase();
-                wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${entityName} Recommendations</h3>`;
-                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${entityRecs.value}</p>`;
-                
-                // Risk Profile for Entity
-                if (entityRisk && entityRisk.value && entityRisk.value.trim() !== '') {
-                    const riskSelected = entityRisk.options[entityRisk.selectedIndex];
-                    if (riskSelected && riskSelected.text && riskSelected.text !== 'Select Risk Profile') {
-                        wordContent += `<p><strong>Risk Profile - ${entityName}:</strong> ${riskSelected.text}</p>`;
-                    }
-                }
-                
-                // Product Recommendations for Entity (if enabled)
-                if (entityProductCheckbox && entityProductCheckbox.checked) {
-                    wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">Product Recommendations - ${entityName}</h4>`;
-                    const entityProducts = document.querySelectorAll(`#${entityType}_products .product-item`);
-                    entityProducts.forEach((product, index) => {
-                        const productContent = extractProductContent(product, index + 1);
-                        if (productContent) {
-                            wordContent += productContent;
-                        }
-                    });
-                }
-            }
-        });
+        // Process entity recommendations
+        if (entitySMSFCheckbox.checked) {
+            processClientRecommendations('smsf', document.getElementById('smsfName').value || 'SMSF');
+        }
+        if (entityTrustCheckbox.checked) {
+            processClientRecommendations('trust', document.getElementById('trustName').value || 'Trust');
+        }
+        if (entityCompanyCheckbox.checked) {
+            processClientRecommendations('company', document.getElementById('companyName').value || 'Company');
+        }
         
-        // DEPENDANTS RECOMMENDATIONS + PRODUCTS + RISK PROFILE
+        // Process dependants
         if (dependantsClientCheckbox.checked) {
-            const dependantsRecs = document.getElementById('dependantsRecommendations');
-            const dependantsRisk = document.getElementById('riskProfileDependants');
-            const dependantsProductCheckbox = document.getElementById('dependantsProductRecsCheckbox');
-            
-            if (dependantsRecs && dependantsRecs.value && dependantsRecs.value.trim() !== '') {
-                wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">Dependants Recommendations</h3>`;
-                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${dependantsRecs.value}</p>`;
-                
-                // Risk Profile for Dependants
-                if (dependantsRisk && dependantsRisk.value && dependantsRisk.value.trim() !== '') {
-                    const riskSelected = dependantsRisk.options[dependantsRisk.selectedIndex];
-                    if (riskSelected && riskSelected.text && riskSelected.text !== 'Select Risk Profile') {
-                        wordContent += `<p><strong>Risk Profile - Dependants:</strong> ${riskSelected.text}</p>`;
-                    }
-                }
-                
-                // Product Recommendations for Dependants (if enabled)
-                if (dependantsProductCheckbox && dependantsProductCheckbox.checked) {
-                    wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">Product Recommendations - Dependants</h4>`;
-                    const dependantsProducts = document.querySelectorAll('#dependants_products .product-item');
-                    dependantsProducts.forEach((product, index) => {
-                        const productContent = extractProductContent(product, index + 1);
-                        if (productContent) {
-                            wordContent += productContent;
-                        }
-                    });
-                }
-            }
+            processClientRecommendations('dependants', 'Dependants');
         }
         
-        // OTHER STRATEGY FIELDS (AFTER all client/entity recommendations)
-        const strategyFields = [
-            {id: 'goalAlignment', label: 'How strategy aligns to goals and objectives'},
-            {id: 'mdaDetails', label: 'MDA Personalisation'},
-            {id: 'tmdDetails', label: 'TMD'},
-            {id: 'inaccurateInfo', label: 'Any potentially inaccurate or incomplete information'},
-            {id: 'alternativeStrategies', label: 'Alternatives - strategies'},
-            {id: 'alternativePlatforms', label: 'Alternatives - platforms'}
-        ];
+        // Add remaining strategy recommendation fields
+        addFieldIfContent('goalAlignment', 'How strategy aligns to goals and objectives');
+        addFieldIfContent('mdaDetails', 'MDA Personalisation');
+        addFieldIfContent('tmdDetails', 'TMD');
+        addFieldIfContent('inaccurateInfo', 'Any potentially inaccurate or incomplete information');
+        addFieldIfContent('alternativeStrategies', 'Alternatives - strategies');
         
-        strategyFields.forEach(field => {
-            const element = document.getElementById(field.id);
-            if (element && element.value && element.value.trim() !== '') {
-                wordContent += `<p><strong>${field.label}:</strong></p>`;
-                wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${element.value}</p>`;
+        // Alternative platforms with full content preservation
+        const altPlatforms = document.getElementById('alternativePlatforms');
+        if (altPlatforms && altPlatforms.value && altPlatforms.value.trim() !== '') {
+            wordContent += `<p><strong>Alternatives - platforms:</strong></p>`;
+            wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${altPlatforms.value}</p>`;
+        }
+        
+        // ===== SECTION 4: FLOWCHART =====
+        const flowchartRequired = document.getElementById('flowchartRequired');
+        if (flowchartRequired) {
+            wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">Flowchart</h2>`;
+            wordContent += `<p><strong>Flowchart required:</strong> ${flowchartRequired.checked ? 'Yes' : 'No'}</p>`;
+        }
+        
+        // ===== SECTION 5: SOA PROJECTIONS =====
+        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">SOA Projections</h2>`;
+        
+        const projectionLength = document.getElementById('projectionDateLength');
+        if (projectionLength && projectionLength.value) {
+            const selectedProjection = projectionLength.options[projectionLength.selectedIndex];
+            wordContent += `<p><strong>Projection date length:</strong> ${selectedProjection.text}</p>`;
+        }
+        
+        const otherProjectionValue = document.getElementById('otherProjectionLengthValue');
+        if (otherProjectionValue && otherProjectionValue.value && otherProjectionValue.value.trim() !== '') {
+            wordContent += `<p><strong>Other projection length:</strong> ${otherProjectionValue.value} years</p>`;
+        }
+        
+        addFieldIfContent('customInstructions', 'Custom Instructions');
+        
+        // Projection options
+        const projectionOptions = document.querySelectorAll('input[name="projectionOptions"]:checked');
+        if (projectionOptions.length > 0) {
+            wordContent += `<p><strong>Projection Options:</strong></p>`;
+            projectionOptions.forEach(option => {
+                wordContent += `<p style="margin-left: 20px;">☑ ${option.nextElementSibling.textContent}</p>`;
+            });
+        }
+        
+        // ===== SECTION 6: SOA FEES =====
+        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">SOA Fees (including GST)</h2>`;
+        
+        addFieldIfContent('upfrontFee', 'Upfront Fee');
+        addFieldIfContent('paymentMethod', 'Method of payment');
+        addFieldIfContent('implementationFee', 'Implementation fee');
+        addFieldIfContent('ongoingFee', 'Ongoing Advice Fee');
+        addFieldIfContent('ongoingPcmFee', 'Ongoing PC&M Fee');
+        addFieldIfContent('smsfFees', 'SMSF fees');
+        addFieldIfContent('trustFees', 'Trust fees');
+        addFieldIfContent('companyFees', 'Company fees');
+        addFieldIfContent('referralFee', 'Referral Fee Applicable');
+        
+        // ===== SECTION 7: ADDITIONAL COMMENTS =====
+        addFieldIfContent('additionalComments', 'Additional Comments/Notes');
+        
+        // ===== SECTION 8: COMPLIANCE CHECKLIST =====
+        wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">Compliance Checklist</h2>`;
+        
+        // All advice documents
+        wordContent += `<h3 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">All Advice documents</h3>`;
+        
+        const requiredDocs = ['factFind', 'filenote', 'pricingCalculator', 'beneficiaryNomination'];
+        const requiredDocsLabels = ['Fact Find (dated within 12 months)', 'Filenote', 'Pricing Calculator', 'Beneficiary nomination advice made (if relevant)'];
+        
+        requiredDocs.forEach((docId, index) => {
+            const checkbox = document.getElementById(docId);
+            const item = document.getElementById(docId + 'Item') || checkbox?.closest('.checklist-item');
+            if (checkbox) {
+                const isNA = item?.classList.contains('na-active');
+                const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
+                const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
+                wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px; ${textDecoration}">${checkStatus} ${requiredDocsLabels[index]}</p>`;
             }
         });
         
-        // Continue with remaining sections...
-        addRemainingWordSections(wordContent);
+        // Compliance requirements
+        wordContent += `<h3 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">Compliance Requirements</h3>`;
+        
+        document.querySelectorAll('#complianceRequirements .checklist-item').forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            const label = item.querySelector('label');
+            if (checkbox && label) {
+                const isNA = item.classList.contains('na-active');
+                const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
+                const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
+                wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px; ${textDecoration}">${checkStatus} ${label.textContent}</p>`;
+            }
+        });
         
         // Create complete Word document
         const html = `
@@ -3881,7 +3876,7 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
                     }
                     h1 { font-size: 24pt; margin-bottom: 20pt; }
                     h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; }
-                    h3, h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; }
+                    h3, h4, h5 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; }
                     p { margin-bottom: 10pt; }
                     @page { margin: 1in; }
                 </style>
@@ -3900,417 +3895,6 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         a.click();
         URL.revokeObjectURL(url);
         
+        console.log('=== WORD EXPORT COMPLETE ===');
         showAutoSaveIndicator('Word document exported successfully!');
     });
-    
-    // Helper function to extract product content with all details
-    function extractProductContent(productElement, productNumber) {
-        let content = '';
-        let hasContent = false;
-        
-        content += `<h5 style="color: #34495e; margin-top: 10px; margin-bottom: 8px;">Product ${productNumber}</h5>`;
-        
-        // Product fields to extract
-        const productFields = [
-            {selector: '[id$="_name"]', label: 'Product Name'},
-            {selector: '[id$="_custom"]', label: 'Custom Product'},
-            {selector: '[id$="_investment"]', label: 'Product Investment/s'},
-            {selector: '[id$="_cash"]', label: 'Cash Preference'},
-            {selector: '[id$="_tranching_text"]', label: 'Tranching Details'},
-            {selector: '[id$="_investment_option"]', label: 'Investment Option'}
-        ];
-        
-        productFields.forEach(field => {
-            const element = productElement.querySelector(field.selector);
-            if (element && element.value && element.value.trim() !== '' && element.style.display !== 'none') {
-                let value = element.value;
-                if (element.tagName === 'SELECT') {
-                    const selected = element.options[element.selectedIndex];
-                    value = selected ? selected.text : '';
-                }
-                if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
-                    hasContent = true;
-                    content += `<p style="margin-left: 15px;"><strong>${field.label}:</strong> ${value}</p>`;
-                }
-            }
-        });
-        
-        // Handle toggle switches (Tranching, MDA)
-        const tranchingToggle = productElement.querySelector('[id$="_tranching"]');
-        if (tranchingToggle && tranchingToggle.checked) {
-            hasContent = true;
-            content += `<p style="margin-left: 15px;"><strong>Tranching:</strong> Yes</p>`;
-        }
-        
-        const mdaToggle = productElement.querySelector('[id$="_mda"]');
-        if (mdaToggle && mdaToggle.checked) {
-            hasContent = true;
-            content += `<p style="margin-left: 15px;"><strong>MDA:</strong> Yes</p>`;
-        }
-        
-        return hasContent ? content : '';
-    }
-    
-    // Helper function to add remaining Word sections
-    function addRemainingWordSections(wordContent) {
-        // This function would continue adding other sections like Flowchart, Projections, Fees, etc.
-        // Since the wordContent is passed by reference as a string, we need to return it
-        // For now, just adding remaining static sections
-        
-        // Continue with other sections...
-        const flowchartRequired = document.getElementById('flowchartRequired');
-        if (flowchartRequired) {
-            wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px;">Flowchart</h2>`;
-            wordContent += `<p><strong>Flowchart required:</strong> ${flowchartRequired.checked ? 'Yes' : 'No'}</p>`;
-        }
-        
-        // Add other sections as needed...
-        return wordContent;
-    }
-    
-    // Export to PDF functionality - FIXED to show ALL textarea content properly
-    exportPdfBtn.addEventListener('click', function() {
-        console.log('=== STARTING PDF EXPORT ===');
-        
-        // Step 1: Hide elements that shouldn't be in PDF
-        const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group, .no-print');
-        const originalDisplays = [];
-        
-        elementsToHide.forEach(el => {
-            originalDisplays.push(el.style.display);
-            el.style.display = 'none';
-        });
-        
-        // Step 2: AGGRESSIVE TEXTAREA EXPANSION - Make ALL textareas show full content
-        const allTextareas = document.querySelectorAll('textarea');
-        const originalTextareaStyles = [];
-        
-        console.log('Found', allTextareas.length, 'textareas to expand');
-        
-        allTextareas.forEach((textarea, index) => {
-            // Save ALL original styles
-            originalTextareaStyles[index] = {
-                height: textarea.style.height,
-                minHeight: textarea.style.minHeight,
-                maxHeight: textarea.style.maxHeight,
-                overflow: textarea.style.overflow,
-                resize: textarea.style.resize,
-                boxSizing: textarea.style.boxSizing,
-                padding: textarea.style.padding,
-                border: textarea.style.border,
-                lineHeight: textarea.style.lineHeight
-            };
-            
-            // FORCE reset to auto for accurate measurement
-            textarea.style.height = 'auto';
-            textarea.style.minHeight = 'auto';
-            textarea.style.maxHeight = 'none';
-            textarea.style.overflow = 'visible';
-            textarea.style.resize = 'none';
-            textarea.style.boxSizing = 'border-box';
-            
-            // Force a reflow to get accurate measurements
-            textarea.offsetHeight;
-            
-            // Calculate the required height with extra padding for safety
-            const scrollHeight = textarea.scrollHeight;
-            const computedStyle = window.getComputedStyle(textarea);
-            const paddingTop = parseInt(computedStyle.paddingTop);
-            const paddingBottom = parseInt(computedStyle.paddingBottom);
-            const borderTop = parseInt(computedStyle.borderTopWidth);
-            const borderBottom = parseInt(computedStyle.borderBottomWidth);
-            
-            // Calculate total height needed (content + padding + borders + extra space)
-            const totalHeight = scrollHeight + paddingTop + paddingBottom + borderTop + borderBottom + 20;
-            
-            // Set the calculated height
-            textarea.style.height = totalHeight + 'px';
-            textarea.style.minHeight = totalHeight + 'px';
-            
-            console.log(`Expanded textarea ${index}: scrollHeight: ${scrollHeight}, totalHeight: ${totalHeight}px`);
-        });
-        
-        // Step 3: Hide empty form groups and sections to clean up the export
-        const allFormGroups = document.querySelectorAll('.form-group');
-        const hiddenFormGroups = [];
-        
-        allFormGroups.forEach((group, index) => {
-            const inputs = group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select');
-            const checkboxes = group.querySelectorAll('input[type="checkbox"]:checked');
-            const radios = group.querySelectorAll('input[type="radio"]:checked');
-            
-            let hasContent = false;
-            
-            // Check if any inputs have values
-            inputs.forEach(input => {
-                if (input.value && input.value.trim() !== '' && input.value !== 'Select a saved draft...') {
-                    hasContent = true;
-                }
-            });
-            
-            // Check if any checkboxes are checked
-            if (checkboxes.length > 0) hasContent = true;
-            
-            // Check if any radios are checked  
-            if (radios.length > 0) hasContent = true;
-            
-            // Hide empty form groups (but keep important structural ones)
-            if (!hasContent && !group.querySelector('.radio-group') && !group.querySelector('.checkbox-group') && !group.querySelector('h3, h4')) {
-                hiddenFormGroups.push({element: group, originalDisplay: group.style.display});
-                group.style.display = 'none';
-            }
-        });
-        
-        // Step 4: Add enhanced PDF-specific styles
-        const pdfStyle = document.createElement('style');
-        pdfStyle.id = 'pdf-export-style';
-        pdfStyle.textContent = `
-            @media print {
-                body { 
-                    background: white !important; 
-                    padding: 0 !important; 
-                    font-size: 12pt !important;
-                    color: black !important;
-                }
-                .container { 
-                    box-shadow: none !important; 
-                    max-width: 100% !important; 
-                    margin: 0 !important; 
-                    padding: 15px !important;
-                    background: white !important;
-                }
-                .section { 
-                    page-break-inside: avoid !important; 
-                    margin-bottom: 15pt !important;
-                    background: white !important;
-                    box-shadow: none !important;
-                }
-                textarea {
-                    border: 1px solid #333 !important;
-                    background: white !important;
-                    overflow: visible !important;
-                    resize: none !important;
-                    page-break-inside: avoid !important;
-                    font-family: inherit !important;
-                    font-size: 11pt !important;
-                    line-height: 1.3 !important;
-                    color: black !important;
-                    white-space: pre-wrap !important;
-                    word-wrap: break-word !important;
-                }
-                input[type="text"], input[type="date"], input[type="number"] {
-                    border: 1px solid #333 !important;
-                    background: white !important;
-                    color: black !important;
-                    font-size: 11pt !important;
-                }
-                select {
-                    border: 1px solid #333 !important;
-                    background: white !important;
-                    color: black !important;
-                    font-size: 11pt !important;
-                }
-                .product-item {
-                    page-break-inside: avoid !important;
-                    margin-bottom: 10pt !important;
-                    border: 1px solid #333 !important;
-                    background: white !important;
-                }
-                .checklist-item {
-                    page-break-inside: avoid !important;
-                    background: #f5f5f5 !important;
-                }
-                .no-print, .btn-group, .draft-selector, .auto-save-indicator {
-                    display: none !important;
-                }
-                h1, h2, h3, h4 {
-                    color: black !important;
-                    page-break-after: avoid !important;
-                }
-                label {
-                    color: black !important;
-                    font-weight: bold !important;
-                }
-            }
-        `;
-        document.head.appendChild(pdfStyle);
-        
-        // Step 5: Set document title for PDF filename
-        const originalTitle = document.title;
-        const clientName = document.getElementById('clientName').value || 'Client';
-        document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        
-        console.log('PDF setup complete - triggering print dialog');
-        
-        // Step 6: Trigger print dialog with longer delay to ensure all rendering is complete
-        setTimeout(() => {
-            window.print();
-        }, 1000);
-        
-        // Step 7: Comprehensive cleanup after print
-        const cleanupAfterPrint = () => {
-            console.log('=== CLEANING UP AFTER PDF EXPORT ===');
-            
-            // Remove PDF styles
-            const pdfStyleElement = document.getElementById('pdf-export-style');
-            if (pdfStyleElement) {
-                pdfStyleElement.remove();
-            }
-            
-            // Restore original title
-            document.title = originalTitle;
-            
-            // Restore hidden elements
-            elementsToHide.forEach((el, index) => {
-                el.style.display = originalDisplays[index];
-            });
-            
-            // RESTORE ALL TEXTAREA STYLES
-            allTextareas.forEach((textarea, index) => {
-                if (originalTextareaStyles[index]) {
-                    const originalStyles = originalTextareaStyles[index];
-                    textarea.style.height = originalStyles.height || '';
-                    textarea.style.minHeight = originalStyles.minHeight || '';
-                    textarea.style.maxHeight = originalStyles.maxHeight || '';
-                    textarea.style.overflow = originalStyles.overflow || '';
-                    textarea.style.resize = originalStyles.resize || '';
-                    textarea.style.boxSizing = originalStyles.boxSizing || '';
-                    textarea.style.padding = originalStyles.padding || '';
-                    textarea.style.border = originalStyles.border || '';
-                    textarea.style.lineHeight = originalStyles.lineHeight || '';
-                }
-                console.log(`Restored textarea ${index} to original styles`);
-            });
-            
-            // Restore hidden form groups
-            hiddenFormGroups.forEach(({element, originalDisplay}) => {
-                element.style.display = originalDisplay;
-            });
-            
-            console.log('=== PDF EXPORT CLEANUP COMPLETE ===');
-            showAutoSaveIndicator('PDF export complete - all elements restored!');
-        };
-        
-        // Listen for print events
-        window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
-        
-        // Fallback cleanup after 20 seconds (in case print dialog is cancelled)
-        setTimeout(cleanupAfterPrint, 20000);
-    });
-    
-    // Reset Form functionality
-    resetBtn.addEventListener('click', function() {
-        if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
-            console.log('=== RESETTING FORM ===');
-            
-            // STEP 1: Reset ALL form fields
-            document.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea').forEach(field => {
-                field.value = '';
-                if (field.tagName === 'TEXTAREA') {
-                    field.style.height = 'auto';
-                }
-            });
-            
-            // STEP 2: Reset ALL checkboxes and radios
-            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            document.querySelectorAll('input[type="radio"]').forEach(radio => {
-                radio.checked = false;
-            });
-            
-            // STEP 3: Reset ALL selects
-            document.querySelectorAll('select').forEach(select => {
-                select.selectedIndex = 0;
-            });
-            
-            // STEP 4: Reset ALL checkbox visual states
-            document.querySelectorAll('.checkbox-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            
-            // STEP 5: Reset ALL checklist N/A states
-            document.querySelectorAll('.checklist-item').forEach(item => {
-                item.classList.remove('na-active');
-            });
-            
-            // STEP 6: Reset MDA N/A state
-            const mdaTextarea = document.getElementById('mdaDetails');
-            if (mdaTextarea) {
-                mdaTextarea.classList.remove('strikethrough');
-            }
-            
-            // STEP 7: Hide ALL conditional sections completely
-            partnerNameGroup.style.display = 'none';
-            entityNameGroup.style.display = 'none';
-            smsfNameGroup.style.display = 'none';
-            trustNameGroup.style.display = 'none';
-            companyNameGroup.style.display = 'none';
-            entitySelector.style.display = 'none';
-            
-            // STEP 8: Hide ALL product recommendation sections
-            document.querySelectorAll('[id$="ProductRecommendationsSection"]').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // STEP 9: COMPLETELY clear ALL dynamic content containers
-            const recommendationsContainer = document.getElementById('recommendationsSectionsContainer');
-            const dynamicFeesContainer = document.getElementById('dynamicFeesContainer');
-            const complianceContainer = document.getElementById('complianceRequirements');
-            
-            if (recommendationsContainer) {
-                recommendationsContainer.innerHTML = '';
-                console.log('Cleared recommendations container');
-            }
-            if (dynamicFeesContainer) {
-                dynamicFeesContainer.innerHTML = '';
-                console.log('Cleared dynamic fees container');
-            }
-            if (complianceContainer) {
-                complianceContainer.innerHTML = '';
-                console.log('Cleared compliance container');
-            }
-            
-            // STEP 10: Reset specific UI elements to defaults
-            flowchartRequiredToggle.checked = false;
-            flowchartStatus.textContent = 'No';
-            projectionDateLength.value = 'lifeExpectancy';
-            otherProjectionLength.style.display = 'none';
-            
-            // STEP 11: Reset projection visibility to default state
-            const customProjectionInstructions = document.getElementById('customProjectionInstructions');
-            const projectionOptionsGroup = document.getElementById('projectionOptionsGroup');
-            if (customProjectionInstructions) customProjectionInstructions.style.display = 'block';
-            if (projectionOptionsGroup) projectionOptionsGroup.style.display = 'block';
-            
-            // STEP 12: Reset special checkboxes
-            paraplannerCompareCheckbox.checked = false;
-            alternativePlatformsTextarea.value = '';
-            tmdInFilenoteCheckbox.checked = false;
-            ongoingFeeReferCheckbox.checked = false;
-            
-            // STEP 13: Force update form to ensure clean state
-            // This will rebuild everything from scratch based on the reset selections
-            updateFormBasedOnSelections();
-            
-            console.log('=== FORM RESET COMPLETE ===');
-            showAutoSaveIndicator('Form has been reset!');
-        }
-    });
-    
-    // Initial form update
-    updateFormBasedOnSelections();
-    
-    // Setup auto-save for existing elements
-    setupAutoSave();
-    
-    // Initialize MDA N/A button
-    setupMDANAButton();
-    
-    // Setup N/A buttons for static elements
-    setupNAButtons();
-});
-    </script>
-</body>
-</html>
