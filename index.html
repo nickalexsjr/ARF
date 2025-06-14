@@ -1755,10 +1755,15 @@
           updateFormBasedOnSelections();
         });
 
-        // Function to create searchable dropdown
+        // Function to create searchable dropdown - FIXED to prevent unwanted visibility
         function createSearchableDropdown(inputId, options, onChange) {
           const input = document.getElementById(inputId);
           if (!input) return;
+
+          // Check if dropdown already exists to prevent duplicates
+          if (input.parentElement.classList.contains("searchable-select")) {
+            return;
+          }
 
           const wrapper = document.createElement("div");
           wrapper.className = "searchable-select";
@@ -1800,9 +1805,16 @@
               const text = item.textContent.toLowerCase();
               item.style.display = text.includes(filter) ? "block" : "none";
             });
-            dropdown.classList.add("active");
+            
+            // FIXED: Only show dropdown when user is actively typing, not during load
+            if (document.activeElement === this) {
+              dropdown.classList.add("active");
+            }
             triggerAutoSave();
           });
+
+          // FIXED: Ensure dropdown is hidden initially and during load
+          dropdown.classList.remove("active");
         }
 
         // Function to create product recommendation item
@@ -3451,8 +3463,31 @@
                   // Special handling for product name changes
                   if (key.endsWith("_name") && element.value) {
                     console.log(`Triggering product selection for ${key} = ${element.value}`);
-                    // Simulate dropdown selection to trigger proper visibility changes
-                    element.dispatchEvent(new Event('input'));
+                    // FIXED: Don't trigger dropdown during load - just trigger the onChange logic
+                    const productId = key.replace("_name", "");
+                    const selectedProduct = element.value;
+                    
+                    // Manually trigger the product selection logic without showing dropdown
+                    const customGroup = document.getElementById(`${productId}_custom_group`);
+                    const mdaSection = document.getElementById(`${productId}_mda_section`);
+                    
+                    if (selectedProduct === "Custom") {
+                      if (customGroup) customGroup.style.display = "block";
+                      if (mdaSection) mdaSection.style.display = "none";
+                    } else {
+                      if (customGroup) customGroup.style.display = "none";
+                      
+                      // Show MDA section for applicable products
+                      if (
+                        selectedProduct.includes("BT Panorama") ||
+                        selectedProduct.includes("Centric Super Choice") ||
+                        selectedProduct === "Centric IDPS"
+                      ) {
+                        if (mdaSection) mdaSection.style.display = "block";
+                      } else {
+                        if (mdaSection) mdaSection.style.display = "none";
+                      }
+                    }
                   }
                 }
               }
@@ -3541,6 +3576,16 @@
                     if (details) {
                       details.style.display = "block";
                       console.log(`Showed tranching details: ${productId}`);
+                      
+                      // IMMEDIATELY restore the tranching text for this product
+                      const tranchingTextKey = `${productId}_tranching_text`;
+                      if (formData[tranchingTextKey]) {
+                        const tranchingTextarea = document.getElementById(tranchingTextKey);
+                        if (tranchingTextarea) {
+                          tranchingTextarea.value = formData[tranchingTextKey];
+                          console.log(`IMMEDIATELY restored tranching text for ${productId}: "${formData[tranchingTextKey]}"`);
+                        }
+                      }
                     }
                   }
                 }
@@ -3622,6 +3667,14 @@
                       }
                     }
                   }
+                });
+
+                // PHASE 4.5: HIDE ALL DROPDOWNS after load is complete
+                console.log("PHASE 4.5: Hiding all dropdowns");
+                
+                document.querySelectorAll('.dropdown-list').forEach(dropdown => {
+                  dropdown.classList.remove('active');
+                  console.log("Hidden dropdown during load");
                 });
 
                 // Final setup of auto-save and event listeners
