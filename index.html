@@ -2603,6 +2603,50 @@
           }
         }
 
+        // Restore extra product recommendation sections based on saved data
+        function restoreAdditionalProducts(formData) {
+          const counts = {};
+          Object.keys(formData).forEach((key) => {
+            const match = key.match(/^(\w+)_product_(\d+)/);
+            if (match) {
+              const id = match[1];
+              const idx = parseInt(match[2], 10);
+              if (!counts[id] || idx > counts[id]) counts[id] = idx;
+            }
+          });
+
+          const getName = (id) => {
+            if (id === "client1")
+              return document.getElementById("clientName").value || "Client 1";
+            if (id === "client2")
+              return document.getElementById("partnerName").value || "Client 2";
+            if (id === "smsf")
+              return document.getElementById("smsfName").value || "SMSF";
+            if (id === "trust")
+              return document.getElementById("trustName").value || "Trust";
+            if (id === "company")
+              return document.getElementById("companyName").value || "Company";
+            if (id === "dependants") return "Dependants";
+            if (id === "joint") return "Joint";
+            return id;
+          };
+
+          Object.keys(counts).forEach((id) => {
+            const container = document.getElementById(`${id}_products`);
+            if (container) {
+              const existing =
+                container.querySelectorAll(".product-item").length;
+              const name = getName(id);
+              for (let i = existing; i <= counts[id]; i++) {
+                container.insertAdjacentHTML(
+                  "beforeend",
+                  createProductRecommendation(id, name, i),
+                );
+              }
+            }
+          });
+        }
+
         // Update compliance requirements based on client status
         function updateComplianceRequirements() {
           const container = document.getElementById("complianceRequirements");
@@ -3397,6 +3441,7 @@
 
           // STEP 2: Rebuild the form structure based on saved client types
           updateFormBasedOnSelections();
+          restoreAdditionalProducts(formData);
 
           // STEP 3: Wait for rebuild, then restore EVERYTHING again
           setTimeout(() => {
@@ -4040,6 +4085,7 @@
 
           // Rebuild form structure based on saved client types and status
           updateFormBasedOnSelections();
+          restoreAdditionalProducts(formData);
 
           // Wait for dynamic content to be rebuilt, then restore states in MULTIPLE phases
           setTimeout(() => {
