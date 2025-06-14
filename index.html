@@ -1930,11 +1930,12 @@
           }
         };
 
-        // Function to add product
+        // Function to add product - FIXED to save properly
         window.addProduct = function (clientId, clientName) {
+          console.log(`=== ADDING PRODUCT FOR ${clientId} ===`);
+          
           const container = document.getElementById(`${clientId}_products`);
-          const productCount =
-            container.querySelectorAll(".product-item").length;
+          const productCount = container.querySelectorAll(".product-item").length;
 
           const newProductHTML = createProductRecommendation(
             clientId,
@@ -1943,12 +1944,21 @@
           );
           container.insertAdjacentHTML("beforeend", newProductHTML);
 
-          // Initialize features for the new product
+          console.log(`Added product ${productCount} for ${clientId}`);
+
+          // IMMEDIATE initialization and save
           setTimeout(() => {
+            console.log("Initializing new product features...");
             initializeProductFeatures();
             setupAutoSaveForNewElements();
-            triggerAutoSave();
-          }, 100);
+            
+            // FORCE SAVE the updated structure immediately
+            console.log("Force saving after adding product...");
+            const clientName = document.getElementById("clientName").value || "Client";
+            saveDraft(`${clientName} - Auto Save`, true);
+            
+            console.log("Product addition complete and saved");
+          }, 150); // Slightly longer timeout to ensure DOM is ready
         };
 
         // Function to update recommendation sections based on selections
@@ -3191,7 +3201,7 @@
           });
         }
 
-        // FIXED COMPREHENSIVE SAVE FUNCTION - Saves EVERYTHING properly
+        // FIXED COMPREHENSIVE SAVE FUNCTION - Now includes product count tracking
         function saveDraft(draftName, isAutoSave = false) {
           console.log("=== FIXED COMPREHENSIVE SAVE STARTING ===");
 
@@ -3229,6 +3239,16 @@
             if (select.id) {
               formData[select.id] = select.value || "";
               console.log(`SAVED MDA OPTION ${select.id} = "${select.value}"`);
+            }
+          });
+
+          // STEP 2.5: SAVE PRODUCT COUNTS for each client type - CRITICAL FOR RECONSTRUCTION
+          ['client1', 'client2', 'joint', 'smsf', 'trust', 'company', 'dependants'].forEach(clientId => {
+            const container = document.getElementById(`${clientId}_products`);
+            if (container) {
+              const productCount = container.querySelectorAll(".product-item").length;
+              formData[`${clientId}_product_count`] = productCount;
+              console.log(`SAVED ${clientId} product count: ${productCount}`);
             }
           });
 
@@ -3310,6 +3330,7 @@
           console.log(`MDA options: ${Object.keys(formData).filter(k => k.includes("_investment_option")).length}`);
           console.log(`Custom products: ${Object.keys(formData).filter(k => k.includes("_custom") && !k.includes("_group")).length}`);
           console.log(`Tranching fields: ${Object.keys(formData).filter(k => k.includes("_tranching")).length}`);
+          console.log(`Product counts: ${Object.keys(formData).filter(k => k.includes("_product_count")).length}`);
 
           // STEP 8: Save to localStorage
           const drafts = JSON.parse(localStorage.getItem("financialAdviceFormDrafts") || "{}");
@@ -3326,7 +3347,7 @@
           console.log("=== COMPREHENSIVE SAVE COMPLETE ===");
         }
 
-        // FIXED COMPREHENSIVE LOAD FUNCTION - Loads EVERYTHING properly 
+        // FIXED COMPREHENSIVE LOAD FUNCTION - Now reconstructs all added products
         function loadDraft(draftName) {
           const drafts = JSON.parse(localStorage.getItem("financialAdviceFormDrafts") || "{}");
           if (!drafts[draftName]) return;
@@ -3338,7 +3359,7 @@
           // PHASE 1: Restore basic form state first to trigger rebuilds
           console.log("PHASE 1: Basic form restoration");
           Object.keys(formData).forEach((key) => {
-            if (!key.startsWith("_") && !key.endsWith("_visible") && !key.endsWith("_text") && !key.endsWith("_na_active")) {
+            if (!key.startsWith("_") && !key.endsWith("_visible") && !key.endsWith("_text") && !key.endsWith("_na_active") && !key.endsWith("_product_count")) {
               const element = document.getElementById(key);
               if (element) {
                 if (element.type === "checkbox" || element.type === "radio") {
@@ -3365,9 +3386,38 @@
           setTimeout(() => {
             console.log("PHASE 2: Dynamic content restoration");
 
+            // PHASE 2.5: RECREATE ALL ADDITIONAL PRODUCTS FIRST
+            console.log("PHASE 2.5: Recreating additional products");
+            
+            ['client1', 'client2', 'joint', 'smsf', 'trust', 'company', 'dependants'].forEach(clientId => {
+              const savedCount = formData[`${clientId}_product_count`];
+              const container = document.getElementById(`${clientId}_products`);
+              
+              if (savedCount && container && savedCount > 1) {
+                console.log(`Recreating ${savedCount - 1} additional products for ${clientId}`);
+                
+                // Get client name for the function
+                let clientName = clientId;
+                if (clientId === 'client1') clientName = formData['clientName'] || 'Client 1';
+                else if (clientId === 'client2') clientName = formData['partnerName'] || 'Client 2'; 
+                else if (clientId === 'smsf') clientName = formData['smsfName'] || 'SMSF';
+                else if (clientId === 'trust') clientName = formData['trustName'] || 'Trust';
+                else if (clientId === 'company') clientName = formData['companyName'] || 'Company';
+                else if (clientId === 'dependants') clientName = 'Dependants';
+                else if (clientId === 'joint') clientName = 'Joint';
+                
+                // Add the additional products (savedCount - 1 because first one already exists)
+                for (let i = 1; i < savedCount; i++) {
+                  const newProductHTML = createProductRecommendation(clientId, clientName, i);
+                  container.insertAdjacentHTML("beforeend", newProductHTML);
+                  console.log(`Added product ${i} for ${clientId}`);
+                }
+              }
+            });
+
             // Restore ALL form fields again (including newly created dynamic elements)
             Object.keys(formData).forEach((key) => {
-              if (!key.startsWith("_") && !key.endsWith("_visible") && !key.endsWith("_text") && !key.endsWith("_na_active")) {
+              if (!key.startsWith("_") && !key.endsWith("_visible") && !key.endsWith("_text") && !key.endsWith("_na_active") && !key.endsWith("_product_count")) {
                 const element = document.getElementById(key);
                 if (element) {
                   if (element.type === "checkbox" || element.type === "radio") {
