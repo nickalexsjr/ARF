@@ -2700,13 +2700,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Count custom product fields
         const customFields = Object.keys(formData).filter(key => key.includes('_custom'));
         console.log('Custom product fields saved:', customFields.length, customFields);
-        // FORCE save investment option dropdowns
-document.querySelectorAll('[id$="_investment_option"]').forEach(select => {
-    if (select.id && select.value && select.value.trim() !== '') {
-        formData[select.id] = select.value;
-        console.log('INVESTMENT OPTION SAVED:', select.id, '=', select.value);
-    }
-});
+        
         const drafts = JSON.parse(localStorage.getItem('financialAdviceFormDrafts') || '{}');
         drafts[draftName] = {
             data: formData,
@@ -2875,17 +2869,6 @@ document.querySelectorAll('[id$="_investment_option"]').forEach(select => {
                     if (formData[element.id]) {
                         element.value = formData[element.id];
                         console.log('FINAL TRANCHING RESTORE:', element.id, '=', formData[element.id]);
-
-                        // MEGA FORCE restore investment options
-const finalInvestmentElements = document.querySelectorAll('[id*="_investment_option"]');
-console.log('Found investment option elements in DOM:', finalInvestmentElements.length);
-
-finalInvestmentElements.forEach(element => {
-    if (formData[element.id]) {
-        element.value = formData[element.id];
-        console.log('FINAL INVESTMENT OPTION RESTORE:', element.id, '=', formData[element.id]);
-    }
-});
                     }
                 });
                 
@@ -3629,26 +3612,100 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         }, 3000);
     }
     
-    // Export to Word functionality - FIXED to show proper order and complete content
-exportWordBtn.addEventListener('click', function() {
-    const clientName = document.getElementById('clientName').value || 'Client';
-    
-    // Build clean Word document content - only include what's actually visible and has content
-    let wordContent = `
-    <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
-    `;
-    
-    // Process each visible section
-    document.querySelectorAll('.section').forEach(section => {
-        if (section.style.display !== 'none') {
-            const h2 = section.querySelector('h2');
-            if (h2) {
-                wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">${h2.textContent}</h2>`;
-            }
-            
-            // Handle Strategy Recommendations section specially
-            if (section.id === 'strategyRecommendationsSection') {
-                // FIRST: Process individual client/entity recommendations with their products
+    // Export to Word functionality - FIXED to match visible content exactly and be clean
+    exportWordBtn.addEventListener('click', function() {
+        const clientName = document.getElementById('clientName').value || 'Client';
+        
+        // Build clean Word document content - only include what's actually visible and has content
+        let wordContent = `
+        <h1 style="text-align: center; color: #2c3e50; margin-bottom: 30px;">Statement of Advice Request Form</h1>
+        `;
+        
+        // Process each visible section
+        document.querySelectorAll('.section').forEach(section => {
+            if (section.style.display !== 'none') {
+                const h2 = section.querySelector('h2');
+                if (h2) {
+                    wordContent += `<h2 style="color: #3498db; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px;">${h2.textContent}</h2>`;
+                }
+                
+                // Process form groups (excluding dynamic recommendations container)
+                section.querySelectorAll('.form-group').forEach(group => {
+                    if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
+                        const label = group.querySelector('label');
+                        
+                        // Process radio groups
+                        const radioGroup = group.querySelector('.radio-group');
+                        if (radioGroup) {
+                            const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
+                            if (checkedRadio && label) {
+                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                const radioLabel = checkedRadio.nextElementSibling;
+                                if (radioLabel) {
+                                    wordContent += `<p style="margin-left: 20px;">● ${radioLabel.textContent}</p>`;
+                                }
+                            }
+                        }
+                        
+                        // Process checkbox groups
+                        const checkboxGroup = group.querySelector('.checkbox-group');
+                        if (checkboxGroup) {
+                            const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
+                            if (checkedBoxes.length > 0 && label) {
+                                wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                checkedBoxes.forEach(checkbox => {
+                                    const checkboxLabel = checkbox.nextElementSibling;
+                                    if (checkboxLabel) {
+                                        wordContent += `<p style="margin-left: 20px;">☑ ${checkboxLabel.textContent}</p>`;
+                                    }
+                                });
+                            }
+                        }
+                        
+                        // Process regular inputs (avoid duplicates)
+                        group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
+                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header') && input.value && input.value.trim() !== '') {
+                                const inputLabel = input.closest('.form-group').querySelector('label');
+                                if (inputLabel) {
+                                    let value = input.value;
+                                    if (input.tagName === 'SELECT') {
+                                        const selected = input.options[input.selectedIndex];
+                                        value = selected ? selected.text : '';
+                                    }
+                                    if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
+                                        wordContent += `<p><strong>${inputLabel.textContent}</strong></p>`;
+                                        wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${value}</p>`;
+                                    }
+                                }
+                            }
+                        });
+                        
+                        // Process checklist items
+                        group.querySelectorAll('.checklist-item').forEach(item => {
+                            if (item.style.display !== 'none') {
+                                const checkbox = item.querySelector('input[type="checkbox"]');
+                                const checkboxLabel = item.querySelector('label');
+                                if (checkbox && checkboxLabel && (checkbox.checked || item.classList.contains('na-active'))) {
+                                    const isNA = item.classList.contains('na-active');
+                                    const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
+                                    const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
+                                    wordContent += `<p style="background-color: #f0f0f0; padding: 5px; margin-bottom: 5px; ${textDecoration}">${checkStatus} ${checkboxLabel.textContent}</p>`;
+                                }
+                            }
+                        });
+                        
+                        // Process toggle switches
+                        group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
+                            const toggleLabel = toggleGroup.querySelector('label');
+                            const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
+                            if (toggleLabel && toggleInput) {
+                                wordContent += `<p><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
+                            }
+                        });
+                    }
+                });
+                
+                // Process dynamic content (recommendations sections) - ONLY VISIBLE CONTENT
                 const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
                 if (dynamicContainer) {
                     // Process recommendation sections with new layout
@@ -3663,14 +3720,14 @@ exportWordBtn.addEventListener('click', function() {
                                 const productCheckbox = textareaDiv.querySelector('input[type="checkbox"]');
                                 
                                 if (label && textarea && textarea.value && textarea.value.trim() !== '') {
-                                    wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${label.textContent}</h3>`;
-                                    wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4;">${textarea.value}</div>`;
+                                    wordContent += `<p><strong>${label.textContent}</strong></p>`;
+                                    wordContent += `<p style="border: 1px solid #ccc; padding: 8px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap;">${textarea.value}</p>`;
                                 }
                                 
                                 if (productCheckbox && productCheckbox.checked) {
                                     const productLabel = productCheckbox.nextElementSibling;
                                     if (productLabel) {
-                                        wordContent += `<p style="margin-left: 20px; margin-bottom: 10px;"><strong>☑ ${productLabel.textContent}</strong></p>`;
+                                        wordContent += `<p style="margin-left: 20px;">☑ ${productLabel.textContent}</p>`;
                                     }
                                 }
                             }
@@ -3682,276 +3739,103 @@ exportWordBtn.addEventListener('click', function() {
                                 if (riskLabel && riskSelect && riskSelect.value && riskSelect.value.trim() !== '') {
                                     const selected = riskSelect.options[riskSelect.selectedIndex];
                                     if (selected && selected.text && selected.text !== 'Select Risk Profile') {
-                                        wordContent += `<p style="margin-bottom: 15px;"><strong>${riskLabel.textContent}</strong> ${selected.text}</p>`;
+                                        wordContent += `<p><strong>${riskLabel.textContent}</strong> ${selected.text}</p>`;
                                     }
                                 }
-                            }
-                            
-                            // IMMEDIATELY after each recommendation, add its corresponding product recommendations
-                            const nextElement = recSection.nextElementSibling;
-                            if (nextElement && nextElement.classList.contains('product-recommendations') && nextElement.style.display === 'block') {
-                                const sectionTitle = nextElement.querySelector('h4');
-                                if (sectionTitle) {
-                                    wordContent += `<h4 style="color: #2c3e50; margin-top: 15px; margin-bottom: 15px; background-color: #ecf0f1; padding: 8px;">${sectionTitle.textContent}</h4>`;
-                                }
-                                
-                                // Process each product item
-                                nextElement.querySelectorAll('.product-item').forEach(product => {
-                                    if (product.style.display !== 'none') {
-                                        const productHeader = product.querySelector('h5');
-                                        let hasProductContent = false;
-                                        let productContentHTML = '';
-                                        
-                                        // Check if this product has any content first
-                                        product.querySelectorAll('input, textarea, select').forEach(input => {
-                                            if (input.value && input.value.trim() !== '' && input.style.display !== 'none') {
-                                                const inputGroup = input.closest('.form-group');
-                                                const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
-                                                
-                                                if (inputLabel) {
-                                                    let value = input.value;
-                                                    if (input.tagName === 'SELECT') {
-                                                        const selected = input.options[input.selectedIndex];
-                                                        value = selected ? selected.text : '';
-                                                    }
-                                                    if (input.type === 'checkbox') {
-                                                        // Handle toggle switches in products
-                                                        const statusSpan = input.parentElement.nextElementSibling;
-                                                        value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
-                                                    }
-                                                    if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
-                                                        hasProductContent = true;
-                                                        productContentHTML += `<p style="margin-left: 25px; margin-bottom: 8px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
-                                                    }
-                                                }
-                                            }
-                                        });
-                                        
-                                        // Only add product header and content if there's actual content
-                                        if (hasProductContent && productHeader) {
-                                            wordContent += `<h5 style="color: #34495e; margin-top: 12px; margin-bottom: 8px; margin-left: 15px;">${productHeader.textContent}</h5>`;
-                                            wordContent += productContentHTML;
-                                        }
-                                    }
-                                });
                             }
                         }
                     });
-                }
-                
-                // THEN: Add the strategy alignment and other strategy section fields AFTER all recommendations
-                section.querySelectorAll('.form-group').forEach(group => {
-                    if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                        const label = group.querySelector('label');
-                        
-                        // Process regular inputs/textareas
-                        group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header') && input.value && input.value.trim() !== '') {
-                                const inputLabel = input.closest('.form-group').querySelector('label');
-                                if (inputLabel) {
-                                    let value = input.value;
-                                    if (input.tagName === 'SELECT') {
-                                        const selected = input.options[input.selectedIndex];
-                                        value = selected ? selected.text : '';
-                                    }
-                                    if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
-                                        // Clean up the label text (remove inline elements)
-                                        let labelText = inputLabel.textContent;
-                                        if (inputLabel.querySelector('.inline-checkbox')) {
-                                            labelText = inputLabel.childNodes[0].textContent.trim();
-                                        }
-                                        if (inputLabel.querySelector('button')) {
-                                            labelText = inputLabel.childNodes[0].textContent.trim();
-                                        }
-                                        
-                                        wordContent += `<h4 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">${labelText}</h4>`;
-                                        wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${value}</div>`;
-                                    }
-                                }
-                            }
-                        });
-                        
-                        // Process inline checkboxes (like TMD in filenote, paraplanner compare)
-                        group.querySelectorAll('.inline-checkbox input[type="checkbox"]:checked').forEach(checkbox => {
-                            const checkboxLabel = checkbox.nextElementSibling;
-                            if (checkboxLabel) {
-                                wordContent += `<p style="margin-bottom: 10px;"><strong>☑ ${checkboxLabel.textContent}</strong></p>`;
-                            }
-                        });
-                        
-                        // Process toggle switches
-                        group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
-                            const toggleLabel = toggleGroup.querySelector('label');
-                            const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                            if (toggleLabel && toggleInput) {
-                                wordContent += `<p style="margin-bottom: 10px;"><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
-                            }
-                        });
-                    }
-                });
-                
-            } else {
-                // Process all other sections normally (not Strategy Recommendations)
-                
-                // SPECIAL HANDLING for Additional Comments section
-                if (section.id === 'additionalCommentsSection') {
-                    const additionalComments = document.getElementById('additionalComments');
-                    if (additionalComments && additionalComments.value && additionalComments.value.trim() !== '') {
-                        wordContent += `<h4 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">Additional Comments/Notes:</h4>`;
-                        wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${additionalComments.value}</div>`;
-                    }
-                } else {
-                    // Handle all other sections normally
-                    section.querySelectorAll('.form-group').forEach(group => {
-                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                            const label = group.querySelector('label');
-                            
-                            // Process radio groups
-                            const radioGroup = group.querySelector('.radio-group');
-                            if (radioGroup) {
-                                const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
-                                if (checkedRadio && label) {
-                                    wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${label.textContent}</h4>`;
-                                    const radioLabel = checkedRadio.nextElementSibling;
-                                    if (radioLabel) {
-                                        wordContent += `<p style="margin-left: 20px; margin-bottom: 10px;">● ${radioLabel.textContent}</p>`;
-                                    }
-                                }
+                    
+                    // Process product recommendations sections - ONLY IF VISIBLE AND CHECKBOX IS CHECKED
+                    dynamicContainer.querySelectorAll('.product-recommendations').forEach(productSection => {
+                        if (productSection.style.display === 'block') {  // Only visible sections
+                            const sectionTitle = productSection.querySelector('h4');
+                            if (sectionTitle) {
+                                wordContent += `<h3 style="color: #34495e; margin-top: 20px; margin-bottom: 15px;">${sectionTitle.textContent}</h3>`;
                             }
                             
-                            // Process checkbox groups
-                            const checkboxGroup = group.querySelector('.checkbox-group');
-                            if (checkboxGroup) {
-                                const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
-                                if (checkedBoxes.length > 0 && label) {
-                                    wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${label.textContent}</h4>`;
-                                    checkedBoxes.forEach(checkbox => {
-                                        const checkboxLabel = checkbox.nextElementSibling;
-                                        if (checkboxLabel) {
-                                            wordContent += `<p style="margin-left: 20px; margin-bottom: 8px;">☑ ${checkboxLabel.textContent}</p>`;
+                            // Process each product item
+                            productSection.querySelectorAll('.product-item').forEach(product => {
+                                if (product.style.display !== 'none') {
+                                    const productHeader = product.querySelector('h5');
+                                    let hasProductContent = false;
+                                    let productContentHTML = '';
+                                    
+                                    // Check if this product has any content first
+                                    product.querySelectorAll('input, textarea, select').forEach(input => {
+                                        if (input.value && input.value.trim() !== '' && input.style.display !== 'none') {
+                                            const inputGroup = input.closest('.form-group');
+                                            const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
+                                            
+                                            if (inputLabel) {
+                                                let value = input.value;
+                                                if (input.tagName === 'SELECT') {
+                                                    const selected = input.options[input.selectedIndex];
+                                                    value = selected ? selected.text : '';
+                                                }
+                                                if (input.type === 'checkbox') {
+                                                    // Handle toggle switches in products
+                                                    const statusSpan = input.parentElement.nextElementSibling;
+                                                    value = statusSpan ? statusSpan.textContent : (input.checked ? 'Yes' : 'No');
+                                                }
+                                                if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
+                                                    hasProductContent = true;
+                                                    productContentHTML += `<p style="margin-left: 20px;"><strong>${inputLabel.textContent}</strong> ${value}</p>`;
+                                                }
+                                            }
                                         }
                                     });
-                                }
-                            }
-                            
-                            // Process regular inputs (avoid duplicates)
-                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header') && input.value && input.value.trim() !== '') {
-                                    const inputLabel = input.closest('.form-group').querySelector('label');
-                                    if (inputLabel) {
-                                        let value = input.value;
-                                        if (input.tagName === 'SELECT') {
-                                            const selected = input.options[input.selectedIndex];
-                                            value = selected ? selected.text : '';
-                                        }
-                                        if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
-                                            // Clean up the label text (remove inline elements)
-                                            let labelText = inputLabel.textContent;
-                                            if (inputLabel.querySelector('.inline-checkbox')) {
-                                                labelText = inputLabel.childNodes[0].textContent.trim();
-                                            }
-                                            if (inputLabel.querySelector('button')) {
-                                                labelText = inputLabel.childNodes[0].textContent.trim();
-                                            }
-                                            
-                                            wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${labelText}</h4>`;
-                                            wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${value}</div>`;
-                                        }
+                                    
+                                    // Only add product header and content if there's actual content
+                                    if (hasProductContent && productHeader) {
+                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${productHeader.textContent}</h4>`;
+                                        wordContent += productContentHTML;
                                     }
-                                }
-                            });
-                            
-                            // Process checklist items
-                            group.querySelectorAll('.checklist-item').forEach(item => {
-                                if (item.style.display !== 'none') {
-                                    const checkbox = item.querySelector('input[type="checkbox"]');
-                                    const checkboxLabel = item.querySelector('label');
-                                    if (checkbox && checkboxLabel && (checkbox.checked || item.classList.contains('na-active'))) {
-                                        const isNA = item.classList.contains('na-active');
-                                        const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
-                                        const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
-                                        wordContent += `<p style="background-color: #f0f0f0; padding: 8px; margin-bottom: 8px; ${textDecoration}">${checkStatus} ${checkboxLabel.textContent}</p>`;
-                                    }
-                                }
-                            });
-                            
-                            // Process toggle switches
-                            group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
-                                const toggleLabel = toggleGroup.querySelector('label');
-                                const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                                if (toggleLabel && toggleInput) {
-                                    wordContent += `<p style="margin-bottom: 10px;"><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
-                                }
-                            });
-                            
-                            // Process inline checkboxes (like TMD in filenote, paraplanner compare)
-                            group.querySelectorAll('.inline-checkbox input[type="checkbox"]:checked').forEach(checkbox => {
-                                const checkboxLabel = checkbox.nextElementSibling;
-                                if (checkboxLabel) {
-                                    wordContent += `<p style="margin-bottom: 10px;"><strong>☑ ${checkboxLabel.textContent}</strong></p>`;
                                 }
                             });
                         }
                     });
                 }
             }
-    });
-    
-    // Create complete Word document
-    const html = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-            <meta charset="utf-8">
-            <title>Financial Advice Request Form - ${clientName}</title>
-            <style>
-                body { 
-                    font-family: Calibri, Arial, sans-serif; 
-                    line-height: 1.5; 
-                    color: #000; 
-                    margin: 20px; 
-                    background: white;
-                }
-                h1 { font-size: 24pt; margin-bottom: 20pt; page-break-after: avoid; }
-                h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; page-break-after: avoid; }
-                h3 { font-size: 16pt; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
-                h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
-                h5 { font-size: 12pt; margin-top: 10pt; margin-bottom: 8pt; page-break-after: avoid; }
-                p { margin-bottom: 10pt; }
-                div { 
-                    page-break-inside: avoid; 
-                    word-wrap: break-word; 
-                    overflow-wrap: break-word;
-                    max-width: 100%;
-                }
-                @page { 
-                    margin: 1in; 
-                    size: A4;
-                }
-                @media print {
-                    div {
-                        max-width: 100% !important;
-                        word-wrap: break-word !important;
-                        overflow-wrap: break-word !important;
+        });
+        
+        // Create complete Word document
+        const html = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset="utf-8">
+                <title>Financial Advice Request Form - ${clientName}</title>
+                <style>
+                    body { 
+                        font-family: Calibri, Arial, sans-serif; 
+                        line-height: 1.5; 
+                        color: #000; 
+                        margin: 20px; 
+                        background: white;
                     }
-                }
-            </style>
-        </head>
-        <body>
-            ${wordContent}
-        </body>
-        </html>
-    `;
-    
-    const blob = new Blob([html], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    showAutoSaveIndicator('Word document exported successfully!');
-});
+                    h1 { font-size: 24pt; margin-bottom: 20pt; }
+                    h2 { font-size: 18pt; margin-top: 20pt; margin-bottom: 10pt; }
+                    h3, h4 { font-size: 14pt; margin-top: 15pt; margin-bottom: 10pt; }
+                    p { margin-bottom: 10pt; }
+                    @page { margin: 1in; }
+                </style>
+            </head>
+            <body>
+                ${wordContent}
+            </body>
+            </html>
+        `;
+        
+        const blob = new Blob([html], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showAutoSaveIndicator('Word document exported successfully!');
+    });
     
     // Export to PDF functionality - FIXED to show ALL textarea content properly
     exportPdfBtn.addEventListener('click', function() {
