@@ -3201,7 +3201,7 @@
           });
         }
 
-        // FIXED COMPREHENSIVE SAVE FUNCTION - Now includes product count tracking
+        // FIXED COMPREHENSIVE SAVE FUNCTION - Now properly saves tranching text
         function saveDraft(draftName, isAutoSave = false) {
           console.log("=== FIXED COMPREHENSIVE SAVE STARTING ===");
 
@@ -3221,14 +3221,26 @@
             }
           });
 
-          // STEP 2: FORCE SAVE all product-related data with specific patterns
+          // STEP 1.5: FORCE SAVE ALL TRANCHING TEXT FIELDS SPECIFICALLY
+          console.log("=== FORCE SAVING TRANCHING TEXT ===");
+          document.querySelectorAll('[id$="_tranching_text"]').forEach((textarea) => {
+            if (textarea.id) {
+              formData[textarea.id] = textarea.value || "";
+              console.log(`FORCE SAVED TRANCHING TEXT ${textarea.id} = "${textarea.value}"`);
+              
+              // Also save a backup
+              formData[textarea.id + "_BACKUP"] = textarea.value || "";
+            }
+          });
+
+          // STEP 2: FORCE SAVE all other product-related data with specific patterns
           console.log("=== SAVING PRODUCT DATA ===");
           
           // Save ALL product names, investments, custom products, etc.
-          document.querySelectorAll('[id*="_name"], [id*="_investment"], [id*="_custom"], [id*="_cash"], [id*="_tranching_text"]').forEach((element) => {
-            if (element.id) {
+          document.querySelectorAll('[id*="_name"], [id*="_investment"], [id*="_custom"], [id*="_cash"]').forEach((element) => {
+            if (element.id && !element.id.includes("_tranching_text")) { // Skip tranching text as we handled it above
               formData[element.id] = element.value || "";
-              if (element.id.includes("_custom") || element.id.includes("_tranching_text")) {
+              if (element.id.includes("_custom")) {
                 console.log(`SAVED ${element.id} = "${element.value}"`);
               }
             }
@@ -3324,13 +3336,23 @@
             key.includes("_tranching")
           );
           
+          const tranchingTextFields = Object.keys(formData).filter(key => 
+            key.includes("_tranching_text") && !key.includes("_BACKUP")
+          );
+          
           console.log(`=== SAVE SUMMARY ===`);
           console.log(`Total fields saved: ${Object.keys(formData).length}`);
           console.log(`Product-related fields: ${productFields.length}`);
           console.log(`MDA options: ${Object.keys(formData).filter(k => k.includes("_investment_option")).length}`);
           console.log(`Custom products: ${Object.keys(formData).filter(k => k.includes("_custom") && !k.includes("_group")).length}`);
           console.log(`Tranching fields: ${Object.keys(formData).filter(k => k.includes("_tranching")).length}`);
+          console.log(`Tranching TEXT fields: ${tranchingTextFields.length}`);
           console.log(`Product counts: ${Object.keys(formData).filter(k => k.includes("_product_count")).length}`);
+
+          // Log all tranching text values for debugging
+          tranchingTextFields.forEach(key => {
+            console.log(`TRANCHING TEXT: ${key} = "${formData[key]}"`);
+          });
 
           // STEP 8: Save to localStorage
           const drafts = JSON.parse(localStorage.getItem("financialAdviceFormDrafts") || "{}");
@@ -3523,6 +3545,29 @@
                   }
                 }
               });
+
+                // PHASE 3.5: FORCE RESTORE ALL TRANCHING TEXT FIELDS
+                console.log("PHASE 3.5: Force restoring tranching text");
+                
+                Object.keys(formData).forEach((key) => {
+                  if (key.endsWith("_tranching_text")) {
+                    let textValue = formData[key];
+                    
+                    // Try backup if main value is empty
+                    if (!textValue && formData[key + "_BACKUP"]) {
+                      textValue = formData[key + "_BACKUP"];
+                      console.log(`Using backup value for ${key}`);
+                    }
+                    
+                    const element = document.getElementById(key);
+                    if (element) {
+                      element.value = textValue || "";
+                      console.log(`FORCE RESTORED TRANCHING TEXT: ${key} = "${textValue}"`);
+                    } else {
+                      console.log(`WARNING: Could not find tranching text element: ${key}`);
+                    }
+                  }
+                });
 
               // PHASE 4: Final restoration of all visibility states and special content
               setTimeout(() => {
