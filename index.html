@@ -3755,7 +3755,16 @@ exportWordBtn.addEventListener('click', function() {
                                         value = selected ? selected.text : '';
                                     }
                                     if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
-                                        wordContent += `<h4 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">${inputLabel.textContent}</h4>`;
+                                        // Clean up the label text (remove inline elements)
+                                        let labelText = inputLabel.textContent;
+                                        if (inputLabel.querySelector('.inline-checkbox')) {
+                                            labelText = inputLabel.childNodes[0].textContent.trim();
+                                        }
+                                        if (inputLabel.querySelector('button')) {
+                                            labelText = inputLabel.childNodes[0].textContent.trim();
+                                        }
+                                        
+                                        wordContent += `<h4 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">${labelText}</h4>`;
                                         wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${value}</div>`;
                                     }
                                 }
@@ -3783,96 +3792,109 @@ exportWordBtn.addEventListener('click', function() {
                 
             } else {
                 // Process all other sections normally (not Strategy Recommendations)
-                section.querySelectorAll('.form-group').forEach(group => {
-                    if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                        const label = group.querySelector('label');
-                        
-                        // Process radio groups
-                        const radioGroup = group.querySelector('.radio-group');
-                        if (radioGroup) {
-                            const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
-                            if (checkedRadio && label) {
-                                wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${label.textContent}</h4>`;
-                                const radioLabel = checkedRadio.nextElementSibling;
-                                if (radioLabel) {
-                                    wordContent += `<p style="margin-left: 20px; margin-bottom: 10px;">● ${radioLabel.textContent}</p>`;
-                                }
-                            }
-                        }
-                        
-                        // Process checkbox groups
-                        const checkboxGroup = group.querySelector('.checkbox-group');
-                        if (checkboxGroup) {
-                            const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
-                            if (checkedBoxes.length > 0 && label) {
-                                wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${label.textContent}</h4>`;
-                                checkedBoxes.forEach(checkbox => {
-                                    const checkboxLabel = checkbox.nextElementSibling;
-                                    if (checkboxLabel) {
-                                        wordContent += `<p style="margin-left: 20px; margin-bottom: 8px;">☑ ${checkboxLabel.textContent}</p>`;
-                                    }
-                                });
-                            }
-                        }
-                        
-                        // Process regular inputs and textareas (FIXED for Additional Comments)
-                        group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                            if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header') && input.value && input.value.trim() !== '') {
-                                const inputLabel = input.closest('.form-group').querySelector('label');
-                                if (inputLabel) {
-                                    let value = input.value;
-                                    if (input.tagName === 'SELECT') {
-                                        const selected = input.options[input.selectedIndex];
-                                        value = selected ? selected.text : '';
-                                    }
-                                    if (value && value.trim() !== '' && value !== 'Select a saved draft...' && value !== 'Select a saved draft...') {
-                                        // Clean up the label text (remove extra elements)
-                                        let labelText = inputLabel.textContent;
-                                        if (inputLabel.querySelector('.inline-checkbox')) {
-                                            labelText = inputLabel.childNodes[0].textContent.trim();
-                                        }
-                                        
-                                        wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${labelText}</h4>`;
-                                        wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${value}</div>`;
-                                    }
-                                }
-                            }
-                        });
-                        
-                        // Process checklist items
-                        group.querySelectorAll('.checklist-item').forEach(item => {
-                            if (item.style.display !== 'none') {
-                                const checkbox = item.querySelector('input[type="checkbox"]');
-                                const checkboxLabel = item.querySelector('label');
-                                if (checkbox && checkboxLabel && (checkbox.checked || item.classList.contains('na-active'))) {
-                                    const isNA = item.classList.contains('na-active');
-                                    const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
-                                    const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
-                                    wordContent += `<p style="background-color: #f0f0f0; padding: 8px; margin-bottom: 8px; ${textDecoration}">${checkStatus} ${checkboxLabel.textContent}</p>`;
-                                }
-                            }
-                        });
-                        
-                        // Process toggle switches
-                        group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
-                            const toggleLabel = toggleGroup.querySelector('label');
-                            const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                            if (toggleLabel && toggleInput) {
-                                wordContent += `<p style="margin-bottom: 10px;"><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
-                            }
-                        });
-                        
-                        // Process inline checkboxes (like TMD in filenote, paraplanner compare)
-                        group.querySelectorAll('.inline-checkbox input[type="checkbox"]:checked').forEach(checkbox => {
-                            const checkboxLabel = checkbox.nextElementSibling;
-                            if (checkboxLabel) {
-                                wordContent += `<p style="margin-bottom: 10px;"><strong>☑ ${checkboxLabel.textContent}</strong></p>`;
-                            }
-                        });
+                
+                // SPECIAL HANDLING for Additional Comments section
+                if (section.id === 'additionalCommentsSection') {
+                    const additionalComments = document.getElementById('additionalComments');
+                    if (additionalComments && additionalComments.value && additionalComments.value.trim() !== '') {
+                        wordContent += `<h4 style="color: #34495e; margin-top: 20px; margin-bottom: 10px;">Additional Comments/Notes:</h4>`;
+                        wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${additionalComments.value}</div>`;
                     }
-                });
+                } else {
+                    // Handle all other sections normally
+                    section.querySelectorAll('.form-group').forEach(group => {
+                        if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
+                            const label = group.querySelector('label');
+                            
+                            // Process radio groups
+                            const radioGroup = group.querySelector('.radio-group');
+                            if (radioGroup) {
+                                const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
+                                if (checkedRadio && label) {
+                                    wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${label.textContent}</h4>`;
+                                    const radioLabel = checkedRadio.nextElementSibling;
+                                    if (radioLabel) {
+                                        wordContent += `<p style="margin-left: 20px; margin-bottom: 10px;">● ${radioLabel.textContent}</p>`;
+                                    }
+                                }
+                            }
+                            
+                            // Process checkbox groups
+                            const checkboxGroup = group.querySelector('.checkbox-group');
+                            if (checkboxGroup) {
+                                const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
+                                if (checkedBoxes.length > 0 && label) {
+                                    wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${label.textContent}</h4>`;
+                                    checkedBoxes.forEach(checkbox => {
+                                        const checkboxLabel = checkbox.nextElementSibling;
+                                        if (checkboxLabel) {
+                                            wordContent += `<p style="margin-left: 20px; margin-bottom: 8px;">☑ ${checkboxLabel.textContent}</p>`;
+                                        }
+                                    });
+                                }
+                            }
+                            
+                            // Process regular inputs (avoid duplicates)
+                            group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
+                                if (input.style.display !== 'none' && !input.closest('.checkbox-group') && !input.closest('.radio-group') && !input.closest('.btn-group') && !input.closest('.product-item') && !input.closest('.recommendation-header') && input.value && input.value.trim() !== '') {
+                                    const inputLabel = input.closest('.form-group').querySelector('label');
+                                    if (inputLabel) {
+                                        let value = input.value;
+                                        if (input.tagName === 'SELECT') {
+                                            const selected = input.options[input.selectedIndex];
+                                            value = selected ? selected.text : '';
+                                        }
+                                        if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
+                                            // Clean up the label text (remove inline elements)
+                                            let labelText = inputLabel.textContent;
+                                            if (inputLabel.querySelector('.inline-checkbox')) {
+                                                labelText = inputLabel.childNodes[0].textContent.trim();
+                                            }
+                                            if (inputLabel.querySelector('button')) {
+                                                labelText = inputLabel.childNodes[0].textContent.trim();
+                                            }
+                                            
+                                            wordContent += `<h4 style="color: #34495e; margin-top: 15px; margin-bottom: 10px;">${labelText}</h4>`;
+                                            wordContent += `<div style="border: 1px solid #ccc; padding: 12px; background-color: #f9f9f9; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; line-height: 1.4; min-height: 40px; max-width: 100%; overflow-wrap: break-word;">${value}</div>`;
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Process checklist items
+                            group.querySelectorAll('.checklist-item').forEach(item => {
+                                if (item.style.display !== 'none') {
+                                    const checkbox = item.querySelector('input[type="checkbox"]');
+                                    const checkboxLabel = item.querySelector('label');
+                                    if (checkbox && checkboxLabel && (checkbox.checked || item.classList.contains('na-active'))) {
+                                        const isNA = item.classList.contains('na-active');
+                                        const checkStatus = isNA ? 'N/A' : (checkbox.checked ? '☑' : '☐');
+                                        const textDecoration = isNA ? 'text-decoration: line-through; opacity: 0.6;' : '';
+                                        wordContent += `<p style="background-color: #f0f0f0; padding: 8px; margin-bottom: 8px; ${textDecoration}">${checkStatus} ${checkboxLabel.textContent}</p>`;
+                                    }
+                                }
+                            });
+                            
+                            // Process toggle switches
+                            group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
+                                const toggleLabel = toggleGroup.querySelector('label');
+                                const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
+                                if (toggleLabel && toggleInput) {
+                                    wordContent += `<p style="margin-bottom: 10px;"><strong>${toggleLabel.textContent}</strong> ${toggleInput.checked ? 'Yes' : 'No'}</p>`;
+                                }
+                            });
+                            
+                            // Process inline checkboxes (like TMD in filenote, paraplanner compare)
+                            group.querySelectorAll('.inline-checkbox input[type="checkbox"]:checked').forEach(checkbox => {
+                                const checkboxLabel = checkbox.nextElementSibling;
+                                if (checkboxLabel) {
+                                    wordContent += `<p style="margin-bottom: 10px;"><strong>☑ ${checkboxLabel.textContent}</strong></p>`;
+                                }
+                            });
+                        }
+                    });
+                }
             }
-        }
     });
     
     // Create complete Word document
