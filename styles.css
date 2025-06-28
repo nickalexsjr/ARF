@@ -689,8 +689,50 @@ input:checked + .slider:before {
     margin-bottom: 20pt;
     padding: 15pt;
 }
+@page WordSection1 {
+    margin: 1in;
+}
 
+.word-export textarea {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.word-export .form-group {
+    page-break-inside: avoid;
+    margin-bottom: 20pt;
+}
+
+.word-export label {
+    display: block;
+    margin-bottom: 8pt;
+}
+
+.word-export input,
+.word-export textarea,
+.word-export select {
+    display: block;
+    margin-bottom: 12pt;
+}
+</style>
 @media print {
+     /* Force page break before alternative strategies if needed */
+    #alternativeStrategies {
+        page-break-before: auto;
+        page-break-inside: avoid;
+    }
+    
+    /* Ensure alternative strategies section stays together */
+    .form-group:has(#alternativeStrategies) {
+        page-break-inside: avoid;
+    }
+    
+    /* If alternative strategies is at bottom of page, move to next page */
+    label[for="alternativeStrategies"] {
+        page-break-after: avoid;
+    }
+    
     body {
         background: white;
         padding: 0;
