@@ -1197,13 +1197,93 @@
         </div>
 
         <div class="form-group">
-          <label for="alternativeStrategies">Alternatives - strategies:</label>
-          <textarea
-            id="alternativeStrategies"
-            name="alternativeStrategies"
-            placeholder="Enter alternative strategies"
-          ></textarea>
-        </div>
+  <label for="alternativeStrategies">
+    Alternatives - strategies:
+    <button type="button" class="btn btn-secondary btn-sm" id="altStrategiesDropdownBtn" style="margin-left: 10px;">
+      <i class="fas fa-chevron-down"></i> Choose from List
+    </button>
+  </label>
+  <div id="altStrategiesDropdown" style="display: none; margin: 10px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+    <div style="margin-bottom: 10px;">
+      <strong>Select alternative strategies to add:</strong>
+    </div>
+    <div style="max-height: 300px; overflow-y: auto;">
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat1" value="Alternative strategy: Super Contributions - Investing outside super – bond or wrap account\nReason for discounted: ">
+        <label for="altStrat1">Super Contributions: Investing outside super – bond or wrap account</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat2" value="Alternative strategy: Super Contributions - Retaining funds in cash\nReason for discounted: ">
+        <label for="altStrat2">Super Contributions: Retaining funds in cash</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat3" value="Alternative strategy: Super Contributions - Debt reduction\nReason for discounted: ">
+        <label for="altStrat3">Super Contributions: Debt reduction</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat4" value="Alternative strategy: Super Contributions - Other contribution types\nReason for discounted: ">
+        <label for="altStrat4">Super Contributions: Other contribution types</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat5" value="Alternative strategy: Account-Based Pensions - Withdraw from super and invest outside\nReason for discounted: ">
+        <label for="altStrat5">Account-Based Pensions: Withdraw from super and invest outside</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat6" value="Alternative strategy: Account-Based Pensions - Withdraw and recontribute to spouse\nReason for discounted: ">
+        <label for="altStrat6">Account-Based Pensions: Withdraw and recontribute to spouse</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat7" value="Alternative strategy: Account-Based Pensions - Retain in accumulation and take lump sums\nReason for discounted: ">
+        <label for="altStrat7">Account-Based Pensions: Retain in accumulation and take lump sums</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat8" value="Alternative strategy: Maximising Centrelink - Use of annuities\nReason for discounted: ">
+        <label for="altStrat8">Maximising Centrelink: Use of annuities</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat9" value="Alternative strategy: Maximising Centrelink - Funeral bonds\nReason for discounted: ">
+        <label for="altStrat9">Maximising Centrelink: Funeral bonds</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat10" value="Alternative strategy: Maximising Centrelink - Gifting\nReason for discounted: ">
+        <label for="altStrat10">Maximising Centrelink: Gifting</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat11" value="Alternative strategy: Maximising Centrelink - Upsizing the home\nReason for discounted: ">
+        <label for="altStrat11">Maximising Centrelink: Upsizing the home</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat12" value="Alternative strategy: Maximising Centrelink - Investing super in younger spouse's name\nReason for discounted: ">
+        <label for="altStrat12">Maximising Centrelink: Investing super in younger spouse's name</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat13" value="Alternative strategy: Maximising Centrelink - Debt reduction\nReason for discounted: ">
+        <label for="altStrat13">Maximising Centrelink: Debt reduction</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat14" value="Alternative strategy: Insurance - Inside vs outside super ownership\nReason for discounted: ">
+        <label for="altStrat14">Insurance: Inside vs outside super ownership</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat15" value="Alternative strategy: Insurance - Stand-alone vs linked cover\nReason for discounted: ">
+        <label for="altStrat15">Insurance: Stand-alone vs linked cover</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat16" value="Alternative strategy: Insurance - Stepped vs level premiums\nReason for discounted: ">
+        <label for="altStrat16">Insurance: Stepped vs level premiums</label>
+      </div>
+      <div class="checkbox-item" style="margin-bottom: 5px;">
+        <input type="checkbox" id="altStrat17" value="Alternative strategy: Insurance - Policy features (e.g. wait period, benefit period, indexation)\nReason for discounted: ">
+        <label for="altStrat17">Insurance: Policy features (e.g. wait period, benefit period, indexation)</label>
+      </div>
+    </div>
+    <div style="margin-top: 10px;">
+      <button type="button" class="btn btn-success btn-sm" id="addSelectedStrategies">Add Selected</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="cancelStrategiesSelection">Cancel</button>
+    </div>
+  </div>
+  <textarea id="alternativeStrategies" name="alternativeStrategies" placeholder="Enter alternative strategies" rows="10"></textarea>
+</div>
 
         <div class="form-group">
           <label for="alternativePlatforms">
