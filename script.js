@@ -9,58 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dependantsClientCheckbox = document.getElementById('dependantsClient');
     const entityClientCheckbox = document.getElementById('entityClient');
     const entitySelector = document.getElementById('entitySelector');
-     // Alternative strategies dropdown functionality
-  const altStrategiesDropdownBtn = document.getElementById('altStrategiesDropdownBtn');
-  const altStrategiesDropdown = document.getElementById('altStrategiesDropdown');
-  const addSelectedStrategiesBtn = document.getElementById('addSelectedStrategies');
-  const cancelStrategiesSelectionBtn = document.getElementById('cancelStrategiesSelection');
-  const alternativeStrategiesTextarea = document.getElementById('alternativeStrategies');
-
-  if (altStrategiesDropdownBtn) {
-    altStrategiesDropdownBtn.addEventListener('click', function() {
-      altStrategiesDropdown.style.display = altStrategiesDropdown.style.display === 'none' ? 'block' : 'none';
-    });
-  }
-
-  if (addSelectedStrategiesBtn) {
-    addSelectedStrategiesBtn.addEventListener('click', function() {
-      const selectedStrategies = [];
-      altStrategiesDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-        selectedStrategies.push(checkbox.value);
-      });
-
-      if (selectedStrategies.length > 0) {
-        const currentValue = alternativeStrategiesTextarea.value;
-        const newStrategies = selectedStrategies.join('\n\n');
-        alternativeStrategiesTextarea.value = currentValue ? currentValue + '\n\n' + newStrategies : newStrategies;
-        
-        // Uncheck all checkboxes
-        altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-          checkbox.checked = false;
-        });
-        
-        // Hide dropdown
-        altStrategiesDropdown.style.display = 'none';
-        
-        // Trigger auto-save
-        if (typeof triggerAutoSave === 'function') {
-          triggerAutoSave();
-        }
-      }
-    });
-  }
-
-  if (cancelStrategiesSelectionBtn) {
-    cancelStrategiesSelectionBtn.addEventListener('click', function() {
-      // Uncheck all checkboxes
-      altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
-      });
-      // Hide dropdown
-      altStrategiesDropdown.style.display = 'none';
-    });
-  }
-});
+    
     // Entity Type Checkboxes
     const entitySMSFCheckbox = document.getElementById('entitySMSF');
     const entityTrustCheckbox = document.getElementById('entityTrust');
@@ -101,6 +50,56 @@ document.addEventListener('DOMContentLoaded', function() {
     const paraplannerCompareCheckbox = document.getElementById('paraplannerCompare');
     const alternativePlatformsTextarea = document.getElementById('alternativePlatforms');
     
+    // Alternative strategies dropdown functionality
+    const altStrategiesDropdownBtn = document.getElementById('altStrategiesDropdownBtn');
+    const altStrategiesDropdown = document.getElementById('altStrategiesDropdown');
+    const addSelectedStrategiesBtn = document.getElementById('addSelectedStrategies');
+    const cancelStrategiesSelectionBtn = document.getElementById('cancelStrategiesSelection');
+    const alternativeStrategiesTextarea = document.getElementById('alternativeStrategies');
+
+    if (altStrategiesDropdownBtn) {
+        altStrategiesDropdownBtn.addEventListener('click', function() {
+            altStrategiesDropdown.style.display = altStrategiesDropdown.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+
+    if (addSelectedStrategiesBtn) {
+        addSelectedStrategiesBtn.addEventListener('click', function() {
+            const selectedStrategies = [];
+            altStrategiesDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedStrategies.push(checkbox.value);
+            });
+
+            if (selectedStrategies.length > 0) {
+                const currentValue = alternativeStrategiesTextarea.value;
+                const newStrategies = selectedStrategies.join('\n\n');
+                alternativeStrategiesTextarea.value = currentValue ? currentValue + '\n\n' + newStrategies : newStrategies;
+                
+                // Uncheck all checkboxes
+                altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Hide dropdown
+                altStrategiesDropdown.style.display = 'none';
+                
+                // Trigger auto-save
+                triggerAutoSave();
+            }
+        });
+    }
+
+    if (cancelStrategiesSelectionBtn) {
+        cancelStrategiesSelectionBtn.addEventListener('click', function() {
+            // Uncheck all checkboxes
+            altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            // Hide dropdown
+            altStrategiesDropdown.style.display = 'none';
+        });
+    }
+    
     // Product options
     const productOptions = [
         'Centric IDPS',
@@ -135,6 +134,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up auto-save
     setupAutoSave();
+    
+    // Check and display compliance warnings
+    checkCriticalCompliance();
+    displayComplianceWarnings();
     
     // Set up checkbox visual selection effect
     document.querySelectorAll('.checkbox-item').forEach(item => {
@@ -328,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (singleClientCheckbox.checked || coupleClientCheckbox.checked) {
             const clientRecommendationHTML = `
                 <div class="form-group">
-                    <label for="clientRecommendations">${clientName} Recommendations:</label>
+                    <label for="clientRecommendations">${clientName} Recommendations/Scope:</label>
                     <textarea id="clientRecommendations" name="clientRecommendations" 
                         placeholder="Enter recommendations for ${clientName}"></textarea>
                 </div>
@@ -368,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (coupleClientCheckbox.checked) {
             const partnerRecommendationHTML = `
                 <div class="form-group">
-                    <label for="partnerRecommendations">${partnerName} Recommendations:</label>
+                    <label for="partnerRecommendations">${partnerName} Recommendations/Scope:</label>
                     <textarea id="partnerRecommendations" name="partnerRecommendations" 
                         placeholder="Enter recommendations for ${partnerName}"></textarea>
                 </div>
@@ -401,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 
                 <div class="form-group">
-                    <label for="jointRecommendations">Joint Recommendations:</label>
+                    <label for="jointRecommendations">Joint Recommendations/Scope:</label>
                     <textarea id="jointRecommendations" name="jointRecommendations" 
                         placeholder="Enter joint recommendations"></textarea>
                 </div>
@@ -435,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (dependantsClientCheckbox.checked) {
             const dependantsRecommendationHTML = `
                 <div class="form-group">
-                    <label for="dependantsRecommendations">Dependants Recommendations:</label>
+                    <label for="dependantsRecommendations">Dependants Recommendations/Scope:</label>
                     <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
                         placeholder="Enter recommendations for dependants"></textarea>
                 </div>
@@ -458,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const entityRecommendationHTML = `
             <div class="form-group">
-                <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations:</label>
+                <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations/Scope:</label>
                 <textarea id="${entityId}Recommendations" name="${entityId}Recommendations" 
                     placeholder="Enter recommendations for ${entityType}"></textarea>
             </div>
@@ -703,7 +706,7 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '';
         
         if (newClientRadio.checked) {
-            // New client requirements
+            // New client requirements - REMOVED FFQ
             const newClientHTML = `
                 <div class="form-group">
                     <div class="checklist-item">
@@ -732,18 +735,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     
                     <div class="checklist-item">
-                        <input type="checkbox" id="clientFFQ" name="compliance" value="ClientFFQ">
-                        <label for="clientFFQ">Completed FFQ to XPLAN</label>
-                    </div>
-                    
-                    <div class="checklist-item">
                         <input type="checkbox" id="scopeOfAdvice" name="compliance" value="ScopeOfAdvice">
                         <label for="scopeOfAdvice">Scope of Advice to XPLAN</label>
                     </div>
                     
                     <div class="checklist-item">
                         <input type="checkbox" id="finametricaSigned" name="compliance" value="FinametricaDoc">
-                        <label for="finametricaSigned">Signed Finametrica Document to be uploaded to XPLAN</label>
+                        <label for="finametricaSigned">Signed Questionnaire to be uploaded to XPLAN</label>
                     </div>
                     
                     <div class="checklist-item">
@@ -842,6 +840,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
     
+    // Add this function to check for missing critical items
+    function checkCriticalCompliance() {
+        const criticalItems = [];
+        
+        // Check TMD
+        const tmdDetails = document.getElementById('tmdDetails');
+        const tmdInFilenote = document.getElementById('tmdInFilenote');
+        if ((!tmdDetails || !tmdDetails.value.trim()) && (!tmdInFilenote || !tmdInFilenote.checked)) {
+            criticalItems.push('TMD');
+        }
+        
+        // Check Best Interests (You can add more checks here)
+        // Add any other critical compliance checks
+        
+        return criticalItems;
+    }
+
+    // Add visual warnings for missing items
+    function displayComplianceWarnings() {
+        const missingItems = checkCriticalCompliance();
+        
+        if (missingItems.length > 0) {
+            // Create or update warning display
+            let warningDiv = document.getElementById('complianceWarning');
+            if (!warningDiv) {
+                warningDiv = document.createElement('div');
+                warningDiv.id = 'complianceWarning';
+                warningDiv.style.cssText = 'background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; margin: 20px 0; border-radius: 8px;';
+                const checklistSection = document.getElementById('checklistSection');
+                if (checklistSection) {
+                    checklistSection.insertBefore(warningDiv, checklistSection.firstChild);
+                }
+            }
+            
+            warningDiv.innerHTML = `
+                <h4><i class="fas fa-exclamation-triangle"></i> Missing Critical Items:</h4>
+                <ul>
+                    ${missingItems.map(item => `<li><strong>${item}</strong> - Please complete before submission</li>`).join('')}
+                </ul>
+            `;
+        } else {
+            // Remove warning if all items are complete
+            const warningDiv = document.getElementById('complianceWarning');
+            if (warningDiv) {
+                warningDiv.remove();
+            }
+        }
+    }
+    
     // Function to update form based on selected client types
     function updateFormBasedOnSelections() {
         // Update partner-related fields based on couple selection
@@ -858,6 +905,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update compliance requirements
         updateComplianceRequirements();
+        
+        // Check compliance warnings
+        displayComplianceWarnings();
     }
     
     // Add event listeners for client name changes
@@ -916,6 +966,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         triggerAutoSave();
     });
+    
+    // Add event listeners for compliance monitoring
+    document.addEventListener('input', displayComplianceWarnings);
+    document.addEventListener('change', displayComplianceWarnings);
     
     // Draft Functionality
     function initializeDraftFunctionality() {
@@ -1095,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Save to Xplan functionality
     saveToXplanBtnBottom.addEventListener('click', function() {
-        // Show coming soon modal or alert
+        // Show coming soon modal
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'block';
@@ -1157,9 +1211,24 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Email client opened. Note: Attachment requires manual addition.');
     });
     
-    // Export to Word functionality
+    // Export to Word functionality - ENHANCED
     exportWordBtn.addEventListener('click', function() {
         const clientName = document.getElementById('clientName').value || 'Client';
+        
+        // Check for missing critical items
+        const missingItems = checkCriticalCompliance();
+        let complianceWarningHTML = '';
+        
+        if (missingItems.length > 0) {
+            complianceWarningHTML = `
+                <div style="background-color: #fff3cd; border: 2px solid #ffeaa7; color: #856404; padding: 15pt; margin: 20pt 0; border-radius: 5pt;">
+                    <h3 style="color: #856404; margin-bottom: 10pt;">⚠️ Missing Critical Items:</h3>
+                    <ul style="margin: 0; padding-left: 20pt;">
+                        ${missingItems.map(item => `<li><strong>${item}</strong> - Please complete before submission</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
         
         // Get clean HTML content
         const container = document.querySelector('.container').cloneNode(true);
@@ -1171,34 +1240,144 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         // Remove hidden elements
         container.querySelectorAll('.draft-selector, .auto-save-indicator, .modal').forEach(el => el.remove());
         
-        // Clean up styling for Word
+        // Clean up styling for Word with better text separation
         const html = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head>
                 <meta charset="utf-8">
                 <title>Financial Advice Request Form - ${clientName}</title>
                 <style>
-                    body { font-family: Calibri, Arial, sans-serif; line-height: 1.5; color: #000; margin: 20px; }
-                    h1 { font-size: 24pt; text-align: center; color: #2c3e50; margin-bottom: 20pt; page-break-after: avoid; }
-                    h2 { font-size: 18pt; color: #3498db; margin-top: 20pt; margin-bottom: 10pt; border-bottom: 2px solid #ecf0f1; padding-bottom: 5pt; page-break-after: avoid; }
-                    h3 { font-size: 14pt; color: #34495e; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
-                    h4 { font-size: 12pt; color: #34495e; margin-top: 10pt; margin-bottom: 8pt; page-break-after: avoid; }
-                    .section { margin-bottom: 20pt; padding: 15pt; border-left: 4px solid #1abc9c; background-color: #f9f9f9; page-break-inside: avoid; }
-                    .form-group { margin-bottom: 15pt; }
-                    label { font-weight: bold; display: block; margin-bottom: 5pt; }
-                    input, textarea, select { border: 1px solid #ddd; padding: 8pt; width: 100%; margin-bottom: 10pt; font-family: Calibri, Arial, sans-serif; background-color: white; }
-                    textarea { min-height: 40pt; }
-                    .checklist-item { margin-bottom: 8pt; padding: 5pt; background-color: #ecf0f1; page-break-inside: avoid; }
-                    .note { background-color: #e3f2fd; padding: 10pt; margin: 15pt 0; border-left: 4px solid #3498db; }
-                    .product-item { border: 1px solid #ddd; padding: 10pt; margin-bottom: 10pt; background-color: #fff; page-break-inside: avoid; }
+                    @page WordSection1 {
+                        margin: 1in;
+                    }
+                    body { 
+                        font-family: 'Segoe UI', Calibri, Arial, sans-serif; 
+                        line-height: 1.6; 
+                        color: #2c3e50; 
+                        margin: 30px; 
+                        background: white;
+                        font-size: 11pt;
+                    }
+                    h1 { 
+                        font-size: 28pt; 
+                        margin-bottom: 30pt; 
+                        text-align: center;
+                        color: #2c3e50;
+                        font-weight: bold;
+                        page-break-after: avoid;
+                    }
+                    h2 { 
+                        font-size: 20pt; 
+                        margin-top: 30pt; 
+                        margin-bottom: 20pt; 
+                        color: #2c3e50;
+                        border-bottom: 3px solid #3498db;
+                        padding-bottom: 8pt;
+                        font-weight: bold;
+                        page-break-after: avoid;
+                    }
+                    h3 { 
+                        font-size: 16pt; 
+                        margin-top: 25pt; 
+                        margin-bottom: 15pt; 
+                        color: #34495e;
+                        font-weight: bold;
+                        page-break-after: avoid;
+                    }
+                    h4 { 
+                        font-size: 14pt; 
+                        margin-top: 20pt; 
+                        margin-bottom: 15pt; 
+                        color: #34495e;
+                        font-weight: bold;
+                        page-break-after: avoid;
+                    }
+                    p { margin-bottom: 12pt; }
+                    div { 
+                        margin-bottom: 12pt !important; 
+                        page-break-inside: avoid;
+                    }
+                    .section { 
+                        margin-bottom: 30pt !important; 
+                        padding: 20pt !important; 
+                        border-left: 4px solid #1abc9c; 
+                        background-color: #f9f9f9; 
+                        page-break-inside: avoid !important;
+                    }
+                    .form-group { 
+                        margin-bottom: 20pt !important;
+                        page-break-inside: avoid !important;
+                    }
+                    label { 
+                        font-weight: bold; 
+                        display: block !important; 
+                        margin-bottom: 8pt !important;
+                        margin-top: 15pt !important;
+                        color: #2c3e50;
+                    }
+                    input, textarea, select { 
+                        display: block !important;
+                        width: 100% !important;
+                        margin-bottom: 15pt !important;
+                        padding: 10pt !important;
+                        border: 1px solid #ddd; 
+                        font-family: Calibri, Arial, sans-serif; 
+                        background-color: white;
+                        white-space: pre-wrap !important;
+                        word-wrap: break-word !important;
+                        overflow-wrap: break-word !important;
+                    }
+                    textarea { 
+                        min-height: 60pt;
+                        white-space: pre-wrap !important;
+                        word-wrap: break-word !important;
+                        overflow-wrap: break-word !important;
+                    }
+                    .checklist-item { 
+                        margin-bottom: 10pt; 
+                        padding: 8pt; 
+                        background-color: #ecf0f1; 
+                        page-break-inside: avoid;
+                        border-radius: 3pt;
+                    }
+                    .note { 
+                        background-color: #e3f2fd; 
+                        padding: 15pt; 
+                        margin: 20pt 0; 
+                        border-left: 4px solid #3498db;
+                        border-radius: 3pt;
+                    }
+                    .product-item { 
+                        border: 1px solid #ddd; 
+                        padding: 15pt; 
+                        margin-bottom: 15pt; 
+                        background-color: #fff; 
+                        page-break-inside: avoid;
+                        border-radius: 3pt;
+                    }
                     .grid-2 { display: block; }
-                    .grid-2 > div { margin-bottom: 10pt; }
-                    .product-recommendations, .risk-profile-section { margin: 15pt 0; padding: 10pt; background-color: #f0f8ff; border: 1px solid #ddd; }
-                    @page { margin: 1in; }
+                    .grid-2 > div { margin-bottom: 15pt; }
+                    .product-recommendations, .risk-profile-section { 
+                        margin: 20pt 0; 
+                        padding: 15pt; 
+                        background-color: #f0f8ff; 
+                        border: 1px solid #ddd;
+                        border-radius: 3pt;
+                        page-break-inside: avoid;
+                    }
+                    .status-complete { background-color: #d5f4e6; color: #27ae60; }
+                    .status-pending { background-color: #fadbd8; color: #e74c3c; }
+                    .status-na { background-color: #ecf0f1; color: #95a5a6; }
                 </style>
             </head>
             <body>
+                ${complianceWarningHTML}
                 ${container.innerHTML}
+                <div style="margin-top: 40px; text-align: center; border-top: 2px solid #bdc3c7; padding-top: 20px;">
+                    <p style="color: #7f8c8d; font-size: 10pt; margin: 0;">
+                        Document generated on ${new Date().toLocaleString()} | Financial Advice Request Form
+                    </p>
+                </div>
             </body>
             </html>
         `;
@@ -1219,9 +1398,26 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         const clientName = document.getElementById('clientName').value || 'Client';
         const element = document.querySelector('.container');
         
+        // Check for missing critical items
+        const missingItems = checkCriticalCompliance();
+        
         // Hide elements that shouldn't be in PDF
-        const elementsToHide = document.querySelectorAll('.btn-group, .draft-selector, .auto-save-indicator, .modal');
+        const elementsToHide = document.querySelectorAll('.btn-group, .draft-selector, .auto-save-indicator, .modal, #complianceWarning');
         elementsToHide.forEach(el => el.style.display = 'none');
+        
+        // Add temporary warning if items are missing
+        let tempWarning = null;
+        if (missingItems.length > 0) {
+            tempWarning = document.createElement('div');
+            tempWarning.style.cssText = 'background-color: #fff3cd; border: 2px solid #ffeaa7; color: #856404; padding: 15px; margin: 20px 0; border-radius: 8px; page-break-after: always;';
+            tempWarning.innerHTML = `
+                <h3>⚠️ Missing Critical Items:</h3>
+                <ul>
+                    ${missingItems.map(item => `<li><strong>${item}</strong> - Please complete before submission</li>`).join('')}
+                </ul>
+            `;
+            element.insertBefore(tempWarning, element.firstChild);
+        }
         
         // Configure html2pdf options
         const opt = {
@@ -1251,6 +1447,15 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         html2pdf().set(opt).from(element).save().then(() => {
             // Restore hidden elements
             elementsToHide.forEach(el => el.style.display = '');
+            
+            // Remove temporary warning if added
+            if (tempWarning) {
+                tempWarning.remove();
+            }
+            
+            // Restore compliance warning if it existed
+            displayComplianceWarnings();
+            
             showAutoSaveIndicator('PDF exported successfully!');
         });
     });
@@ -1303,6 +1508,17 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
             // Reset paraplanner compare checkbox
             paraplannerCompareCheckbox.checked = false;
             alternativePlatformsTextarea.value = '';
+            
+            // Hide alternative strategies dropdown if visible
+            if (altStrategiesDropdown) {
+                altStrategiesDropdown.style.display = 'none';
+            }
+            
+            // Remove compliance warning
+            const warningDiv = document.getElementById('complianceWarning');
+            if (warningDiv) {
+                warningDiv.remove();
+            }
             
             showAutoSaveIndicator('Form has been reset!');
         }
