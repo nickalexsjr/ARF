@@ -813,6 +813,57 @@ input:checked + .slider:before {
         margin: 10% auto;
     }
 }
+
+</style>
+/* Alternative Strategies Dropdown Styles */
+#altStrategiesDropdownBtn {
+    cursor: pointer;
+    user-select: none;
+}
+
+#altStrategiesDropdown {
+    display: none;
+    margin: 10px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
+    z-index: 10;
+}
+
+#altStrategiesDropdown .checkbox-item {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background-color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#altStrategiesDropdown .checkbox-item:hover {
+    background-color: #e9ecef;
+}
+
+#altStrategiesDropdown input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+#altStrategiesDropdown label {
+    cursor: pointer;
+    margin-bottom: 0;
+    display: inline;
+}
+
+/* Button styling within dropdown */
+#altStrategiesDropdown .btn {
+    margin-right: 10px;
+}
+</style>
+
     </style>
 </head>
 <body>
