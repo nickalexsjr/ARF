@@ -1197,13 +1197,14 @@
         </div>
 
         <div class="form-group">
-          <label for="alternativeStrategies">Alternatives - strategies:</label>
-          <textarea
-            id="alternativeStrategies"
-            name="alternativeStrategies"
-            placeholder="Enter alternative strategies"
-          ></textarea>
-        </div>
+    <label for="alternativeStrategies">
+        Alternatives - strategies:
+        <button type="button" class="btn btn-secondary btn-sm" id="addAlternativeStrategyBtn" style="margin-left: 10px;">
+            <i class="fas fa-plus"></i> Add from List
+        </button>
+    </label>
+    <textarea id="alternativeStrategies" name="alternativeStrategies" placeholder="Enter alternative strategies"></textarea>
+</div>
 
         <div class="form-group">
           <label for="alternativePlatforms">
@@ -1518,6 +1519,34 @@
         </div>
       </section>
 
+<div id="alternativeStrategyModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <span class="close" id="closeAlternativeModal">&times;</span>
+        <h3><i class="fas fa-list"></i> Select Alternative Strategies</h3>
+        <div class="form-group">
+            <label for="strategyDropdown">Choose Strategy Category:</label>
+            <select id="strategyDropdown" style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                <option value="">Select a strategy category...</option>
+                <option value="super_contributions">Super Contributions</option>
+                <option value="account_based_pensions">Account-Based Pensions</option>
+                <option value="maximising_centrelink">Maximising Centrelink</option>
+                <option value="insurance">Insurance</option>
+            </select>
+        </div>
+        <div id="strategyOptions" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; background: #f8f9fa;">
+            <!-- Strategy options will be populated here -->
+        </div>
+        <div class="modal-buttons">
+            <button type="button" class="btn btn-success" id="addSelectedStrategies">
+                <i class="fas fa-plus"></i> Add Selected
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelAlternativeModal">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+</div>
+      
       <!-- Save Draft Modal -->
       <div id="saveDraftModal" class="modal">
         <div class="modal-content">
@@ -1992,7 +2021,7 @@
                 <div class="recommendation-section">
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
-                            <label for="clientRecommendations">${clientName} Recommendations:</label>
+                            <label for="clientRecommendations">${clientName} Recommendations/Scope:</label>
                             <div class="recommendation-checkbox">
                                 <input type="checkbox" id="client1ProductRecsCheckbox" name="client1ProductRecsCheckbox">
                                 <label for="client1ProductRecsCheckbox">Product Recommendations?</label>
@@ -2039,7 +2068,7 @@
                 <div class="recommendation-section">
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
-                            <label for="partnerRecommendations">${partnerName} Recommendations:</label>
+                            <label for="partnerRecommendations">${partnerName} Recommendations/Scope:</label>
                             <div class="recommendation-checkbox">
                                 <input type="checkbox" id="client2ProductRecsCheckbox" name="client2ProductRecsCheckbox">
                                 <label for="client2ProductRecsCheckbox">Product Recommendations?</label>
@@ -2079,7 +2108,7 @@
                 <div class="recommendation-section">
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
-                            <label for="jointRecommendations">Joint Recommendations:</label>
+                            <label for="jointRecommendations">Joint Recommendations/Scope:</label>
                             <div class="recommendation-checkbox">
                                 <input type="checkbox" id="jointProductRecsCheckbox" name="jointProductRecsCheckbox">
                                 <label for="jointProductRecsCheckbox">Product Recommendations?</label>
@@ -2160,7 +2189,7 @@
                 <div class="recommendation-section">
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
-                            <label for="dependantsRecommendations">Dependants Recommendations:</label>
+                            <label for="dependantsRecommendations">Dependants Recommendations/Scope:</label>
                             <div class="recommendation-checkbox">
                                 <input type="checkbox" id="dependantsProductRecsCheckbox" name="dependantsProductRecsCheckbox">
                                 <label for="dependantsProductRecsCheckbox">Product Recommendations?</label>
@@ -2302,7 +2331,7 @@
             <div class="recommendation-section">
                 <div class="recommendation-textarea">
                     <div class="recommendation-header">
-                        <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations:</label>
+                        <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations/Scope:</label>
                         <div class="recommendation-checkbox">
                             <input type="checkbox" id="${entityId}ProductRecsCheckbox" name="${entityId}ProductRecsCheckbox">
                             <label for="${entityId}ProductRecsCheckbox">Product Recommendations?</label>
@@ -2634,9 +2663,9 @@
             const newClientHTML = `
                 <div class="form-group">
                     <div class="checklist-item">
-                        <input type="checkbox" id="clientIdUploaded" name="compliance" value="ClientID">
-                        <label for="clientIdUploaded">Upload copy of ID to XPLAN</label>
-                    </div>
+    <input type="checkbox" id="finametricaQuestionnaire" name="compliance" value="FinametricaQuestionnaire">
+    <label for="finametricaQuestionnaire">Signed Finametrica Questionnaire to be uploaded to XPLAN</label>
+</div>
                     
                     <div class="checklist-item">
                         <input type="checkbox" id="amlCompletion" name="compliance" value="AML">
@@ -2657,12 +2686,7 @@
                         <input type="checkbox" id="riskProfilingEvidence" name="riskProfiling" value="Evidence">
                         <label for="riskProfilingEvidence">Evidence of Risk profiling outcome in filenote</label>
                     </div>
-                    
-                    <div class="checklist-item">
-                        <input type="checkbox" id="clientFFQ" name="compliance" value="ClientFFQ">
-                        <label for="clientFFQ">Completed FFQ to XPLAN</label>
-                    </div>
-                    
+
                     <div class="checklist-item">
                         <input type="checkbox" id="scopeOfAdvice" name="compliance" value="ScopeOfAdvice">
                         <label for="scopeOfAdvice">Scope of Advice to XPLAN</label>
