@@ -4713,12 +4713,16 @@ ${document.getElementById("formCompletedBy").value || "[Your Name]"}`;
           }, 3000);
         }
 
-        // Export to Word functionality - ENHANCED with compliance sections and better UI
-        // Export to Word functionality - ENHANCED with compliance sections and better formatting
+     // Export to Word functionality - FIXED with deduplication and TMD warning
 exportWordBtn.addEventListener('click', function() {
     const clientName = document.getElementById('clientName').value || 'Client';
     
-    // Build comprehensive Word document content with better formatting
+    // Check for TMD completion
+    const tmdDetails = document.getElementById('tmdDetails');
+    const tmdInFilenote = document.getElementById('tmdInFilenote');
+    const tmdCompleted = (tmdDetails && tmdDetails.value.trim() !== '') || (tmdInFilenote && tmdInFilenote.checked);
+    
+    // Build Word document content
     let wordContent = `
         <div style="text-align: center; margin-bottom: 40px;">
             <h1 style="color: #2c3e50; font-size: 28pt; margin-bottom: 10px; font-weight: bold;">Statement of Advice Request Form</h1>
@@ -4726,12 +4730,25 @@ exportWordBtn.addEventListener('click', function() {
         </div>
     `;
     
-    // Process each visible section with enhanced formatting
+    // Add TMD warning if not completed
+    if (!tmdCompleted) {
+        wordContent += `
+            <div style="background-color: #fff3cd; border: 2px solid #ffeaa7; color: #856404; padding: 15pt; margin: 20pt 0; border-radius: 5pt;">
+                <h3 style="color: #856404; margin-bottom: 10pt;">⚠️ COMPLIANCE WARNING</h3>
+                <p style="margin: 0;"><strong>TMD (Target Market Determination) has not been completed.</strong></p>
+                <p style="margin: 0;">Please ensure TMD details are documented before finalizing the Statement of Advice.</p>
+            </div>
+        `;
+    }
+    
+    // Track processed elements to avoid duplicates
+    const processedElements = new Set();
+    
+    // Process each visible section
     document.querySelectorAll('.section').forEach((section) => {
         if (section.style.display !== 'none') {
             const h2 = section.querySelector('h2');
             if (h2) {
-                // Clean section title (remove icon)
                 const sectionTitle = h2.textContent.replace(/^\s*[^\w\s]\s*/, '').trim();
                 wordContent += `
                     <div style="margin-bottom: 30px; page-break-inside: avoid;">
@@ -4742,7 +4759,7 @@ exportWordBtn.addEventListener('click', function() {
                 `;
             }
             
-            // Handle dynamic recommendations content first
+            // Handle dynamic recommendations content
             const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
             if (dynamicContainer) {
                 const processedProducts = new Set();
@@ -4777,12 +4794,11 @@ exportWordBtn.addEventListener('click', function() {
                                         if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
                                             hasProductContent = true;
                                             
-                                            // Special handling for textareas to preserve formatting
                                             if (input.tagName === 'TEXTAREA') {
                                                 productContentHTML += `
                                                     <div style="margin-left: 20px; margin-bottom: 10px;">
                                                         <strong style="color: #2c3e50;">${inputLabel.textContent}</strong><br>
-                                                        <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; margin-top: 5px; white-space: pre-wrap; font-family: 'Courier New', monospace;">
+                                                        <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; margin-top: 5px; white-space: pre-line; font-family: Calibri, Arial, sans-serif;">
 ${value}
                                                         </div>
                                                     </div>
@@ -4829,7 +4845,7 @@ ${value}
                                     <div style="margin-bottom: 20px;">
                                         <h4 style="color: #2c3e50; font-size: 14pt; margin-bottom: 10px;">${label.textContent}</h4>
                                         <div style="border: 1px solid #bdc3c7; padding: 15px; background-color: #f8f9fa; 
-                                                    border-radius: 5px; white-space: pre-wrap; line-height: 1.6; font-family: 'Courier New', monospace;">
+                                                    border-radius: 5px; white-space: pre-line; line-height: 1.6; font-family: Calibri, Arial, sans-serif;">
 ${textarea.value}
                                         </div>
                                     </div>
@@ -4867,10 +4883,15 @@ ${textarea.value}
                 });
             }
             
-            // Process regular form groups with enhanced formatting
+            // Process regular form groups
             section.querySelectorAll('.form-group').forEach((group) => {
                 if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
                     const label = group.querySelector('label');
+                    
+                    // Skip if this is inside the alternative strategies dropdown
+                    if (group.closest('#altStrategiesDropdown')) {
+                        return;
+                    }
                     
                     // Process radio groups
                     const radioGroup = group.querySelector('.radio-group');
@@ -4910,24 +4931,48 @@ ${textarea.value}
                         }
                     }
                     
-                    // Process regular inputs and textareas
-                    group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach((input) => {
+                    // Process textareas and inputs
+                    const textarea = group.querySelector('textarea');
+                    if (textarea && !processedElements.has(textarea.id) && textarea.value && textarea.value.trim() !== '') {
+                        processedElements.add(textarea.id);
+                        
+                        const inputLabelEl = group.querySelector('label');
+                        let labelText = inputLabelEl ? inputLabelEl.textContent : '';
+                        
+                        // Clean up label text
+                        labelText = labelText.replace(/Choose from List.*$/i, '').trim();
+                        
+                        if (labelText) {
+                            wordContent += `
+                                <div style="margin-bottom: 15px;">
+                                    <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
+                                    <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
+                                                border-radius: 5px; margin-top: 8px; white-space: pre-line; line-height: 1.6; font-family: Calibri, Arial, sans-serif;">
+${textarea.value}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // Process other inputs
+                    group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], select').forEach((input) => {
                         if (input.style.display !== 'none' && 
                             !input.closest('.checkbox-group') && 
                             !input.closest('.radio-group') && 
                             !input.closest('.btn-group') && 
                             !input.closest('.product-item') && 
                             !input.closest('.recommendation-header') && 
-                            !input.closest('#altStrategiesDropdown') && // Skip dropdown items
+                            !input.closest('#altStrategiesDropdown') && 
+                            !processedElements.has(input.id) &&
                             input.value && input.value.trim() !== '') {
                         
+                            processedElements.add(input.id);
+                            
                             const inputLabelEl = input.closest('.form-group')?.querySelector('label');
                             let labelText = inputLabelEl ? inputLabelEl.textContent : '';
                             
-                            // Clean up label text (remove button text if present)
-                            if (labelText.includes('Choose from List')) {
-                                labelText = labelText.replace(/Choose from List.*$/i, '').trim();
-                            }
+                            labelText = labelText.replace(/Choose from List.*$/i, '').trim();
                             
                             if (labelText) {
                                 let value = input.value;
@@ -4936,28 +4981,15 @@ ${textarea.value}
                                     value = selected ? selected.text : '';
                                 }
                                 if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
-                                    // Special handling for textareas to preserve formatting
-                                    if (input.tagName === 'TEXTAREA') {
-                                        wordContent += `
-                                            <div style="margin-bottom: 15px;">
-                                                <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
-                                                <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-                                                            border-radius: 5px; margin-top: 8px; white-space: pre-wrap; line-height: 1.6; font-family: 'Courier New', monospace;">
-${value}
-                                                </div>
+                                    wordContent += `
+                                        <div style="margin-bottom: 15px;">
+                                            <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
+                                            <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
+                                                        border-radius: 5px; margin-top: 8px;">
+                                                ${value}
                                             </div>
-                                        `;
-                                    } else {
-                                        wordContent += `
-                                            <div style="margin-bottom: 15px;">
-                                                <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
-                                                <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-                                                            border-radius: 5px; margin-top: 8px;">
-                                                    ${value}
-                                                </div>
-                                            </div>
-                                        `;
-                                    }
+                                        </div>
+                                    `;
                                 }
                             }
                         }
@@ -4984,7 +5016,7 @@ ${value}
                 }
             });
             
-            // ALWAYS INCLUDE COMPLIANCE SECTIONS with comprehensive checklist display
+            // Include compliance sections
             if (section.id === 'checklistSection') {
                 wordContent += `
                     <div style="margin-top: 25px;">
@@ -4993,7 +5025,6 @@ ${value}
                         </h3>
                 `;
                 
-                // Always show the static checklist items
                 const staticItems = [
                     { id: 'factFind', label: 'Fact Find (dated within 12 months)' },
                     { id: 'filenote', label: 'Filenote' },
@@ -5041,7 +5072,6 @@ ${value}
                         </h3>
                 `;
                 
-                // Show compliance requirements based on client status
                 const complianceContainer = document.getElementById('complianceRequirements');
                 if (complianceContainer) {
                     complianceContainer.querySelectorAll('.checklist-item').forEach((item) => {
@@ -5093,7 +5123,7 @@ ${value}
         }
     });
     
-    // Create enhanced Word document with better styling
+    // Create Word document
     const html = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
@@ -5101,12 +5131,15 @@ ${value}
             <title>Financial Advice Request Form - ${clientName}</title>
             <style>
                 body { 
-                    font-family: 'Segoe UI', Calibri, Arial, sans-serif; 
+                    font-family: Calibri, Arial, sans-serif; 
                     line-height: 1.6; 
                     color: #2c3e50; 
                     margin: 30px; 
                     background: white;
                     font-size: 11pt;
+                }
+                * {
+                    font-family: Calibri, Arial, sans-serif !important;
                 }
                 h1 { 
                     font-size: 28pt; 
@@ -5170,7 +5203,9 @@ ${value}
     URL.revokeObjectURL(url);
     
     showAutoSaveIndicator('Enhanced Word document exported successfully!');
-});      
+});
+
+        
 
         // Export to PDF functionality - FIXED to show ALL textarea content properly
         exportPdfBtn.addEventListener("click", function () {
