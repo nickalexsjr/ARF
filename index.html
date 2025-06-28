@@ -4714,431 +4714,463 @@ ${document.getElementById("formCompletedBy").value || "[Your Name]"}`;
         }
 
         // Export to Word functionality - ENHANCED with compliance sections and better UI
-        exportWordBtn.addEventListener("click", function () {
-          const clientName =
-            document.getElementById("clientName").value || "Client";
-
-          // Build comprehensive Word document content with better formatting
-          let wordContent = `
+        // Export to Word functionality - ENHANCED with compliance sections and better formatting
+exportWordBtn.addEventListener('click', function() {
+    const clientName = document.getElementById('clientName').value || 'Client';
+    
+    // Build comprehensive Word document content with better formatting
+    let wordContent = `
         <div style="text-align: center; margin-bottom: 40px;">
             <h1 style="color: #2c3e50; font-size: 28pt; margin-bottom: 10px; font-weight: bold;">Statement of Advice Request Form</h1>
             <p style="color: #7f8c8d; font-size: 14pt; margin: 0;">Generated on ${new Date().toLocaleDateString()}</p>
         </div>
-        `;
-
-          // Process each visible section with enhanced formatting
-          document.querySelectorAll(".section").forEach((section) => {
-            if (section.style.display !== "none") {
-              const h2 = section.querySelector("h2");
-              if (h2) {
+    `;
+    
+    // Process each visible section with enhanced formatting
+    document.querySelectorAll('.section').forEach((section) => {
+        if (section.style.display !== 'none') {
+            const h2 = section.querySelector('h2');
+            if (h2) {
                 // Clean section title (remove icon)
                 const sectionTitle = h2.textContent.replace(/^\s*[^\w\s]\s*/, '').trim();
                 wordContent += `
-                <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                    <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
-                               border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold;">
-                        ${sectionTitle}
-                    </h2>
+                    <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                        <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
+                                   border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold;">
+                            ${sectionTitle}
+                        </h2>
                 `;
-              }
-
-              // Handle dynamic recommendations content first
-              const dynamicContainer = section.querySelector("#recommendationsSectionsContainer");
-              if (dynamicContainer) {
+            }
+            
+            // Handle dynamic recommendations content first
+            const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
+            if (dynamicContainer) {
                 const processedProducts = new Set();
-
+                
                 const processProductSection = (sectionEl) => {
-                  const title = sectionEl.querySelector("h4");
-                  if (title) {
-                    wordContent += `<h3 style="color: #34495e; font-size: 16pt; margin-top: 25px; margin-bottom: 15px; font-weight: bold;">${title.textContent}</h3>`;
-                  }
-
-                  sectionEl.querySelectorAll(".product-item").forEach((product) => {
-                    if (product.style.display !== "none") {
-                      const productHeader = product.querySelector("h5");
-                      let hasProductContent = false;
-                      let productContentHTML = "";
-
-                      product.querySelectorAll("input, textarea, select").forEach((input) => {
-                        if (input.value && input.value.trim() !== "" && input.style.display !== "none") {
-                          const inputGroup = input.closest(".form-group");
-                          const inputLabel = inputGroup ? inputGroup.querySelector("label") : null;
-
-                          if (inputLabel) {
-                            let value = input.value;
-                            if (input.tagName === "SELECT") {
-                              const selected = input.options[input.selectedIndex];
-                              value = selected ? selected.text : "";
-                            }
-                            if (input.type === "checkbox") {
-                              const statusSpan = input.parentElement.nextElementSibling;
-                              value = statusSpan ? statusSpan.textContent : input.checked ? "Yes" : "No";
-                            }
-                            if (value && value !== "Select investment option" && value !== "" && value !== "Type to search products") {
-                              hasProductContent = true;
-                              productContentHTML += `
-                                <div style="margin-left: 20px; margin-bottom: 10px;">
-                                    <strong style="color: #2c3e50;">${inputLabel.textContent}</strong><br>
-                                    <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; margin-top: 5px;">
-                                        ${value}
-                                    </div>
-                                </div>
-                              `;
-                            }
-                          }
-                        }
-                      });
-
-                      if (hasProductContent && productHeader) {
-                        wordContent += `
-                          <h4 style="color: #34495e; font-size: 14pt; margin-top: 20px; margin-bottom: 15px; 
-                                     background-color: #ecf0f1; padding: 10px; border-radius: 5px;">${productHeader.textContent}</h4>
-                          ${productContentHTML}
-                        `;
-                      }
+                    const title = sectionEl.querySelector('h4');
+                    if (title) {
+                        wordContent += `<h3 style="color: #34495e; font-size: 16pt; margin-top: 25px; margin-bottom: 15px; font-weight: bold;">${title.textContent}</h3>`;
                     }
-                  });
+                    
+                    sectionEl.querySelectorAll('.product-item').forEach((product) => {
+                        if (product.style.display !== 'none') {
+                            const productHeader = product.querySelector('h5');
+                            let hasProductContent = false;
+                            let productContentHTML = '';
+                            
+                            product.querySelectorAll('input, textarea, select').forEach((input) => {
+                                if (input.value && input.value.trim() !== '' && input.style.display !== 'none') {
+                                    const inputGroup = input.closest('.form-group');
+                                    const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
+                                    
+                                    if (inputLabel) {
+                                        let value = input.value;
+                                        if (input.tagName === 'SELECT') {
+                                            const selected = input.options[input.selectedIndex];
+                                            value = selected ? selected.text : '';
+                                        }
+                                        if (input.type === 'checkbox') {
+                                            const statusSpan = input.parentElement.nextElementSibling;
+                                            value = statusSpan ? statusSpan.textContent : input.checked ? 'Yes' : 'No';
+                                        }
+                                        if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
+                                            hasProductContent = true;
+                                            
+                                            // Special handling for textareas to preserve formatting
+                                            if (input.tagName === 'TEXTAREA') {
+                                                productContentHTML += `
+                                                    <div style="margin-left: 20px; margin-bottom: 10px;">
+                                                        <strong style="color: #2c3e50;">${inputLabel.textContent}</strong><br>
+                                                        <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; margin-top: 5px; white-space: pre-wrap; font-family: 'Courier New', monospace;">
+${value}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            } else {
+                                                productContentHTML += `
+                                                    <div style="margin-left: 20px; margin-bottom: 10px;">
+                                                        <strong style="color: #2c3e50;">${inputLabel.textContent}</strong><br>
+                                                        <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; margin-top: 5px;">
+                                                            ${value}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            if (hasProductContent && productHeader) {
+                                wordContent += `
+                                    <h4 style="color: #34495e; font-size: 14pt; margin-top: 20px; margin-bottom: 15px; 
+                                               background-color: #ecf0f1; padding: 10px; border-radius: 5px;">${productHeader.textContent}</h4>
+                                    ${productContentHTML}
+                                `;
+                            }
+                        }
+                    });
                 };
-
+                
                 Array.from(dynamicContainer.children).forEach((child) => {
-                  if (child.style.display === "none") return;
-
-                  if (child.classList.contains("recommendation-section")) {
-                    const textareaDiv = child.querySelector(".recommendation-textarea");
-                    const riskDiv = child.querySelector(".risk-profile-inline");
-
-                    if (textareaDiv) {
-                      const label = textareaDiv.querySelector("label");
-                      const textarea = textareaDiv.querySelector("textarea");
-
-                      if (label && textarea && textarea.value && textarea.value.trim() !== "") {
-                        wordContent += `
-                          <div style="margin-bottom: 20px;">
-                              <h4 style="color: #2c3e50; font-size: 14pt; margin-bottom: 10px;">${label.textContent}</h4>
-                              <div style="border: 1px solid #bdc3c7; padding: 15px; background-color: #f8f9fa; 
-                                          border-radius: 5px; white-space: pre-wrap; line-height: 1.6;">
-                                  ${textarea.value}
-                              </div>
-                          </div>
-                        `;
-                      }
-                    }
-
-                    if (riskDiv) {
-                      const riskLabel = riskDiv.querySelector("label");
-                      const riskSelect = riskDiv.querySelector("select");
-
-                      if (riskLabel && riskSelect && riskSelect.value && riskSelect.value.trim() !== "") {
-                        const selected = riskSelect.options[riskSelect.selectedIndex];
-                        if (selected && selected.text && selected.text !== "Select Risk Profile") {
-                          wordContent += `
-                            <div style="margin-bottom: 15px;">
-                                <strong style="color: #2c3e50;">${riskLabel.textContent}</strong>
-                                <span style="background-color: #e8f5e8; padding: 5px 10px; border-radius: 3px; margin-left: 10px;">
-                                    ${selected.text}
-                                </span>
-                            </div>
-                          `;
+                    if (child.style.display === 'none') return;
+                    
+                    if (child.classList.contains('recommendation-section')) {
+                        const textareaDiv = child.querySelector('.recommendation-textarea');
+                        const riskDiv = child.querySelector('.risk-profile-inline');
+                        
+                        if (textareaDiv) {
+                            const label = textareaDiv.querySelector('label');
+                            const textarea = textareaDiv.querySelector('textarea');
+                            
+                            if (label && textarea && textarea.value && textarea.value.trim() !== '') {
+                                wordContent += `
+                                    <div style="margin-bottom: 20px;">
+                                        <h4 style="color: #2c3e50; font-size: 14pt; margin-bottom: 10px;">${label.textContent}</h4>
+                                        <div style="border: 1px solid #bdc3c7; padding: 15px; background-color: #f8f9fa; 
+                                                    border-radius: 5px; white-space: pre-wrap; line-height: 1.6; font-family: 'Courier New', monospace;">
+${textarea.value}
+                                        </div>
+                                    </div>
+                                `;
+                            }
                         }
-                      }
+                        
+                        if (riskDiv) {
+                            const riskLabel = riskDiv.querySelector('label');
+                            const riskSelect = riskDiv.querySelector('select');
+                            
+                            if (riskLabel && riskSelect && riskSelect.value && riskSelect.value.trim() !== '') {
+                                const selected = riskSelect.options[riskSelect.selectedIndex];
+                                if (selected && selected.text && selected.text !== 'Select Risk Profile') {
+                                    wordContent += `
+                                        <div style="margin-bottom: 15px;">
+                                            <strong style="color: #2c3e50;">${riskLabel.textContent}</strong>
+                                            <span style="background-color: #e8f5e8; padding: 5px 10px; border-radius: 3px; margin-left: 10px;">
+                                                ${selected.text}
+                                            </span>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        }
+                        
+                        const next = child.nextElementSibling;
+                        if (next && next.classList.contains('product-recommendations') && next.style.display !== 'none') {
+                            processProductSection(next);
+                            processedProducts.add(next);
+                        }
+                    } else if (child.classList.contains('product-recommendations') && !processedProducts.has(child)) {
+                        processProductSection(child);
                     }
-
-                    const next = child.nextElementSibling;
-                    if (next && next.classList.contains("product-recommendations") && next.style.display !== "none") {
-                      processProductSection(next);
-                      processedProducts.add(next);
-                    }
-                  } else if (child.classList.contains("product-recommendations") && !processedProducts.has(child)) {
-                    processProductSection(child);
-                  }
                 });
-              }
-
-              // Process regular form groups with enhanced formatting
-              section.querySelectorAll(".form-group").forEach((group) => {
-                if (group.style.display !== "none" && !group.closest("#recommendationsSectionsContainer")) {
-                  const label = group.querySelector("label");
-
-                  // Process radio groups
-                  const radioGroup = group.querySelector(".radio-group");
-                  if (radioGroup) {
-                    const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
-                    if (checkedRadio && label) {
-                      wordContent += `
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #2c3e50; font-size: 12pt;">${label.textContent}</strong><br>
-                            <div style="margin-left: 20px; margin-top: 8px;">
-                      `;
-                      const radioLabel = checkedRadio.nextElementSibling;
-                      if (radioLabel) {
-                        wordContent += `<span style="color: #27ae60;">● ${radioLabel.textContent}</span>`;
-                      }
-                      wordContent += `</div></div>`;
-                    }
-                  }
-
-                  // Process checkbox groups
-                  const checkboxGroup = group.querySelector(".checkbox-group");
-                  if (checkboxGroup) {
-                    const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
-                    if (checkedBoxes.length > 0 && label) {
-                      wordContent += `
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #2c3e50; font-size: 12pt;">${label.textContent}</strong><br>
-                            <div style="margin-left: 20px; margin-top: 8px;">
-                      `;
-                      checkedBoxes.forEach((checkbox) => {
-                        const checkboxLabel = checkbox.nextElementSibling;
-                        if (checkboxLabel) {
-                          wordContent += `<div style="margin-bottom: 5px;"><span style="color: #27ae60;">✓</span> ${checkboxLabel.textContent}</div>`;
+            }
+            
+            // Process regular form groups with enhanced formatting
+            section.querySelectorAll('.form-group').forEach((group) => {
+                if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
+                    const label = group.querySelector('label');
+                    
+                    // Process radio groups
+                    const radioGroup = group.querySelector('.radio-group');
+                    if (radioGroup) {
+                        const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
+                        if (checkedRadio && label) {
+                            wordContent += `
+                                <div style="margin-bottom: 15px;">
+                                    <strong style="color: #2c3e50; font-size: 12pt;">${label.textContent}</strong><br>
+                                    <div style="margin-left: 20px; margin-top: 8px;">
+                            `;
+                            const radioLabel = checkedRadio.nextElementSibling;
+                            if (radioLabel) {
+                                wordContent += `<span style="color: #27ae60;">● ${radioLabel.textContent}</span>`;
+                            }
+                            wordContent += `</div></div>`;
                         }
-                      });
-                      wordContent += `</div></div>`;
                     }
-                  }
-
-                  // Process regular inputs
-                  group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach((input) => {
-                    if (input.style.display !== "none" && 
-                        !input.closest(".checkbox-group") && 
-                        !input.closest(".radio-group") && 
-                        !input.closest(".btn-group") && 
-                        !input.closest(".product-item") && 
-                        !input.closest(".recommendation-header") && 
-                        input.value && input.value.trim() !== "") {
-                      
-                      const inputLabelEl = input.closest(".form-group").querySelector("label");
-                      let labelText = inputLabelEl ? inputLabelEl.textContent : "";
-                      
-                      if (labelText) {
-                        let value = input.value;
-                        if (input.tagName === "SELECT") {
-                          const selected = input.options[input.selectedIndex];
-                          value = selected ? selected.text : "";
+                    
+                    // Process checkbox groups
+                    const checkboxGroup = group.querySelector('.checkbox-group');
+                    if (checkboxGroup) {
+                        const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
+                        if (checkedBoxes.length > 0 && label) {
+                            wordContent += `
+                                <div style="margin-bottom: 15px;">
+                                    <strong style="color: #2c3e50; font-size: 12pt;">${label.textContent}</strong><br>
+                                    <div style="margin-left: 20px; margin-top: 8px;">
+                            `;
+                            checkedBoxes.forEach((checkbox) => {
+                                const checkboxLabel = checkbox.nextElementSibling;
+                                if (checkboxLabel) {
+                                    wordContent += `<div style="margin-bottom: 5px;"><span style="color: #27ae60;">✓</span> ${checkboxLabel.textContent}</div>`;
+                                }
+                            });
+                            wordContent += `</div></div>`;
                         }
-                        if (value && value.trim() !== "" && value !== "Select a saved draft...") {
-                          wordContent += `
-                            <div style="margin-bottom: 15px;">
-                                <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
-                                <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-                                            border-radius: 5px; margin-top: 8px; white-space: pre-wrap; line-height: 1.6;">
-                                    ${value}
+                    }
+                    
+                    // Process regular inputs and textareas
+                    group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach((input) => {
+                        if (input.style.display !== 'none' && 
+                            !input.closest('.checkbox-group') && 
+                            !input.closest('.radio-group') && 
+                            !input.closest('.btn-group') && 
+                            !input.closest('.product-item') && 
+                            !input.closest('.recommendation-header') && 
+                            !input.closest('#altStrategiesDropdown') && // Skip dropdown items
+                            input.value && input.value.trim() !== '') {
+                        
+                            const inputLabelEl = input.closest('.form-group')?.querySelector('label');
+                            let labelText = inputLabelEl ? inputLabelEl.textContent : '';
+                            
+                            // Clean up label text (remove button text if present)
+                            if (labelText.includes('Choose from List')) {
+                                labelText = labelText.replace(/Choose from List.*$/i, '').trim();
+                            }
+                            
+                            if (labelText) {
+                                let value = input.value;
+                                if (input.tagName === 'SELECT') {
+                                    const selected = input.options[input.selectedIndex];
+                                    value = selected ? selected.text : '';
+                                }
+                                if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
+                                    // Special handling for textareas to preserve formatting
+                                    if (input.tagName === 'TEXTAREA') {
+                                        wordContent += `
+                                            <div style="margin-bottom: 15px;">
+                                                <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
+                                                <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
+                                                            border-radius: 5px; margin-top: 8px; white-space: pre-wrap; line-height: 1.6; font-family: 'Courier New', monospace;">
+${value}
+                                                </div>
+                                            </div>
+                                        `;
+                                    } else {
+                                        wordContent += `
+                                            <div style="margin-bottom: 15px;">
+                                                <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
+                                                <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
+                                                            border-radius: 5px; margin-top: 8px;">
+                                                    ${value}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Process toggle switches
+                    group.querySelectorAll('.yes-no-label').forEach((toggleGroup) => {
+                        const toggleLabel = toggleGroup.querySelector('label');
+                        const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
+                        if (toggleLabel && toggleInput) {
+                            const status = toggleInput.checked ? 'Yes' : 'No';
+                            const statusColor = toggleInput.checked ? '#27ae60' : '#e74c3c';
+                            wordContent += `
+                                <div style="margin-bottom: 15px;">
+                                    <strong style="color: #2c3e50; font-size: 12pt;">${toggleLabel.textContent}</strong>
+                                    <span style="background-color: ${statusColor}; color: white; padding: 4px 12px; 
+                                                 border-radius: 15px; margin-left: 15px; font-weight: bold;">
+                                        ${status}
+                                    </span>
                                 </div>
-                            </div>
-                          `;
+                            `;
                         }
-                      }
-                    }
-                  });
-
-                  // Process toggle switches
-                  group.querySelectorAll(".yes-no-label").forEach((toggleGroup) => {
-                    const toggleLabel = toggleGroup.querySelector("label");
-                    const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                    if (toggleLabel && toggleInput) {
-                      const status = toggleInput.checked ? "Yes" : "No";
-                      const statusColor = toggleInput.checked ? "#27ae60" : "#e74c3c";
-                      wordContent += `
-                        <div style="margin-bottom: 15px;">
-                            <strong style="color: #2c3e50; font-size: 12pt;">${toggleLabel.textContent}</strong>
-                            <span style="background-color: ${statusColor}; color: white; padding: 4px 12px; 
-                                         border-radius: 15px; margin-left: 15px; font-weight: bold;">
-                                ${status}
-                            </span>
-                        </div>
-                      `;
-                    }
-                  });
+                    });
                 }
-              });
-
-              // ALWAYS INCLUDE COMPLIANCE SECTIONS with comprehensive checklist display
-              if (section.id === "checklistSection") {
+            });
+            
+            // ALWAYS INCLUDE COMPLIANCE SECTIONS with comprehensive checklist display
+            if (section.id === 'checklistSection') {
                 wordContent += `
-                  <div style="margin-top: 25px;">
-                      <h3 style="color: #e67e22; font-size: 16pt; margin-bottom: 15px; font-weight: bold;">
-                          All Advice Documents
-                      </h3>
+                    <div style="margin-top: 25px;">
+                        <h3 style="color: #e67e22; font-size: 16pt; margin-bottom: 15px; font-weight: bold;">
+                            All Advice Documents
+                        </h3>
                 `;
-
+                
                 // Always show the static checklist items
                 const staticItems = [
-                  { id: "factFind", label: "Fact Find (dated within 12 months)" },
-                  { id: "filenote", label: "Filenote" },
-                  { id: "pricingCalculator", label: "Pricing Calculator" },
-                  { id: "beneficiaryNomination", label: "Beneficiary nomination advice made (if relevant)" }
+                    { id: 'factFind', label: 'Fact Find (dated within 12 months)' },
+                    { id: 'filenote', label: 'Filenote' },
+                    { id: 'pricingCalculator', label: 'Pricing Calculator' },
+                    { id: 'beneficiaryNomination', label: 'Beneficiary nomination advice made (if relevant)' }
                 ];
-
+                
                 staticItems.forEach(item => {
-                  const checkbox = document.getElementById(item.id);
-                  const checklistItem = checkbox ? checkbox.closest(".checklist-item") : null;
-                  const isNA = checklistItem ? checklistItem.classList.contains("na-active") : false;
-                  const isChecked = checkbox ? checkbox.checked : false;
-                  
-                  let status, statusColor, statusBg;
-                  if (isNA) {
-                    status = "N/A";
-                    statusColor = "#95a5a6";
-                    statusBg = "#ecf0f1";
-                  } else if (isChecked) {
-                    status = "✓ Complete";
-                    statusColor = "#27ae60";
-                    statusBg = "#d5f4e6";
-                  } else {
-                    status = "○ Pending";
-                    statusColor = "#e74c3c";
-                    statusBg = "#fadbd8";
-                  }
-
-                  wordContent += `
-                    <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 8px; 
-                                background-color: ${statusBg}; border-radius: 5px;">
-                        <span style="color: ${statusColor}; font-weight: bold; margin-right: 10px; min-width: 100px;">
-                            ${status}
-                        </span>
-                        <span style="color: #2c3e50;">${item.label}</span>
-                    </div>
-                  `;
-                });
-
-                wordContent += `
-                  </div>
-                  <div style="margin-top: 25px;">
-                      <h3 style="color: #e67e22; font-size: 16pt; margin-bottom: 15px; font-weight: bold;">
-                          Compliance Requirements
-                      </h3>
-                `;
-
-                // Show compliance requirements based on client status
-                const complianceContainer = document.getElementById("complianceRequirements");
-                if (complianceContainer) {
-                  complianceContainer.querySelectorAll(".checklist-item").forEach((item) => {
-                    const checkbox = item.querySelector('input[type="checkbox"]');
-                    const checkboxLabel = item.querySelector("label");
+                    const checkbox = document.getElementById(item.id);
+                    const checklistItem = checkbox ? checkbox.closest('.checklist-item') : null;
+                    const isNA = checklistItem ? checklistItem.classList.contains('na-active') : false;
+                    const isChecked = checkbox ? checkbox.checked : false;
                     
-                    if (checkbox && checkboxLabel) {
-                      const isNA = item.classList.contains("na-active");
-                      const isChecked = checkbox.checked;
-                      
-                      let status, statusColor, statusBg;
-                      if (isNA) {
-                        status = "N/A";
-                        statusColor = "#95a5a6";
-                        statusBg = "#ecf0f1";
-                      } else if (isChecked) {
-                        status = "✓ Complete";
-                        statusColor = "#27ae60";
-                        statusBg = "#d5f4e6";
-                      } else {
-                        status = "○ Pending";
-                        statusColor = "#e74c3c";
-                        statusBg = "#fadbd8";
-                      }
-
-                      wordContent += `
+                    let status, statusColor, statusBg;
+                    if (isNA) {
+                        status = 'N/A';
+                        statusColor = '#95a5a6';
+                        statusBg = '#ecf0f1';
+                    } else if (isChecked) {
+                        status = '✓ Complete';
+                        statusColor = '#27ae60';
+                        statusBg = '#d5f4e6';
+                    } else {
+                        status = '○ Pending';
+                        statusColor = '#e74c3c';
+                        statusBg = '#fadbd8';
+                    }
+                    
+                    wordContent += `
                         <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 8px; 
                                     background-color: ${statusBg}; border-radius: 5px;">
                             <span style="color: ${statusColor}; font-weight: bold; margin-right: 10px; min-width: 100px;">
                                 ${status}
                             </span>
-                            <span style="color: #2c3e50;">${checkboxLabel.textContent}</span>
+                            <span style="color: #2c3e50;">${item.label}</span>
                         </div>
-                      `;
-                    }
-                  });
-                } else {
-                  wordContent += `
-                    <div style="padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-                        <em style="color: #856404;">Compliance requirements will be determined based on client status selection.</em>
+                    `;
+                });
+                
+                wordContent += `
                     </div>
-                  `;
+                    <div style="margin-top: 25px;">
+                        <h3 style="color: #e67e22; font-size: 16pt; margin-bottom: 15px; font-weight: bold;">
+                            Compliance Requirements
+                        </h3>
+                `;
+                
+                // Show compliance requirements based on client status
+                const complianceContainer = document.getElementById('complianceRequirements');
+                if (complianceContainer) {
+                    complianceContainer.querySelectorAll('.checklist-item').forEach((item) => {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        const checkboxLabel = item.querySelector('label');
+                        
+                        if (checkbox && checkboxLabel) {
+                            const isNA = item.classList.contains('na-active');
+                            const isChecked = checkbox.checked;
+                            
+                            let status, statusColor, statusBg;
+                            if (isNA) {
+                                status = 'N/A';
+                                statusColor = '#95a5a6';
+                                statusBg = '#ecf0f1';
+                            } else if (isChecked) {
+                                status = '✓ Complete';
+                                statusColor = '#27ae60';
+                                statusBg = '#d5f4e6';
+                            } else {
+                                status = '○ Pending';
+                                statusColor = '#e74c3c';
+                                statusBg = '#fadbd8';
+                            }
+                            
+                            wordContent += `
+                                <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 8px; 
+                                            background-color: ${statusBg}; border-radius: 5px;">
+                                    <span style="color: ${statusColor}; font-weight: bold; margin-right: 10px; min-width: 100px;">
+                                        ${status}
+                                    </span>
+                                    <span style="color: #2c3e50;">${checkboxLabel.textContent}</span>
+                                </div>
+                            `;
+                        }
+                    });
+                } else {
+                    wordContent += `
+                        <div style="padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+                            <em style="color: #856404;">Compliance requirements will be determined based on client status selection.</em>
+                        </div>
+                    `;
                 }
-
+                
                 wordContent += `</div>`;
-              }
-
-              wordContent += `</div>`;
             }
-          });
-
-          // Create enhanced Word document with better styling
-          const html = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head>
-                <meta charset="utf-8">
-                <title>Financial Advice Request Form - ${clientName}</title>
-                <style>
-                    body { 
-                        font-family: 'Segoe UI', Calibri, Arial, sans-serif; 
-                        line-height: 1.6; 
-                        color: #2c3e50; 
-                        margin: 30px; 
-                        background: white;
-                        font-size: 11pt;
-                    }
-                    h1 { 
-                        font-size: 28pt; 
-                        margin-bottom: 30pt; 
-                        text-align: center;
-                        color: #2c3e50;
-                        font-weight: bold;
-                    }
-                    h2 { 
-                        font-size: 20pt; 
-                        margin-top: 30pt; 
-                        margin-bottom: 20pt; 
-                        color: #2c3e50;
-                        border-bottom: 3px solid #3498db;
-                        padding-bottom: 8pt;
-                        font-weight: bold;
-                    }
-                    h3 { 
-                        font-size: 16pt; 
-                        margin-top: 25pt; 
-                        margin-bottom: 15pt; 
-                        color: #34495e;
-                        font-weight: bold;
-                    }
-                    h4 { 
-                        font-size: 14pt; 
-                        margin-top: 20pt; 
-                        margin-bottom: 15pt; 
-                        color: #34495e;
-                        font-weight: bold;
-                    }
-                    p { margin-bottom: 12pt; }
-                    div { margin-bottom: 10pt; }
-                    strong { color: #2c3e50; font-weight: bold; }
-                    @page { 
-                        margin: 1in; 
-                        font-size: 11pt;
-                    }
-                    .status-complete { background-color: #d5f4e6; color: #27ae60; }
-                    .status-pending { background-color: #fadbd8; color: #e74c3c; }
-                    .status-na { background-color: #ecf0f1; color: #95a5a6; }
-                </style>
-            </head>
-            <body>
-                ${wordContent}
-                <div style="margin-top: 40px; text-align: center; border-top: 2px solid #bdc3c7; padding-top: 20px;">
-                    <p style="color: #7f8c8d; font-size: 10pt; margin: 0;">
-                        Document generated on ${new Date().toLocaleString()} | Financial Advice Request Form
-                    </p>
-                </div>
-            </body>
-            </html>
-        `;
-
-          const blob = new Blob([html], { type: "application/msword" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, "_")}.doc`;
-          a.click();
-          URL.revokeObjectURL(url);
-
-          showAutoSaveIndicator("Enhanced Word document exported successfully!");
-        });
+            
+            wordContent += `</div>`;
+        }
+    });
+    
+    // Create enhanced Word document with better styling
+    const html = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+            <meta charset="utf-8">
+            <title>Financial Advice Request Form - ${clientName}</title>
+            <style>
+                body { 
+                    font-family: 'Segoe UI', Calibri, Arial, sans-serif; 
+                    line-height: 1.6; 
+                    color: #2c3e50; 
+                    margin: 30px; 
+                    background: white;
+                    font-size: 11pt;
+                }
+                h1 { 
+                    font-size: 28pt; 
+                    margin-bottom: 30pt; 
+                    text-align: center;
+                    color: #2c3e50;
+                    font-weight: bold;
+                }
+                h2 { 
+                    font-size: 20pt; 
+                    margin-top: 30pt; 
+                    margin-bottom: 20pt; 
+                    color: #2c3e50;
+                    border-bottom: 3px solid #3498db;
+                    padding-bottom: 8pt;
+                    font-weight: bold;
+                }
+                h3 { 
+                    font-size: 16pt; 
+                    margin-top: 25pt; 
+                    margin-bottom: 15pt; 
+                    color: #34495e;
+                    font-weight: bold;
+                }
+                h4 { 
+                    font-size: 14pt; 
+                    margin-top: 20pt; 
+                    margin-bottom: 15pt; 
+                    color: #34495e;
+                    font-weight: bold;
+                }
+                p { margin-bottom: 12pt; }
+                div { margin-bottom: 10pt; }
+                strong { color: #2c3e50; font-weight: bold; }
+                @page { 
+                    margin: 1in; 
+                    font-size: 11pt;
+                }
+                .status-complete { background-color: #d5f4e6; color: #27ae60; }
+                .status-pending { background-color: #fadbd8; color: #e74c3c; }
+                .status-na { background-color: #ecf0f1; color: #95a5a6; }
+            </style>
+        </head>
+        <body>
+            ${wordContent}
+            <div style="margin-top: 40px; text-align: center; border-top: 2px solid #bdc3c7; padding-top: 20px;">
+                <p style="color: #7f8c8d; font-size: 10pt; margin: 0;">
+                    Document generated on ${new Date().toLocaleString()} | Financial Advice Request Form
+                </p>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const blob = new Blob([html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showAutoSaveIndicator('Enhanced Word document exported successfully!');
+});      
 
         // Export to PDF functionality - FIXED to show ALL textarea content properly
         exportPdfBtn.addEventListener("click", function () {
