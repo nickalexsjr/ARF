@@ -50,55 +50,91 @@ document.addEventListener('DOMContentLoaded', function() {
     const paraplannerCompareCheckbox = document.getElementById('paraplannerCompare');
     const alternativePlatformsTextarea = document.getElementById('alternativePlatforms');
     
-    // Alternative strategies dropdown functionality
-    const altStrategiesDropdownBtn = document.getElementById('altStrategiesDropdownBtn');
-    const altStrategiesDropdown = document.getElementById('altStrategiesDropdown');
-    const addSelectedStrategiesBtn = document.getElementById('addSelectedStrategies');
-    const cancelStrategiesSelectionBtn = document.getElementById('cancelStrategiesSelection');
-    const alternativeStrategiesTextarea = document.getElementById('alternativeStrategies');
+   // Alternative strategies dropdown functionality
+const altStrategiesDropdownBtn = document.getElementById('altStrategiesDropdownBtn');
+const altStrategiesDropdown = document.getElementById('altStrategiesDropdown');
+const addSelectedStrategiesBtn = document.getElementById('addSelectedStrategies');
+const cancelStrategiesSelectionBtn = document.getElementById('cancelStrategiesSelection');
+const alternativeStrategiesTextarea = document.getElementById('alternativeStrategies');
 
-    if (altStrategiesDropdownBtn) {
-        altStrategiesDropdownBtn.addEventListener('click', function() {
-            altStrategiesDropdown.style.display = altStrategiesDropdown.style.display === 'none' ? 'block' : 'none';
+// Simple toggle dropdown
+if (altStrategiesDropdownBtn) {
+    altStrategiesDropdownBtn.addEventListener('click', function(e) {
+        e.preventDefault(); // Prevent any default action
+        e.stopPropagation(); // Stop event bubbling
+        
+        // Toggle display
+        if (altStrategiesDropdown.style.display === 'none' || !altStrategiesDropdown.style.display) {
+            altStrategiesDropdown.style.display = 'block';
+            console.log('Dropdown opened');
+        } else {
+            altStrategiesDropdown.style.display = 'none';
+            console.log('Dropdown closed');
+        }
+    });
+}
+
+// Add selected strategies
+if (addSelectedStrategiesBtn) {
+    addSelectedStrategiesBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const selectedStrategies = [];
+        const checkboxes = altStrategiesDropdown.querySelectorAll('input[type="checkbox"]:checked');
+        
+        checkboxes.forEach(checkbox => {
+            selectedStrategies.push(checkbox.value);
         });
-    }
 
-    if (addSelectedStrategiesBtn) {
-        addSelectedStrategiesBtn.addEventListener('click', function() {
-            const selectedStrategies = [];
-            altStrategiesDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                selectedStrategies.push(checkbox.value);
-            });
-
-            if (selectedStrategies.length > 0) {
-                const currentValue = alternativeStrategiesTextarea.value;
-                const newStrategies = selectedStrategies.join('\n\n');
-                alternativeStrategiesTextarea.value = currentValue ? currentValue + '\n\n' + newStrategies : newStrategies;
-                
-                // Uncheck all checkboxes
-                altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-                
-                // Hide dropdown
-                altStrategiesDropdown.style.display = 'none';
-                
-                // Trigger auto-save
-                triggerAutoSave();
+        if (selectedStrategies.length > 0) {
+            const currentValue = alternativeStrategiesTextarea.value;
+            const newStrategies = selectedStrategies.join('\n\n');
+            
+            if (currentValue && !currentValue.endsWith('\n')) {
+                alternativeStrategiesTextarea.value = currentValue + '\n\n' + newStrategies;
+            } else {
+                alternativeStrategiesTextarea.value = currentValue + newStrategies;
             }
-        });
-    }
-
-    if (cancelStrategiesSelectionBtn) {
-        cancelStrategiesSelectionBtn.addEventListener('click', function() {
+            
             // Uncheck all checkboxes
             altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
             });
+            
             // Hide dropdown
             altStrategiesDropdown.style.display = 'none';
+            
+            // Trigger auto-save if you have it
+            if (typeof triggerAutoSave === 'function') {
+                triggerAutoSave();
+            }
+        }
+    });
+}
+
+// Cancel selection
+if (cancelStrategiesSelectionBtn) {
+    cancelStrategiesSelectionBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Uncheck all checkboxes
+        altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
         });
+        
+        // Hide dropdown
+        altStrategiesDropdown.style.display = 'none';
+    });
+}
+
+// Close dropdown when clicking outside (optional)
+document.addEventListener('click', function(e) {
+    if (altStrategiesDropdown && altStrategiesDropdownBtn) {
+        if (!altStrategiesDropdown.contains(e.target) && !altStrategiesDropdownBtn.contains(e.target)) {
+            altStrategiesDropdown.style.display = 'none';
+        }
     }
+});
     
     // Product options
     const productOptions = [
