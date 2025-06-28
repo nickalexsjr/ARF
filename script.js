@@ -2,123 +2,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Client Status Radio Buttons
     const newClientRadio = document.getElementById('newClient');
     const existingClientRadio = document.getElementById('existingClient');
-
-const alternativeStrategies = {
-    super_contributions: [
-        "Investing outside super – bond or wrap account",
-        "Retaining funds in cash", 
-        "Debt reduction",
-        "Other contribution types"
-    ],
-    account_based_pensions: [
-        "Withdraw from super and invest outside",
-        "Withdraw and recontribute to spouse",
-        "Retain in accumulation and take lump sums"
-    ],
-    maximising_centrelink: [
-        "Use of annuities",
-        "Funeral bonds",
-        "Gifting",
-        "Upsizing the home",
-        "Investing super in younger spouse's name",
-        "Debt reduction"
-    ],
-    insurance: [
-        "Inside vs outside super ownership",
-        "Stand-alone vs linked cover",
-        "Stepped vs level premiums",
-        "Policy features (e.g. wait period, benefit period, indexation)"
-    ]
-};
-
-// Alternative Strategy Modal functionality
-const alternativeStrategyModal = document.getElementById('alternativeStrategyModal');
-const addAlternativeStrategyBtn = document.getElementById('addAlternativeStrategyBtn');
-const closeAlternativeModal = document.getElementById('closeAlternativeModal');
-const cancelAlternativeModal = document.getElementById('cancelAlternativeModal');
-const addSelectedStrategies = document.getElementById('addSelectedStrategies');
-const strategyDropdown = document.getElementById('strategyDropdown');
-const strategyOptions = document.getElementById('strategyOptions');
-const alternativeStrategiesTextarea = document.getElementById('alternativeStrategies');
-
-// Open modal
-addAlternativeStrategyBtn.addEventListener('click', function() {
-    alternativeStrategyModal.style.display = 'block';
-    populateStrategyOptions('');
-});
-
-// Close modal events
-closeAlternativeModal.addEventListener('click', function() {
-    alternativeStrategyModal.style.display = 'none';
-});
-
-cancelAlternativeModal.addEventListener('click', function() {
-    alternativeStrategyModal.style.display = 'none';
-});
-
-window.addEventListener('click', function(event) {
-    if (event.target === alternativeStrategyModal) {
-        alternativeStrategyModal.style.display = 'none';
-    }
-});
-
-// Populate strategy options based on dropdown selection
-strategyDropdown.addEventListener('change', function() {
-    populateStrategyOptions(this.value);
-});
-
-function populateStrategyOptions(category) {
-    strategyOptions.innerHTML = '';
-    
-    if (!category) {
-        strategyOptions.innerHTML = '<p style="color: #666; font-style: italic;">Please select a strategy category above to see available options.</p>';
-        return;
-    }
-    
-    const strategies = alternativeStrategies[category];
-    if (!strategies) return;
-    
-    const categoryTitle = category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    
-    strategies.forEach((strategy, index) => {
-        const strategyId = `strategy_${category}_${index}`;
-        const strategyHtml = `
-            <div class="checkbox-item" style="margin-bottom: 10px; display: block; width: 100%;">
-                <input type="checkbox" id="${strategyId}" value="${strategy}" style="margin-right: 8px;">
-                <label for="${strategyId}" style="margin-bottom: 0; cursor: pointer; flex: 1;">
-                    <strong>Alternative strategy ${categoryTitle}:</strong> ${strategy}
-                </label>
-            </div>
-        `;
-        strategyOptions.insertAdjacentHTML('beforeend', strategyHtml);
-    });
-}
-
-// Add selected strategies to textarea
-addSelectedStrategies.addEventListener('click', function() {
-    const selectedStrategies = [];
-    const checkboxes = strategyOptions.querySelectorAll('input[type="checkbox"]:checked');
-    
-    checkboxes.forEach(checkbox => {
-        const label = checkbox.nextElementSibling.textContent.trim();
-        selectedStrategies.push(label + '\nReason for discount: \n');
-    });
-    
-    if (selectedStrategies.length > 0) {
-        const currentText = alternativeStrategiesTextarea.value;
-        const newText = currentText + (currentText ? '\n\n' : '') + selectedStrategies.join('\n');
-        alternativeStrategiesTextarea.value = newText;
-        
-        // Trigger auto-save
-        triggerAutoSave();
-        
-        // Show success message
-        showAutoSaveIndicator(`Added ${selectedStrategies.length} alternative strategies`);
-    }
-    
-    // Close modal
-    alternativeStrategyModal.style.display = 'none';
-});
     
     // Client Type Checkboxes
     const singleClientCheckbox = document.getElementById('singleClient');
@@ -381,32 +264,38 @@ addSelectedStrategies.addEventListener('click', function() {
         }
     };
     
+    // Function to update recommendation sections based on selections
     function updateRecommendationSections() {
-    const container = document.getElementById('recommendationsSectionsContainer');
-    container.innerHTML = '';
-    
-    // Get client names
-    const clientName = document.getElementById('clientName').value || 'Client 1';
-    const partnerName = document.getElementById('partnerName').value || 'Client 2';
-    
-    // Add client recommendations if single or couple is selected
-    if (singleClientCheckbox.checked || coupleClientCheckbox.checked) {
-        const clientRecommendationHTML = `
-            <div class="recommendation-section">
-                <div class="recommendation-textarea">
-                    <div class="recommendation-header">
-                        <label for="clientRecommendations">${clientName} Recommendations/Scope:</label>
-                        <div class="recommendation-checkbox">
-                            <input type="checkbox" id="client1ProductRecsCheckbox" name="client1ProductRecsCheckbox">
-                            <label for="client1ProductRecsCheckbox">Product Recommendations?</label>
-                        </div>
-                    </div>
+        const container = document.getElementById('recommendationsSectionsContainer');
+        container.innerHTML = '';
+        
+        // Get client names
+        const clientName = document.getElementById('clientName').value || 'Client 1';
+        const partnerName = document.getElementById('partnerName').value || 'Client 2';
+        
+        // Add client recommendations if single or couple is selected
+        if (singleClientCheckbox.checked || coupleClientCheckbox.checked) {
+            const clientRecommendationHTML = `
+                <div class="form-group">
+                    <label for="clientRecommendations">${clientName} Recommendations:</label>
                     <textarea id="clientRecommendations" name="clientRecommendations" 
-                        placeholder="Enter recommendations/scope for ${clientName}"></textarea>
+                        placeholder="Enter recommendations for ${clientName}"></textarea>
                 </div>
-                <div class="risk-profile-inline">
+                
+                <div class="product-recommendations">
+                    <h4>Product Recommendations - ${clientName}</h4>
+                    <div id="client1_products">
+                        ${createProductRecommendation('client1', clientName, 0)}
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client1', '${clientName}')">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                
+                <div class="risk-profile-section">
+                    <h4>Risk Profile - ${clientName}</h4>
                     <div class="form-group">
-                        <label for="riskProfile1">Risk Profile - ${clientName}:</label>
+                        <label for="riskProfile1">Risk Profile:</label>
                         <select id="riskProfile1" name="riskProfile1">
                             <option value="">Select Risk Profile</option>
                             <option value="conservative">Conservative</option>
@@ -415,45 +304,38 @@ addSelectedStrategies.addEventListener('click', function() {
                             <option value="balanced">Balanced</option>
                             <option value="growth">Growth</option>
                             <option value="highGrowth">High Growth</option>
-                            <option value="growthPlus">Growth Plus</option>
                             <option value="custom">Custom</option>
                         </select>
                     </div>
                 </div>
-            </div>
+            `;
             
-            <div class="product-recommendations" id="client1ProductRecommendationsSection" style="display: none;">
-                <h4>Product Recommendations - ${clientName}</h4>
-                <div id="client1_products">
-                    ${createProductRecommendation("client1", clientName, 0)}
-                </div>
-                <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client1', '${clientName}')">
-                    <i class="fas fa-plus"></i> Add Product
-                </button>
-            </div>
-        `;
+            container.insertAdjacentHTML('beforeend', clientRecommendationHTML);
+        }
         
-        container.insertAdjacentHTML('beforeend', clientRecommendationHTML);
-    }
-    
-    // Add partner recommendations if couple is selected
-    if (coupleClientCheckbox.checked) {
-        const partnerRecommendationHTML = `
-            <div class="recommendation-section">
-                <div class="recommendation-textarea">
-                    <div class="recommendation-header">
-                        <label for="partnerRecommendations">${partnerName} Recommendations/Scope:</label>
-                        <div class="recommendation-checkbox">
-                            <input type="checkbox" id="client2ProductRecsCheckbox" name="client2ProductRecsCheckbox">
-                            <label for="client2ProductRecsCheckbox">Product Recommendations?</label>
-                        </div>
-                    </div>
+        // Add partner recommendations if couple is selected
+        if (coupleClientCheckbox.checked) {
+            const partnerRecommendationHTML = `
+                <div class="form-group">
+                    <label for="partnerRecommendations">${partnerName} Recommendations:</label>
                     <textarea id="partnerRecommendations" name="partnerRecommendations" 
-                        placeholder="Enter recommendations/scope for ${partnerName}"></textarea>
+                        placeholder="Enter recommendations for ${partnerName}"></textarea>
                 </div>
-                <div class="risk-profile-inline">
+                
+                <div class="product-recommendations">
+                    <h4>Product Recommendations - ${partnerName}</h4>
+                    <div id="client2_products">
+                        ${createProductRecommendation('client2', partnerName, 0)}
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client2', '${partnerName}')">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                
+                <div class="risk-profile-section">
+                    <h4>Risk Profile - ${partnerName}</h4>
                     <div class="form-group">
-                        <label for="riskProfile2">Risk Profile - ${partnerName}:</label>
+                        <label for="riskProfile2">Risk Profile:</label>
                         <select id="riskProfile2" name="riskProfile2">
                             <option value="">Select Risk Profile</option>
                             <option value="conservative">Conservative</option>
@@ -462,185 +344,88 @@ addSelectedStrategies.addEventListener('click', function() {
                             <option value="balanced">Balanced</option>
                             <option value="growth">Growth</option>
                             <option value="highGrowth">High Growth</option>
-                            <option value="growthPlus">Growth Plus</option>
                             <option value="custom">Custom</option>
                         </select>
                     </div>
                 </div>
-            </div>
-            
-            <div class="product-recommendations" id="client2ProductRecommendationsSection" style="display: none;">
-                <h4>Product Recommendations - ${partnerName}</h4>
-                <div id="client2_products">
-                    ${createProductRecommendation("client2", partnerName, 0)}
-                </div>
-                <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('client2', '${partnerName}')">
-                    <i class="fas fa-plus"></i> Add Product
-                </button>
-            </div>
-            
-            <div class="recommendation-section">
-                <div class="recommendation-textarea">
-                    <div class="recommendation-header">
-                        <label for="jointRecommendations">Joint Recommendations/Scope:</label>
-                        <div class="recommendation-checkbox">
-                            <input type="checkbox" id="jointProductRecsCheckbox" name="jointProductRecsCheckbox">
-                            <label for="jointProductRecsCheckbox">Product Recommendations?</label>
-                        </div>
-                    </div>
+                
+                <div class="form-group">
+                    <label for="jointRecommendations">Joint Recommendations:</label>
                     <textarea id="jointRecommendations" name="jointRecommendations" 
-                        placeholder="Enter joint recommendations/scope"></textarea>
-                    <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointNA()">
-                        N/A
-                    </button>
+                        placeholder="Enter joint recommendations"></textarea>
                 </div>
-                <div class="risk-profile-inline">
-                    <div class="form-group">
-                        <label for="riskProfileJoint">Risk Profile - Joint:</label>
-                        <select id="riskProfileJoint" name="riskProfileJoint">
-                            <option value="">Select Risk Profile</option>
-                            <option value="conservative">Conservative</option>
-                            <option value="defensive">Defensive</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="balanced">Balanced</option>
-                            <option value="growth">Growth</option>
-                            <option value="highGrowth">High Growth</option>
-                            <option value="growthPlus">Growth Plus</option>
-                            <option value="na">N/A</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointRiskNA()">
-                            N/A
-                        </button>
-                    </div>
-                </div>
-            </div>
+            `;
             
-            <div class="product-recommendations" id="jointProductRecommendationsSection" style="display: none;">
-                <h4>Product Recommendations - Joint</h4>
-                <div id="joint_products">
-                    ${createProductRecommendation("joint", "Joint", 0)}
-                </div>
-                <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('joint', 'Joint')">
-                    <i class="fas fa-plus"></i> Add Product
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointProductNA()">
-                    N/A
-                </button>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', partnerRecommendationHTML);
-    }
-    
-    // Add entity recommendations
-    if (entityClientCheckbox.checked) {
-        if (entitySMSFCheckbox.checked) {
-            const smsfName = document.getElementById('smsfName').value || 'SMSF';
-            addEntityRecommendation('SMSF', smsfName);
+            container.insertAdjacentHTML('beforeend', partnerRecommendationHTML);
         }
         
-        if (entityTrustCheckbox.checked) {
-            const trustName = document.getElementById('trustName').value || 'Trust';
-            addEntityRecommendation('Trust', trustName);
-        }
-        
-        if (entityCompanyCheckbox.checked) {
-            const companyName = document.getElementById('companyName').value || 'Company';
-            addEntityRecommendation('Company', companyName);
-        }
-    }
-    
-    // Add dependants recommendations if selected
-    if (dependantsClientCheckbox.checked) {
-        const dependantsRecommendationHTML = `
-            <div class="recommendation-section">
-                <div class="recommendation-textarea">
-                    <div class="recommendation-header">
-                        <label for="dependantsRecommendations">Dependants Recommendations/Scope:</label>
-                        <div class="recommendation-checkbox">
-                            <input type="checkbox" id="dependantsProductRecsCheckbox" name="dependantsProductRecsCheckbox">
-                            <label for="dependantsProductRecsCheckbox">Product Recommendations?</label>
-                        </div>
-                    </div>
-                    <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
-                        placeholder="Enter recommendations/scope for dependants"></textarea>
-                </div>
-                <div class="risk-profile-inline">
-                    <div class="form-group">
-                        <label for="riskProfileDependants">Risk Profile - Dependants:</label>
-                        <select id="riskProfileDependants" name="riskProfileDependants">
-                            <option value="">Select Risk Profile</option>
-                            <option value="conservative">Conservative</option>
-                            <option value="defensive">Defensive</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="balanced">Balanced</option>
-                            <option value="growth">Growth</option>
-                            <option value="highGrowth">High Growth</option>
-                            <option value="growthPlus">Growth Plus</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+        // Add entity recommendations
+        if (entityClientCheckbox.checked) {
+            const entityName = document.getElementById('entityName').value || 'Entity';
             
-            <div class="product-recommendations" id="dependantsProductRecommendationsSection" style="display: none;">
-                <h4>Product Recommendations - Dependants</h4>
-                <div id="dependants_products">
-                    ${createProductRecommendation("dependants", "Dependants", 0)}
-                </div>
-                <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('dependants', 'Dependants')">
-                    <i class="fas fa-plus"></i> Add Product
-                </button>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', dependantsRecommendationHTML);
-    }
-    
-    // Initialize all product dropdowns and event listeners
-    setTimeout(() => {
-        console.log("Starting product features initialization...");
-        initializeProductFeatures();
-        setupProductRecommendationToggles();
-        setupAutoSaveForNewElements();
-        
-        // Ensure product recommendation sections are properly displayed based on saved state
-        document.querySelectorAll('[id$="ProductRecsCheckbox"]').forEach(checkbox => {
-            if (checkbox.checked) {
-                // Trigger the change event to show the section
-                const event = new Event('change');
-                checkbox.dispatchEvent(event);
+            if (entitySMSFCheckbox.checked) {
+                addEntityRecommendation('SMSF', entityName);
             }
-        });
+            
+            if (entityTrustCheckbox.checked) {
+                addEntityRecommendation('Trust', entityName);
+            }
+            
+            if (entityCompanyCheckbox.checked) {
+                addEntityRecommendation('Company', entityName);
+            }
+            
+            if (!entitySMSFCheckbox.checked && !entityTrustCheckbox.checked && !entityCompanyCheckbox.checked) {
+                addEntityRecommendation('Entity', entityName);
+            }
+        }
         
-        console.log('Initialized recommendation sections with', 
-                   document.querySelectorAll('[id$="ProductRecsCheckbox"]').length, 'product checkboxes');
-    }, 200);
-}
-
+        // Add dependants recommendations if selected
+        if (dependantsClientCheckbox.checked) {
+            const dependantsRecommendationHTML = `
+                <div class="form-group">
+                    <label for="dependantsRecommendations">Dependants Recommendations:</label>
+                    <textarea id="dependantsRecommendations" name="dependantsRecommendations" 
+                        placeholder="Enter recommendations for dependants"></textarea>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', dependantsRecommendationHTML);
+        }
+        
+        // Initialize all product dropdowns and event listeners
+        setTimeout(() => {
+            initializeProductFeatures();
+            setupAutoSaveForNewElements();
+        }, 100);
+    }
     
     // Helper function to add entity recommendation sections
     function addEntityRecommendation(entityType, entityName) {
-    const container = document.getElementById('recommendationsSectionsContainer');
-    const entityId = entityType.toLowerCase();
-    
-    const entityRecommendationHTML = `
-        <div class="recommendation-section">
-            <div class="recommendation-textarea">
-                <div class="recommendation-header">
-                    <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations/Scope:</label>
-                    <div class="recommendation-checkbox">
-                        <input type="checkbox" id="${entityId}ProductRecsCheckbox" name="${entityId}ProductRecsCheckbox">
-                        <label for="${entityId}ProductRecsCheckbox">Product Recommendations?</label>
-                    </div>
-                </div>
+        const container = document.getElementById('recommendationsSectionsContainer');
+        const entityId = entityType.toLowerCase();
+        
+        const entityRecommendationHTML = `
+            <div class="form-group">
+                <label for="${entityId}Recommendations">${entityType} - ${entityName} Recommendations:</label>
                 <textarea id="${entityId}Recommendations" name="${entityId}Recommendations" 
-                    placeholder="Enter recommendations/scope for ${entityType}"></textarea>
+                    placeholder="Enter recommendations for ${entityType}"></textarea>
             </div>
-            <div class="risk-profile-inline">
+            
+            <div class="product-recommendations">
+                <h4>Product Recommendations - ${entityType} - ${entityName}</h4>
+                <div id="${entityId}_products">
+                    ${createProductRecommendation(entityId, entityName, 0)}
+                </div>
+                <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('${entityId}', '${entityName}')">
+                    <i class="fas fa-plus"></i> Add Product
+                </button>
+            </div>
+            
+            <div class="risk-profile-section">
+                <h4>Risk Profile - ${entityType} - ${entityName}</h4>
                 <div class="form-group">
-                    <label for="riskProfile${entityId}">Risk Profile - ${entityType}:</label>
+                    <label for="riskProfile${entityId}">Risk Profile:</label>
                     <select id="riskProfile${entityId}" name="riskProfile${entityId}">
                         <option value="">Select Risk Profile</option>
                         <option value="conservative">Conservative</option>
@@ -649,26 +434,14 @@ addSelectedStrategies.addEventListener('click', function() {
                         <option value="balanced">Balanced</option>
                         <option value="growth">Growth</option>
                         <option value="highGrowth">High Growth</option>
-                        <option value="growthPlus">Growth Plus</option>
                         <option value="custom">Custom</option>
                     </select>
                 </div>
             </div>
-        </div>
+        `;
         
-        <div class="product-recommendations" id="${entityId}ProductRecommendationsSection" style="display: none;">
-            <h4>Product Recommendations - ${entityType} - ${entityName}</h4>
-            <div id="${entityId}_products">
-                ${createProductRecommendation(entityId, entityName, 0)}
-            </div>
-            <button type="button" class="btn btn-success btn-sm add-product-btn" onclick="addProduct('${entityId}', '${entityName}')">
-                <i class="fas fa-plus"></i> Add Product
-            </button>
-        </div>
-    `;
-    
-    container.insertAdjacentHTML('beforeend', entityRecommendationHTML);
-}
+        container.insertAdjacentHTML('beforeend', entityRecommendationHTML);
+    }
     
     // Function to add product
     window.addProduct = function(clientId, clientName) {
@@ -873,163 +646,150 @@ addSelectedStrategies.addEventListener('click', function() {
         }
     }
     
-    // MODIFICATION 8: Update updateComplianceRequirements function
-// Replace the existing function with this updated version:
-
-function updateComplianceRequirements() {
-    const container = document.getElementById('complianceRequirements');
-    container.innerHTML = '';
-    
-    if (newClientRadio.checked) {
-        // New client requirements - UPDATED
-        const newClientHTML = `
-            <div class="form-group">
-                <div class="checklist-item">
-                    <input type="checkbox" id="clientIdUploaded" name="compliance" value="ClientID">
-                    <label for="clientIdUploaded">Upload copy of ID to XPLAN</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="amlCompletion" name="compliance" value="AML">
-                    <label for="amlCompletion">AML to be completed per entity/individual save to XPLAN</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="taskXGreenID" name="compliance" value="GreenID">
-                    <label for="taskXGreenID">TaskX - Green ID to be completed</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="initialFN" name="compliance" value="InitialFN">
-                    <label for="initialFN">Initial FN</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="riskProfilingEvidence" name="riskProfiling" value="Evidence">
-                    <label for="riskProfilingEvidence">Evidence of Risk profiling outcome in filenote</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="scopeOfAdvice" name="compliance" value="ScopeOfAdvice">
-                    <label for="scopeOfAdvice">Scope of Advice to XPLAN</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="finametricaQuestionnaire" name="compliance" value="FinametricaQuestionnaire">
-                    <label for="finametricaQuestionnaire">Signed Finametrica Questionnaire to be uploaded to XPLAN</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="finametricaReport" name="compliance" value="FinametricaReport">
-                    <label for="finametricaReport">Finametrica Report to be uploaded to XPLAN</label>
-                </div>
-                
-                <div class="checklist-item" id="superResearchItem">
-                    <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
-                    <label for="superResearch">Super research confirmation</label>
-                    <button type="button" class="btn btn-secondary btn-sm na-button" id="superResearchNABtn">N/A</button>
-                </div>
-                
-                <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
-                    <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
-                    <label for="contributionHistory">Contribution history obtained</label>
-                    <button type="button" class="btn btn-secondary btn-sm na-button" id="contributionHistoryNABtn">N/A</button>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="taskXNewAdvice" name="compliance" value="TaskXNewAdvice">
-                    <label for="taskXNewAdvice">TaskX - New Advice Request</label>
-                </div>
-            </div>
-        `;
-        container.innerHTML = newClientHTML;
-    } else if (existingClientRadio.checked) {
-        // Existing client requirements - UPDATED  
-        const existingClientHTML = `
-            <div class="form-group">
-                <div class="checklist-item">
-                    <input type="checkbox" id="strategicFN" name="compliance" value="StrategicFN">
-                    <label for="strategicFN">Strategic FN / Other relevant FN</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="riskProfilingEvidence" name="riskProfiling" value="Evidence">
-                    <label for="riskProfilingEvidence">Evidence of Risk profiling outcome in filenote</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="uploadPricingCalc" name="compliance" value="UploadPricing">
-                    <label for="uploadPricingCalc">Upload Pricing Calculator</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="workingsResearch" name="compliance" value="WorkingsResearch">
-                    <label for="workingsResearch">Workings / Research etc to be uploaded</label>
-                </div>
-                
-                <div class="checklist-item">
-                    <input type="checkbox" id="submitJira" name="compliance" value="SubmitJira">
-                    <label for="submitJira">Submit JIRA for pricing/or PCR (if applicable)</label>
-                </div>
-                
-                <div class="checklist-item" id="superResearchItem">
-                    <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
-                    <label for="superResearch">Super research confirmation</label>
-                    <button type="button" class="btn btn-secondary btn-sm na-button" id="superResearchNABtn">N/A</button>
-                </div>
-                
-                <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
-                    <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
-                    <label for="contributionHistory">Contribution history obtained</label>
-                    <button type="button" class="btn btn-secondary btn-sm na-button" id="contributionHistoryNABtn">N/A</button>
-                </div>
-            </div>
-        `;
-        container.innerHTML = existingClientHTML;
-    }
-    
-    // Add SMSF specific items if SMSF is selected
-    if (entitySMSFCheckbox.checked) {
-        const smsfHTML = `
-            <div class="form-group">
-                <div class="checklist-item">
-                    <input type="checkbox" id="smsfDocs" name="compliance" value="SMSFDocs">
-                    <label for="smsfDocs">SMSF trust deed, financials, investment strategy, costs</label>
-                </div>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', smsfHTML);
-    }
-    
-    // Add event listener for super research checkbox and N/A buttons
-    setTimeout(() => {
-        const superResearchCheckbox = document.getElementById('superResearch');
-        const contributionHistoryItem = document.getElementById('contributionHistoryItem');
-        const superResearchNABtn = document.getElementById('superResearchNABtn');
-        const contributionHistoryNABtn = document.getElementById('contributionHistoryNABtn');
-        const superResearchItem = document.getElementById('superResearchItem');
+    // Update compliance requirements based on client status
+    function updateComplianceRequirements() {
+        const container = document.getElementById('complianceRequirements');
+        container.innerHTML = '';
         
-        if (superResearchCheckbox && contributionHistoryItem) {
-            superResearchCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    contributionHistoryItem.style.display = 'block';
-                    // Remove N/A state when manually checking
-                    if (superResearchItem) {
-                        superResearchItem.classList.remove('na-active');
-                    }
-                } else {
-                    contributionHistoryItem.style.display = 'none';
-                    document.getElementById('contributionHistory').checked = false;
-                    // Also remove N/A state from contribution history
-                    contributionHistoryItem.classList.remove('na-active');
-                }
-                triggerAutoSave();
-            });
+        if (newClientRadio.checked) {
+            // New client requirements
+            const newClientHTML = `
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="clientIdUploaded" name="compliance" value="ClientID">
+                        <label for="clientIdUploaded">Upload copy of ID to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="amlCompletion" name="compliance" value="AML">
+                        <label for="amlCompletion">AML to be completed per entity/individual save to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="taskXGreenID" name="compliance" value="GreenID">
+                        <label for="taskXGreenID">TaskX - Green ID to be completed</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="initialFN" name="compliance" value="InitialFN">
+                        <label for="initialFN">Initial FN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="riskProfilingEvidence" name="riskProfiling" value="Evidence">
+                        <label for="riskProfilingEvidence">Evidence of Risk profiling outcome in filenote</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="clientFFQ" name="compliance" value="ClientFFQ">
+                        <label for="clientFFQ">Completed FFQ to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="scopeOfAdvice" name="compliance" value="ScopeOfAdvice">
+                        <label for="scopeOfAdvice">Scope of Advice to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="finametricaSigned" name="compliance" value="FinametricaDoc">
+                        <label for="finametricaSigned">Signed Finametrica Document to be uploaded to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="finametricaReport" name="compliance" value="FinametricaReport">
+                        <label for="finametricaReport">Finametrica Report to be uploaded to XPLAN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
+                        <label for="superResearch">Super research confirmation</label>
+                    </div>
+                    
+                    <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
+                        <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
+                        <label for="contributionHistory">Contribution history obtained</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="taskXNewAdvice" name="compliance" value="TaskXNewAdvice">
+                        <label for="taskXNewAdvice">TaskX - New Advice Request</label>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = newClientHTML;
+        } else if (existingClientRadio.checked) {
+            // Existing client requirements
+            const existingClientHTML = `
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="strategicFN" name="compliance" value="StrategicFN">
+                        <label for="strategicFN">Strategic FN / Other relevant FN</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="riskProfilingEvidence" name="riskProfiling" value="Evidence">
+                        <label for="riskProfilingEvidence">Evidence of Risk profiling outcome in filenote</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="uploadPricingCalc" name="compliance" value="UploadPricing">
+                        <label for="uploadPricingCalc">Upload Pricing Calculator</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="workingsResearch" name="compliance" value="WorkingsResearch">
+                        <label for="workingsResearch">Workings / Research etc to be uploaded</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="submitJira" name="compliance" value="SubmitJira">
+                        <label for="submitJira">Submit JIRA for pricing/or PCR (if applicable)</label>
+                    </div>
+                    
+                    <div class="checklist-item">
+                        <input type="checkbox" id="superResearch" name="compliance" value="SuperResearch">
+                        <label for="superResearch">Super research confirmation</label>
+                    </div>
+                    
+                    <div class="checklist-item" id="contributionHistoryItem" style="display: none; margin-left: 30px;">
+                        <input type="checkbox" id="contributionHistory" name="compliance" value="ContributionHistory">
+                        <label for="contributionHistory">Contribution history obtained</label>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = existingClientHTML;
         }
         
-        setupAutoSaveForNewElements();
-    }, 100);
-}
+        // Add SMSF specific items if SMSF is selected
+        if (entitySMSFCheckbox.checked) {
+            const smsfHTML = `
+                <div class="form-group">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="smsfDocs" name="compliance" value="SMSFDocs">
+                        <label for="smsfDocs">SMSF trust deed, financials, investment strategy, costs</label>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', smsfHTML);
+        }
+        
+        // Add event listener for super research checkbox
+        setTimeout(() => {
+            const superResearchCheckbox = document.getElementById('superResearch');
+            const contributionHistoryItem = document.getElementById('contributionHistoryItem');
+            
+            if (superResearchCheckbox && contributionHistoryItem) {
+                superResearchCheckbox.addEventListener('change', function() {
+                    contributionHistoryItem.style.display = this.checked ? 'block' : 'none';
+                    if (!this.checked) {
+                        document.getElementById('contributionHistory').checked = false;
+                    }
+                    triggerAutoSave();
+                });
+            }
+            setupAutoSaveForNewElements();
+        }, 100);
+    }
     
     // Function to update form based on selected client types
     function updateFormBasedOnSelections() {
@@ -1346,744 +1106,160 @@ ${document.getElementById('formCompletedBy').value || '[Your Name]'}`;
         showAutoSaveIndicator('Email client opened. Note: Attachment requires manual addition.');
     });
     
-    // MODIFICATION 9: Update Export to Word functionality
-// Replace the existing exportWordBtn.addEventListener with this updated version:
-
-exportWordBtn.addEventListener('click', function() {
-    const clientName = document.getElementById('clientName').value || 'Client';
-    
-    // Build comprehensive Word document content with better formatting
-    let wordContent = `
-        <div style="text-align: center; margin-bottom: 40px;">
-            <h1 style="color: #2c3e50; font-size: 28pt; margin-bottom: 10px; font-weight: bold;">Statement of Advice Request Form</h1>
-            <p style="color: #7f8c8d; font-size: 14pt; margin: 0;">Generated on ${new Date().toLocaleDateString()}</p>
-        </div>
-    `;
-    
-    // Get TMD value for flagging
-    const tmdDetails = document.getElementById('tmdDetails').value;
-    const tmdInFilenote = document.getElementById('tmdInFilenote') ? document.getElementById('tmdInFilenote').checked : false;
-    
-    // Helper function to check if critical fields are missing
-    function checkMissingItems() {
-        const missingItems = [];
+    // Export to Word functionality
+    exportWordBtn.addEventListener('click', function() {
+        const clientName = document.getElementById('clientName').value || 'Client';
         
-        // Check TMD
-        if (!tmdDetails || tmdDetails.trim() === '') {
-            if (!tmdInFilenote) {
-                missingItems.push('TMD');
-            }
-        }
+        // Get clean HTML content
+        const container = document.querySelector('.container').cloneNode(true);
         
-        // Check Best Interests (can add more checks here)
-        const goalAlignment = document.getElementById('goalAlignment').value;
-        if (!goalAlignment || goalAlignment.trim() === '') {
-            missingItems.push('Best Interests/Goal Alignment');
-        }
+        // Remove buttons and draft selector
+        const buttons = container.querySelector('.btn-group');
+        if (buttons) buttons.remove();
         
-        return missingItems;
-    }
-    
-    const missingItems = checkMissingItems();
-    
-    // Add missing items flag at the top if any are missing
-    if (missingItems.length > 0) {
-        wordContent += `
-            <div style="background-color: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 30px; border-radius: 5px;">
-                <h3 style="color: #856404; margin-top: 0; margin-bottom: 10px;">⚠️ MISSING REQUIRED ITEMS</h3>
-                <p style="color: #856404; margin: 0; font-weight: bold;">
-                    The following items require attention: ${missingItems.join(', ')}
-                </p>
-            </div>
+        // Remove hidden elements
+        container.querySelectorAll('.draft-selector, .auto-save-indicator, .modal').forEach(el => el.remove());
+        
+        // Clean up styling for Word
+        const html = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset="utf-8">
+                <title>Financial Advice Request Form - ${clientName}</title>
+                <style>
+                    body { font-family: Calibri, Arial, sans-serif; line-height: 1.5; color: #000; margin: 20px; }
+                    h1 { font-size: 24pt; text-align: center; color: #2c3e50; margin-bottom: 20pt; page-break-after: avoid; }
+                    h2 { font-size: 18pt; color: #3498db; margin-top: 20pt; margin-bottom: 10pt; border-bottom: 2px solid #ecf0f1; padding-bottom: 5pt; page-break-after: avoid; }
+                    h3 { font-size: 14pt; color: #34495e; margin-top: 15pt; margin-bottom: 10pt; page-break-after: avoid; }
+                    h4 { font-size: 12pt; color: #34495e; margin-top: 10pt; margin-bottom: 8pt; page-break-after: avoid; }
+                    .section { margin-bottom: 20pt; padding: 15pt; border-left: 4px solid #1abc9c; background-color: #f9f9f9; page-break-inside: avoid; }
+                    .form-group { margin-bottom: 15pt; }
+                    label { font-weight: bold; display: block; margin-bottom: 5pt; }
+                    input, textarea, select { border: 1px solid #ddd; padding: 8pt; width: 100%; margin-bottom: 10pt; font-family: Calibri, Arial, sans-serif; background-color: white; }
+                    textarea { min-height: 40pt; }
+                    .checklist-item { margin-bottom: 8pt; padding: 5pt; background-color: #ecf0f1; page-break-inside: avoid; }
+                    .note { background-color: #e3f2fd; padding: 10pt; margin: 15pt 0; border-left: 4px solid #3498db; }
+                    .product-item { border: 1px solid #ddd; padding: 10pt; margin-bottom: 10pt; background-color: #fff; page-break-inside: avoid; }
+                    .grid-2 { display: block; }
+                    .grid-2 > div { margin-bottom: 10pt; }
+                    .product-recommendations, .risk-profile-section { margin: 15pt 0; padding: 10pt; background-color: #f0f8ff; border: 1px solid #ddd; }
+                    @page { margin: 1in; }
+                </style>
+            </head>
+            <body>
+                ${container.innerHTML}
+            </body>
+            </html>
         `;
-    }
-    
-    // Process each visible section with enhanced formatting
-    document.querySelectorAll('.section').forEach(section => {
-        if (section.style.display !== 'none') {
-            const h2 = section.querySelector('h2');
-            if (h2) {
-                // Clean section title (remove icon)
-                const sectionTitle = h2.textContent.replace(/^\s*[^\w\s]\s*/, '').trim();
-                wordContent += `
-                    <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                        <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
-                                   border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold; page-break-after: avoid;">
-                            ${sectionTitle}
-                        </h2>
-                `;
-            }
-            
-            // Handle dynamic recommendations content first
-            const dynamicContainer = section.querySelector('#recommendationsSectionsContainer');
-            if (dynamicContainer) {
-                const processedProducts = new Set();
-                
-                const processProductSection = (sectionEl) => {
-                    const title = sectionEl.querySelector('h4');
-                    if (title) {
-                        wordContent += `<h3 style="color: #34495e; font-size: 16pt; margin-top: 25px; margin-bottom: 15px; font-weight: bold; page-break-after: avoid;">${title.textContent}</h3>`;
-                    }
-                    
-                    sectionEl.querySelectorAll('.product-item').forEach(product => {
-                        if (product.style.display !== 'none') {
-                            const productHeader = product.querySelector('h5');
-                            let hasProductContent = false;
-                            let productContentHTML = '';
-                            
-                            product.querySelectorAll('input, textarea, select').forEach(input => {
-                                if (input.value && input.value.trim() !== '' && input.style.display !== 'none') {
-                                    const inputGroup = input.closest('.form-group');
-                                    const inputLabel = inputGroup ? inputGroup.querySelector('label') : null;
-                                    
-                                    if (inputLabel) {
-                                        let value = input.value;
-                                        if (input.tagName === 'SELECT') {
-                                            const selected = input.options[input.selectedIndex];
-                                            value = selected ? selected.text : '';
-                                        }
-                                        if (input.type === 'checkbox') {
-                                            const statusSpan = input.parentElement.nextElementSibling;
-                                            value = statusSpan ? statusSpan.textContent : input.checked ? 'Yes' : 'No';
-                                        }
-                                        if (value && value !== 'Select investment option' && value !== '' && value !== 'Type to search products') {
-                                            hasProductContent = true;
-                                            productContentHTML += `
-                                                <div style="margin-left: 20px; margin-bottom: 15px; page-break-inside: avoid;">
-                                                    <strong style="color: #2c3e50; display: block; margin-bottom: 5px;">${inputLabel.textContent}</strong>
-                                                    <div style="background-color: #f8f9fa; padding: 12px; border-left: 3px solid #3498db; margin-top: 5px; white-space: pre-wrap; line-height: 1.5;">
-                                                        ${value}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }
-                                    }
-                                }
-                            });
-                            
-                            if (hasProductContent && productHeader) {
-                                wordContent += `
-                                    <div style="page-break-inside: avoid;">
-                                        <h4 style="color: #34495e; font-size: 14pt; margin-top: 20px; margin-bottom: 15px; 
-                                                   background-color: #ecf0f1; padding: 10px; border-radius: 5px; page-break-after: avoid;">${productHeader.textContent}</h4>
-                                        ${productContentHTML}
-                                    </div>
-                                `;
-                            }
-                        }
-                    });
-                };
-                
-                Array.from(dynamicContainer.children).forEach(child => {
-                    if (child.style.display === 'none') return;
-                    
-                    if (child.classList.contains('recommendation-section')) {
-                        const textareaDiv = child.querySelector('.recommendation-textarea');
-                        const riskDiv = child.querySelector('.risk-profile-inline');
-                        
-                        if (textareaDiv) {
-                            const label = textareaDiv.querySelector('label');
-                            const textarea = textareaDiv.querySelector('textarea');
-                            
-                            if (label && textarea && textarea.value && textarea.value.trim() !== '') {
-                                wordContent += `
-                                    <div style="margin-bottom: 25px; page-break-inside: avoid;">
-                                        <h4 style="color: #2c3e50; font-size: 14pt; margin-bottom: 10px; page-break-after: avoid;">${label.textContent}</h4>
-                                        <div style="border: 1px solid #bdc3c7; padding: 15px; background-color: #f8f9fa; 
-                                                    border-radius: 5px; white-space: pre-wrap; line-height: 1.6; page-break-inside: avoid;">
-                                            ${textarea.value}
-                                        </div>
-                                    </div>
-                                `;
-                            }
-                        }
-                        
-                        if (riskDiv) {
-                            const riskLabel = riskDiv.querySelector('label');
-                            const riskSelect = riskDiv.querySelector('select');
-                            
-                            if (riskLabel && riskSelect && riskSelect.value && riskSelect.value.trim() !== '') {
-                                const selected = riskSelect.options[riskSelect.selectedIndex];
-                                if (selected && selected.text && selected.text !== 'Select Risk Profile') {
-                                    wordContent += `
-                                        <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                                            <strong style="color: #2c3e50; display: block; margin-bottom: 8px;">${riskLabel.textContent}</strong>
-                                            <span style="background-color: #e8f5e8; padding: 8px 15px; border-radius: 5px; display: inline-block;">
-                                                ${selected.text}
-                                            </span>
-                                        </div>
-                                    `;
-                                }
-                            }
-                        }
-                        
-                        const next = child.nextElementSibling;
-                        if (next && next.classList.contains('product-recommendations') && next.style.display !== 'none') {
-                            processProductSection(next);
-                            processedProducts.add(next);
-                        }
-                    } else if (child.classList.contains('product-recommendations') && !processedProducts.has(child)) {
-                        processProductSection(child);
-                    }
-                });
-            }
-            
-            // Process regular form groups with enhanced formatting
-            section.querySelectorAll('.form-group').forEach(group => {
-                if (group.style.display !== 'none' && !group.closest('#recommendationsSectionsContainer')) {
-                    const label = group.querySelector('label');
-                    
-                    // Process radio groups
-                    const radioGroup = group.querySelector('.radio-group');
-                    if (radioGroup) {
-                        const checkedRadio = radioGroup.querySelector('input[type="radio"]:checked');
-                        if (checkedRadio && label) {
-                            wordContent += `
-                                <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                                    <strong style="color: #2c3e50; font-size: 12pt; display: block; margin-bottom: 8px;">${label.textContent}</strong>
-                                    <div style="margin-left: 20px; margin-top: 8px;">
-                            `;
-                            const radioLabel = checkedRadio.nextElementSibling;
-                            if (radioLabel) {
-                                wordContent += `<span style="color: #27ae60; font-weight: bold;">● ${radioLabel.textContent}</span>`;
-                            }
-                            wordContent += `</div></div>`;
-                        }
-                    }
-                    
-                    // Process checkbox groups
-                    const checkboxGroup = group.querySelector('.checkbox-group');
-                    if (checkboxGroup) {
-                        const checkedBoxes = checkboxGroup.querySelectorAll('input[type="checkbox"]:checked');
-                        if (checkedBoxes.length > 0 && label) {
-                            wordContent += `
-                                <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                                    <strong style="color: #2c3e50; font-size: 12pt; display: block; margin-bottom: 8px;">${label.textContent}</strong>
-                                    <div style="margin-left: 20px; margin-top: 8px;">
-                            `;
-                            checkedBoxes.forEach(checkbox => {
-                                const checkboxLabel = checkbox.nextElementSibling;
-                                if (checkboxLabel) {
-                                    wordContent += `<div style="margin-bottom: 8px;"><span style="color: #27ae60; font-weight: bold;">✓</span> ${checkboxLabel.textContent}</div>`;
-                                }
-                            });
-                            wordContent += `</div></div>`;
-                        }
-                    }
-                    
-                    // Process regular inputs with better separation
-                    group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select').forEach(input => {
-                        if (input.style.display !== 'none' && 
-                            !input.closest('.checkbox-group') && 
-                            !input.closest('.radio-group') && 
-                            !input.closest('.btn-group') && 
-                            !input.closest('.product-item') && 
-                            !input.closest('.recommendation-header') && 
-                            input.value && input.value.trim() !== '') {
-                            
-                            const inputLabelEl = input.closest('.form-group').querySelector('label');
-                            let labelText = inputLabelEl ? inputLabelEl.textContent : '';
-                            
-                            if (labelText) {
-                                let value = input.value;
-                                if (input.tagName === 'SELECT') {
-                                    const selected = input.options[input.selectedIndex];
-                                    value = selected ? selected.text : '';
-                                }
-                                if (value && value.trim() !== '' && value !== 'Select a saved draft...') {
-                                    
-                                    // Special handling for Alternative Strategies to start on new page
-                                    let pageBreakBefore = '';
-                                    if (labelText.includes('Alternatives - strategies')) {
-                                        pageBreakBefore = 'page-break-before: always;';
-                                    }
-                                    
-                                    wordContent += `
-                                        <div style="margin-bottom: 25px; ${pageBreakBefore} page-break-inside: avoid;">
-                                            <strong style="color: #2c3e50; font-size: 12pt; display: block; margin-bottom: 8px; page-break-after: avoid;">${labelText}</strong>
-                                            <div style="border: 1px solid #bdc3c7; padding: 15px; background-color: #f8f9fa; 
-                                                        border-radius: 5px; margin-top: 8px; white-space: pre-wrap; line-height: 1.6; page-break-inside: avoid;">
-                                                ${value}
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-                            }
-                        }
-                    });
-                    
-                    // Process toggle switches
-                    group.querySelectorAll('.yes-no-label').forEach(toggleGroup => {
-                        const toggleLabel = toggleGroup.querySelector('label');
-                        const toggleInput = toggleGroup.querySelector('input[type="checkbox"]');
-                        if (toggleLabel && toggleInput) {
-                            const status = toggleInput.checked ? 'Yes' : 'No';
-                            const statusColor = toggleInput.checked ? '#27ae60' : '#e74c3c';
-                            wordContent += `
-                                <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                                    <strong style="color: #2c3e50; font-size: 12pt; display: inline-block; margin-right: 15px;">${toggleLabel.textContent}</strong>
-                                    <span style="background-color: ${statusColor}; color: white; padding: 6px 15px; 
-                                                 border-radius: 15px; font-weight: bold; font-size: 11pt;">
-                                        ${status}
-                                    </span>
-                                </div>
-                            `;
-                        }
-                    });
-                }
-            });
-            
-            // ALWAYS INCLUDE COMPLIANCE SECTIONS with comprehensive checklist display
-            if (section.id === 'checklistSection') {
-                wordContent += `
-                    <div style="margin-top: 30px; page-break-inside: avoid;">
-                        <h3 style="color: #e67e22; font-size: 16pt; margin-bottom: 15px; font-weight: bold; page-break-after: avoid;">
-                            All Advice Documents
-                        </h3>
-                `;
-                
-                // Always show the static checklist items
-                const staticItems = [
-                    { id: 'factFind', label: 'Fact Find (dated within 12 months)' },
-                    { id: 'filenote', label: 'Filenote' },
-                    { id: 'pricingCalculator', label: 'Pricing Calculator' },
-                    { id: 'beneficiaryNomination', label: 'Beneficiary nomination advice made (if relevant)' }
-                ];
-                
-                staticItems.forEach(item => {
-                    const checkbox = document.getElementById(item.id);
-                    const checklistItem = checkbox ? checkbox.closest('.checklist-item') : null;
-                    const isNA = checklistItem ? checklistItem.classList.contains('na-active') : false;
-                    const isChecked = checkbox ? checkbox.checked : false;
-                    
-                    let status, statusColor, statusBg;
-                    if (isNA) {
-                        status = 'N/A';
-                        statusColor = '#95a5a6';
-                        statusBg = '#ecf0f1';
-                    } else if (isChecked) {
-                        status = '✓ Complete';
-                        statusColor = '#27ae60';
-                        statusBg = '#d5f4e6';
-                    } else {
-                        status = '○ Pending';
-                        statusColor = '#e74c3c';
-                        statusBg = '#fadbd8';
-                    }
-                    
-                    wordContent += `
-                        <div style="display: block; margin-bottom: 12px; padding: 12px; 
-                                    background-color: ${statusBg}; border-radius: 5px; page-break-inside: avoid;">
-                            <span style="color: ${statusColor}; font-weight: bold; margin-right: 15px; display: inline-block; min-width: 110px;">
-                                ${status}
-                            </span>
-                            <span style="color: #2c3e50;">${item.label}</span>
-                        </div>
-                    `;
-                });
-                
-                wordContent += `
-                    </div>
-                    <div style="margin-top: 30px; page-break-inside: avoid;">
-                        <h3 style="color: #e67e22; font-size: 16pt; margin-bottom: 15px; font-weight: bold; page-break-after: avoid;">
-                            Compliance Requirements
-                        </h3>
-                `;
-                
-                // Show compliance requirements based on client status
-                const complianceContainer = document.getElementById('complianceRequirements');
-                if (complianceContainer) {
-                    complianceContainer.querySelectorAll('.checklist-item').forEach(item => {
-                        const checkbox = item.querySelector('input[type="checkbox"]');
-                        const checkboxLabel = item.querySelector('label');
-                        
-                        if (checkbox && checkboxLabel) {
-                            const isNA = item.classList.contains('na-active');
-                            const isChecked = checkbox.checked;
-                            
-                            let status, statusColor, statusBg;
-                            if (isNA) {
-                                status = 'N/A';
-                                statusColor = '#95a5a6';
-                                statusBg = '#ecf0f1';
-                            } else if (isChecked) {
-                                status = '✓ Complete';
-                                statusColor = '#27ae60';
-                                statusBg = '#d5f4e6';
-                            } else {
-                                status = '○ Pending';
-                                statusColor = '#e74c3c';
-                                statusBg = '#fadbd8';
-                            }
-                            
-                            wordContent += `
-                                <div style="display: block; margin-bottom: 12px; padding: 12px; 
-                                            background-color: ${statusBg}; border-radius: 5px; page-break-inside: avoid;">
-                                    <span style="color: ${statusColor}; font-weight: bold; margin-right: 15px; display: inline-block; min-width: 110px;">
-                                        ${status}
-                                    </span>
-                                    <span style="color: #2c3e50;">${checkboxLabel.textContent}</span>
-                                </div>
-                            `;
-                        }
-                    });
-                } else {
-                    wordContent += `
-                        <div style="padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-                            <em style="color: #856404;">Compliance requirements will be determined based on client status selection.</em>
-                        </div>
-                    `;
-                }
-                
-                wordContent += `</div>`;
-            }
-            
-            wordContent += `</div>`;
-        }
+        
+        const blob = new Blob([html], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showAutoSaveIndicator('Word document exported successfully!');
     });
     
-    // Create enhanced Word document with better styling and no text bundling
-    const html = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-            <meta charset="utf-8">
-            <title>Financial Advice Request Form - ${clientName}</title>
-            <style>
-                body { 
-                    font-family: 'Segoe UI', Calibri, Arial, sans-serif; 
-                    line-height: 1.6; 
-                    color: #2c3e50; 
-                    margin: 30px; 
-                    background: white;
-                    font-size: 11pt;
-                }
-                h1 { 
-                    font-size: 28pt; 
-                    margin-bottom: 30pt; 
-                    text-align: center;
-                    color: #2c3e50;
-                    font-weight: bold;
-                    page-break-after: avoid;
-                }
-                h2 { 
-                    font-size: 20pt; 
-                    margin-top: 30pt; 
-                    margin-bottom: 20pt; 
-                    color: #2c3e50;
-                    border-bottom: 3px solid #3498db;
-                    padding-bottom: 8pt;
-                    font-weight: bold;
-                    page-break-after: avoid;
-                }
-                h3 { 
-                    font-size: 16pt; 
-                    margin-top: 25pt; 
-                    margin-bottom: 15pt; 
-                    color: #34495e;
-                    font-weight: bold;
-                    page-break-after: avoid;
-                }
-                h4 { 
-                    font-size: 14pt; 
-                    margin-top: 20pt; 
-                    margin-bottom: 15pt; 
-                    color: #34495e;
-                    font-weight: bold;
-                    page-break-after: avoid;
-                }
-                p { 
-                    margin-bottom: 15pt; 
-                    text-align: justify;
-                }
-                div { 
-                    margin-bottom: 12pt; 
-                }
-                strong { 
-                    color: #2c3e50; 
-                    font-weight: bold; 
-                }
-                @page { 
-                    margin: 1in; 
-                    font-size: 11pt;
-                }
-                .status-complete { background-color: #d5f4e6; color: #27ae60; }
-                .status-pending { background-color: #fadbd8; color: #e74c3c; }
-                .status-na { background-color: #ecf0f1; color: #95a5a6; }
-                .no-wrap {
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
-                }
-            </style>
-        </head>
-        <body>
-            ${wordContent}
-            <div style="margin-top: 40px; text-align: center; border-top: 2px solid #bdc3c7; padding-top: 20px; page-break-inside: avoid;">
-                <p style="color: #7f8c8d; font-size: 10pt; margin: 0;">
-                    Document generated on ${new Date().toLocaleString()} | Financial Advice Request Form
-                </p>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    const blob = new Blob([html], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    showAutoSaveIndicator('Enhanced Word document exported successfully!');
-});
-
-    
-   // MODIFICATION 10: Update Export to PDF functionality
-// Replace the existing exportPdfBtn.addEventListener with this updated version:
-
-exportPdfBtn.addEventListener('click', function() {
-    console.log('=== STARTING PDF EXPORT ===');
-    
-    // Step 1: Hide elements that shouldn't be in PDF
-    const elementsToHide = document.querySelectorAll('.draft-selector, .auto-save-indicator, .modal, .btn-group, .no-print');
-    const originalDisplays = [];
-    
-    elementsToHide.forEach(el => {
-        originalDisplays.push(el.style.display);
-        el.style.display = 'none';
-    });
-    
-    // Step 2: AGGRESSIVE TEXTAREA EXPANSION - Make ALL textareas show full content
-    const allTextareas = document.querySelectorAll('textarea');
-    const originalTextareaStyles = [];
-    
-    console.log('Found', allTextareas.length, 'textareas to expand');
-    
-    allTextareas.forEach((textarea, index) => {
-        // Save ALL original styles
-        originalTextareaStyles[index] = {
-            height: textarea.style.height,
-            minHeight: textarea.style.minHeight,
-            maxHeight: textarea.style.maxHeight,
-            overflow: textarea.style.overflow,
-            resize: textarea.style.resize,
-            boxSizing: textarea.style.boxSizing,
-            padding: textarea.style.padding,
-            border: textarea.style.border,
-            lineHeight: textarea.style.lineHeight,
+    // Export to PDF functionality
+    exportPdfBtn.addEventListener('click', function() {
+        const clientName = document.getElementById('clientName').value || 'Client';
+        const element = document.querySelector('.container');
+        
+        // Hide elements that shouldn't be in PDF
+        const elementsToHide = document.querySelectorAll('.btn-group, .draft-selector, .auto-save-indicator, .modal');
+        elementsToHide.forEach(el => el.style.display = 'none');
+        
+        // Configure html2pdf options
+        const opt = {
+            margin: [10, 10, 10, 10],
+            filename: `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                letterRendering: true
+            },
+            jsPDF: { 
+                unit: 'mm', 
+                format: 'a4', 
+                orientation: 'portrait',
+                compress: true
+            },
+            pagebreak: { 
+                mode: ['avoid-all', 'css', 'legacy'],
+                before: '.section',
+                avoid: ['.product-item', '.checklist-item', '.form-group']
+            }
         };
         
-        // FORCE reset to auto for accurate measurement
-        textarea.style.height = 'auto';
-        textarea.style.minHeight = 'auto';
-        textarea.style.maxHeight = 'none';
-        textarea.style.overflow = 'visible';
-        textarea.style.resize = 'none';
-        textarea.style.boxSizing = 'border-box';
-        
-        // Force a reflow to get accurate measurements
-        textarea.offsetHeight;
-        
-        // Calculate the required height with extra padding for safety
-        const scrollHeight = textarea.scrollHeight;
-        const computedStyle = window.getComputedStyle(textarea);
-        const paddingTop = parseInt(computedStyle.paddingTop);
-        const paddingBottom = parseInt(computedStyle.paddingBottom);
-        const borderTop = parseInt(computedStyle.borderTopWidth);
-        const borderBottom = parseInt(computedStyle.borderBottomWidth);
-        
-        // Calculate total height needed (content + padding + borders + extra space)
-        const totalHeight = scrollHeight + paddingTop + paddingBottom + borderTop + borderBottom + 20;
-        
-        // Set the calculated height
-        textarea.style.height = totalHeight + 'px';
-        textarea.style.minHeight = totalHeight + 'px';
-        
-        console.log(`Expanded textarea ${index}: scrollHeight: ${scrollHeight}, totalHeight: ${totalHeight}px`);
+        // Generate PDF
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Restore hidden elements
+            elementsToHide.forEach(el => el.style.display = '');
+            showAutoSaveIndicator('PDF exported successfully!');
+        });
     });
     
-    // Step 3: Hide empty form groups and sections to clean up the export
-    const allFormGroups = document.querySelectorAll('.form-group');
-    const hiddenFormGroups = [];
-    
-    allFormGroups.forEach((group, index) => {
-        const inputs = group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea, select');
-        const checkboxes = group.querySelectorAll('input[type="checkbox"]:checked');
-        const radios = group.querySelectorAll('input[type="radio"]:checked');
-        
-        let hasContent = false;
-        
-        // Check if any inputs have values
-        inputs.forEach(input => {
-            if (input.value && input.value.trim() !== '' && input.value !== 'Select a saved draft...') {
-                hasContent = true;
-            }
-        });
-        
-        // Check if any checkboxes are checked
-        if (checkboxes.length > 0) hasContent = true;
-        
-        // Check if any radios are checked
-        if (radios.length > 0) hasContent = true;
-        
-        // Hide empty form groups (but keep important structural ones)
-        if (!hasContent && !group.querySelector('.radio-group') && !group.querySelector('.checkbox-group') && !group.querySelector('h3, h4')) {
-            hiddenFormGroups.push({
-                element: group,
-                originalDisplay: group.style.display
+    // Reset Form functionality
+    resetBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+            // Reset form fields
+            document.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], textarea').forEach(field => {
+                field.value = '';
+                // Reset textarea size
+                if (field.tagName === 'TEXTAREA') {
+                    field.style.height = 'auto';
+                }
             });
-            group.style.display = 'none';
+            
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            document.querySelectorAll('select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            
+            // Reset client type selection
+            document.querySelectorAll('.checkbox-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Hide conditional sections
+            partnerNameGroup.style.display = 'none';
+            entityNameGroup.style.display = 'none';
+            entitySelector.style.display = 'none';
+            
+            // Clear dynamic content
+            document.getElementById('recommendationsSectionsContainer').innerHTML = '';
+            document.getElementById('dynamicFeesContainer').innerHTML = '';
+            document.getElementById('complianceRequirements').innerHTML = '';
+            
+            // Reset other UI elements
+            flowchartRequiredToggle.checked = false;
+            flowchartStatus.textContent = 'No';
+            projectionDateLength.value = 'lifeExpectancy';
+            otherProjectionLength.style.display = 'none';
+            
+            // Reset paraplanner compare checkbox
+            paraplannerCompareCheckbox.checked = false;
+            alternativePlatformsTextarea.value = '';
+            
+            showAutoSaveIndicator('Form has been reset!');
         }
     });
     
-    // Step 4: Add enhanced PDF-specific styles with page breaks for Alternative Strategies
-    const pdfStyle = document.createElement('style');
-    pdfStyle.id = 'pdf-export-style';
-    pdfStyle.textContent = `
-        @media print {
-            body { 
-                background: white !important; 
-                padding: 0 !important; 
-                font-size: 12pt !important;
-                color: black !important;
-                white-space: pre-wrap !important;
-                word-wrap: break-word !important;
-            }
-            input[type="text"], input[type="date"], input[type="number"] {
-                border: 1px solid #333 !important;
-                background: white !important;
-                color: black !important;
-                font-size: 11pt !important;
-            }
-            select {
-                border: 1px solid #333 !important;
-                background: white !important;
-                color: black !important;
-                font-size: 11pt !important;
-            }
-            .product-item {
-                page-break-inside: avoid !important;
-                margin-bottom: 10pt !important;
-                border: 1px solid #333 !important;
-                background: white !important;
-            }
-            .checklist-item {
-                page-break-inside: avoid !important;
-                background: #f5f5f5 !important;
-            }
-            .no-print, .btn-group, .draft-selector, .auto-save-indicator {
-                display: none !important;
-            }
-            h1, h2, h3, h4 {
-                color: black !important;
-                page-break-after: avoid !important;
-            }
-            label {
-                color: black !important;
-                font-weight: bold !important;
-            }
-            /* Specific targeting for Alternative Strategies section */
-            label[for="alternativeStrategies"] {
-                page-break-before: always !important;
-            }
-        }
-    `;
-    document.head.appendChild(pdfStyle);
+    // Initial form update
+    updateFormBasedOnSelections();
     
-    // Step 5: Set document title for PDF filename
-    const originalTitle = document.title;
-    const clientName = document.getElementById('clientName').value || 'Client';
-    document.title = `Financial_Advice_Request_Form_${clientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    
-    console.log('PDF setup complete - triggering print dialog');
-    
-    // Step 6: Trigger print dialog with longer delay to ensure all rendering is complete
-    setTimeout(() => {
-        window.print();
-    }, 1000);
-    
-    // Step 7: Comprehensive cleanup after print
-    const cleanupAfterPrint = () => {
-        console.log('=== CLEANING UP AFTER PDF EXPORT ===');
-        
-        // Remove PDF styles
-        const pdfStyleElement = document.getElementById('pdf-export-style');
-        if (pdfStyleElement) {
-            pdfStyleElement.remove();
-        }
-        
-        // Restore original title
-        document.title = originalTitle;
-        
-        // Restore hidden elements
-        elementsToHide.forEach((el, index) => {
-            el.style.display = originalDisplays[index];
-        });
-        
-        // RESTORE ALL TEXTAREA STYLES
-        allTextareas.forEach((textarea, index) => {
-            if (originalTextareaStyles[index]) {
-                const originalStyles = originalTextareaStyles[index];
-                textarea.style.height = originalStyles.height || '';
-                textarea.style.minHeight = originalStyles.minHeight || '';
-                textarea.style.maxHeight = originalStyles.maxHeight || '';
-                textarea.style.overflow = originalStyles.overflow || '';
-                textarea.style.resize = originalStyles.resize || '';
-                textarea.style.boxSizing = originalStyles.boxSizing || '';
-                textarea.style.padding = originalStyles.padding || '';
-                textarea.style.border = originalStyles.border || '';
-                textarea.style.lineHeight = originalStyles.lineHeight || '';
-            }
-            console.log(`Restored textarea ${index} to original styles`);
-        });
-        
-        // Restore hidden form groups
-        hiddenFormGroups.forEach(({ element, originalDisplay }) => {
-            element.style.display = originalDisplay;
-        });
-        
-        console.log('=== PDF EXPORT CLEANUP COMPLETE ===');
-        showAutoSaveIndicator('PDF export complete - all elements restored!');
-    };
-    
-    // Listen for print events
-    window.addEventListener('afterprint', cleanupAfterPrint, { once: true });
-    
-    // Fallback cleanup after 20 seconds (in case print dialog is cancelled)
-    setTimeout(cleanupAfterPrint, 20000);
+    // Setup auto-save for existing elements
+    setupAutoSave();
 });
-            }
-            .container { 
-                box-shadow: none !important; 
-                max-width: 100% !important; 
-                margin: 0 !important; 
-                padding: 15px !important;
-                background: white !important;
-            }
-            .section { 
-                page-break-inside: avoid !important; 
-                margin-bottom: 15pt !important;
-                background: white !important;
-                box-shadow: none !important;
-            }
-            /* Force Alternative Strategies to start on new page */
-            .section h2:contains("Strategy Recommendations") ~ .form-group label:contains("Alternatives - strategies") {
-                page-break-before: always !important;
-            }
-            /* Alternative fallback using specific targeting */
-            #alternativeStrategies {
-                page-break-before: auto !important;
-            }
-            #alternativeStrategies:first-of-type {
-                page-break-before: always !important;
-            }
-            textarea {
-                border: 1px solid #333 !important;
-                background: white !important;
-                overflow: visible !important;
-                resize: none !important;
-                page-break-inside: avoid !important;
-                font-family: inherit !important;
-                font-size: 11pt !important;
-                line-height: 1.3 !important;
-                color: black !important;
