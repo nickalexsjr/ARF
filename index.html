@@ -1197,6 +1197,7 @@
         </div>
 
         <div class="form-group">
+  <div class="form-group">
   <label for="alternativeStrategies">
     Alternatives - strategies:
     <button type="button" class="btn btn-secondary btn-sm" id="altStrategiesDropdownBtn" style="margin-left: 10px;">
@@ -5534,7 +5535,91 @@ ${document.getElementById("formCompletedBy").value || "[Your Name]"}`;
 
         // Setup auto-save for existing elements
         setupAutoSave();
+// Alternative strategies dropdown functionality
+const altStrategiesDropdownBtn = document.getElementById('altStrategiesDropdownBtn');
+const altStrategiesDropdown = document.getElementById('altStrategiesDropdown');
+const addSelectedStrategiesBtn = document.getElementById('addSelectedStrategies');
+const cancelStrategiesSelectionBtn = document.getElementById('cancelStrategiesSelection');
+const alternativeStrategiesTextarea = document.getElementById('alternativeStrategies');
 
+// Simple toggle dropdown
+if (altStrategiesDropdownBtn) {
+    altStrategiesDropdownBtn.addEventListener('click', function(e) {
+        e.preventDefault(); // Prevent any default action
+        e.stopPropagation(); // Stop event bubbling
+        
+        // Toggle display
+        if (altStrategiesDropdown.style.display === 'none' || !altStrategiesDropdown.style.display) {
+            altStrategiesDropdown.style.display = 'block';
+            console.log('Dropdown opened');
+        } else {
+            altStrategiesDropdown.style.display = 'none';
+            console.log('Dropdown closed');
+        }
+    });
+}
+
+// Add selected strategies
+if (addSelectedStrategiesBtn) {
+    addSelectedStrategiesBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const selectedStrategies = [];
+        const checkboxes = altStrategiesDropdown.querySelectorAll('input[type="checkbox"]:checked');
+        
+        checkboxes.forEach(checkbox => {
+            selectedStrategies.push(checkbox.value);
+        });
+
+        if (selectedStrategies.length > 0) {
+            const currentValue = alternativeStrategiesTextarea.value;
+            const newStrategies = selectedStrategies.join('\n\n');
+            
+            if (currentValue && !currentValue.endsWith('\n')) {
+                alternativeStrategiesTextarea.value = currentValue + '\n\n' + newStrategies;
+            } else {
+                alternativeStrategiesTextarea.value = currentValue + newStrategies;
+            }
+            
+            // Uncheck all checkboxes
+            altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Hide dropdown
+            altStrategiesDropdown.style.display = 'none';
+            
+            // Trigger auto-save if you have it
+            if (typeof triggerAutoSave === 'function') {
+                triggerAutoSave();
+            }
+        }
+    });
+}
+
+// Cancel selection
+if (cancelStrategiesSelectionBtn) {
+    cancelStrategiesSelectionBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Uncheck all checkboxes
+        altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Hide dropdown
+        altStrategiesDropdown.style.display = 'none';
+    });
+}
+
+// Close dropdown when clicking outside (optional)
+document.addEventListener('click', function(e) {
+    if (altStrategiesDropdown && altStrategiesDropdownBtn) {
+        if (!altStrategiesDropdown.contains(e.target) && !altStrategiesDropdownBtn.contains(e.target)) {
+            altStrategiesDropdown.style.display = 'none';
+        }
+    }
+});
         // Initialize MDA N/A button
         setupMDANAButton();
 
