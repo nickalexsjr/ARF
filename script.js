@@ -9,7 +9,58 @@ document.addEventListener('DOMContentLoaded', function() {
     const dependantsClientCheckbox = document.getElementById('dependantsClient');
     const entityClientCheckbox = document.getElementById('entityClient');
     const entitySelector = document.getElementById('entitySelector');
-    
+     // Alternative strategies dropdown functionality
+  const altStrategiesDropdownBtn = document.getElementById('altStrategiesDropdownBtn');
+  const altStrategiesDropdown = document.getElementById('altStrategiesDropdown');
+  const addSelectedStrategiesBtn = document.getElementById('addSelectedStrategies');
+  const cancelStrategiesSelectionBtn = document.getElementById('cancelStrategiesSelection');
+  const alternativeStrategiesTextarea = document.getElementById('alternativeStrategies');
+
+  if (altStrategiesDropdownBtn) {
+    altStrategiesDropdownBtn.addEventListener('click', function() {
+      altStrategiesDropdown.style.display = altStrategiesDropdown.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  if (addSelectedStrategiesBtn) {
+    addSelectedStrategiesBtn.addEventListener('click', function() {
+      const selectedStrategies = [];
+      altStrategiesDropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedStrategies.push(checkbox.value);
+      });
+
+      if (selectedStrategies.length > 0) {
+        const currentValue = alternativeStrategiesTextarea.value;
+        const newStrategies = selectedStrategies.join('\n\n');
+        alternativeStrategiesTextarea.value = currentValue ? currentValue + '\n\n' + newStrategies : newStrategies;
+        
+        // Uncheck all checkboxes
+        altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        
+        // Hide dropdown
+        altStrategiesDropdown.style.display = 'none';
+        
+        // Trigger auto-save
+        if (typeof triggerAutoSave === 'function') {
+          triggerAutoSave();
+        }
+      }
+    });
+  }
+
+  if (cancelStrategiesSelectionBtn) {
+    cancelStrategiesSelectionBtn.addEventListener('click', function() {
+      // Uncheck all checkboxes
+      altStrategiesDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      // Hide dropdown
+      altStrategiesDropdown.style.display = 'none';
+    });
+  }
+});
     // Entity Type Checkboxes
     const entitySMSFCheckbox = document.getElementById('entitySMSF');
     const entityTrustCheckbox = document.getElementById('entityTrust');
