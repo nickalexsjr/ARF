@@ -4798,9 +4798,9 @@ exportWordBtn.addEventListener('click', function() {
                                                 productContentHTML += `
                                                     <div style="margin-left: 20px; margin-bottom: 10px;">
                                                         <strong style="color: #2c3e50;">${inputLabel.textContent}</strong><br>
-                                                        <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; margin-top: 5px; white-space: pre; font-family: Calibri, Arial, sans-serif; overflow-x: auto;">
-${value}
-                                                        </div>
+                                                        <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; margin-top: 5px; font-family: Calibri, Arial, sans-serif;">
+${value.replace(/\n/g, '<br>')}
+</div>
                                                     </div>
                                                 `;
                                             } else {
@@ -4844,10 +4844,10 @@ ${value}
                                 wordContent += `
                                     <div style="margin-bottom: 20px;">
                                         <h4 style="color: #2c3e50; font-size: 14pt; margin-bottom: 10px;">${label.textContent}</h4>
-                                        <div style="border: 1px solid #bdc3c7; padding: 15px; background-color: #f8f9fa; 
-                                                    border-radius: 5px; white-space: pre; line-height: 1.6; font-family: Calibri, Arial, sans-serif; overflow-x: auto;">
-${textarea.value}
-                                        </div>
+                                       <div style="border: 1px solid #bdc3c7; padding: 15px; background-color: #f8f9fa; 
+            border-radius: 5px; font-family: Calibri, Arial, sans-serif;">
+${textarea.value.replace(/\n/g, '<br>')}
+</div>
                                     </div>
                                 `;
                             }
@@ -4947,9 +4947,9 @@ ${textarea.value}
                                 <div style="margin-bottom: 15px;">
                                     <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
                                     <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-                                                border-radius: 5px; margin-top: 8px; white-space: pre; line-height: 1.6; font-family: Calibri, Arial, sans-serif; overflow-x: auto;">
-${textarea.value}
-                                    </div>
+            border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
+${textarea.value.replace(/\n/g, '<br>')}
+</div>
                                 </div>
                             `;
                         }
