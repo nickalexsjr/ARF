@@ -651,7 +651,28 @@
         margin-top: 20px;
       }
 
-      /* Auto-save indicator */
+     /* Strategy dropdown styles */
+.strategy-dropdown {
+    margin-top: 10px;
+    position: relative;
+    z-index: 100;
+}
+
+.strategy-dropdown-btn {
+    margin-left: 10px;
+}
+
+.recommendation-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.recommendation-header label:first-child {
+    flex: 1;
+    min-width: 200px;
+}
       .auto-save-indicator {
         position: fixed;
         bottom: 20px;
@@ -882,6 +903,13 @@
     </style>
   </head>
   <body>
+    <!-- Draft Selector (Share as Link button removed) -->
+    <!-- Test Strategy Mode Toggle -->
+    <div style="position: fixed; top: 20px; left: 20px; background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 1000; display: flex; align-items: center; gap: 10px;">
+        <input type="checkbox" id="testStrategyMode" name="testStrategyMode">
+        <label for="testStrategyMode" style="margin: 0; font-weight: 500; cursor: pointer;">Test Strategy Mode</label>
+    </div>
+
     <!-- Draft Selector (Share as Link button removed) -->
     <div class="draft-selector">
       <label for="draftSelector">Load Draft:</label>
@@ -1186,15 +1214,14 @@
         </div>
 
         <div class="form-group">
-          <label for="inaccurateInfo"
-            >Any potentially inaccurate or incomplete information:</label
-          >
-          <textarea
-            id="inaccurateInfo"
-            name="inaccurateInfo"
-            placeholder="Include reasons why information may be inaccurate or was not provided"
-          ></textarea>
-        </div>
+                <label for="inaccurateInfo">
+                    Any potentially inaccurate or incomplete information:
+                    <button type="button" class="btn btn-secondary btn-sm na-button" id="inaccurateInfoNABtn">
+                        N/A
+                    </button>
+                </label>
+                <textarea id="inaccurateInfo" name="inaccurateInfo" placeholder="Include reasons why information may be inaccurate or was not provided"></textarea>
+            </div>
 
         <div class="form-group">
   <div class="form-group">
@@ -1512,7 +1539,7 @@
 
       <!-- Additional Comments Section -->
       <section class="section" id="additionalCommentsSection">
-        <h2><i class="fas fa-comment-alt"></i> Additional Comments/Notes (Test Mode do not use yet)</h2>
+        <h2><i class="fas fa-comment-alt"></i> Additional Comments/Notes</h2>
 
         <div class="form-group">
           <textarea
@@ -2074,6 +2101,12 @@
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
                             <label for="clientRecommendations">${clientName} Recommendations/Scope:</label>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeRecommendationSection('client1')" style="margin-left: 10px;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm strategy-dropdown-btn" id="client1StrategyBtn" style="margin-left: 10px; display: none;">
+                                <i class="fas fa-chevron-down"></i> Strategies
+                            </button>
                             <div class="recommendation-checkbox">
                                 <input type="checkbox" id="client1ProductRecsCheckbox" name="client1ProductRecsCheckbox">
                                 <label for="client1ProductRecsCheckbox">Product Recommendations?</label>
@@ -2081,6 +2114,7 @@
                         </div>
                         <textarea id="clientRecommendations" name="clientRecommendations" 
                             placeholder="Enter recommendations for ${clientName}"></textarea>
+                        <div id="client1StrategyDropdown" class="strategy-dropdown" style="display: none;"></div>
                     </div>
                     <div class="risk-profile-inline">
                         <div class="form-group">
@@ -2121,6 +2155,12 @@
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
                             <label for="partnerRecommendations">${partnerName} Recommendations/Scope:</label>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeRecommendationSection('client2')" style="margin-left: 10px;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm strategy-dropdown-btn" id="client2StrategyBtn" style="margin-left: 10px; display: none;">
+                                <i class="fas fa-chevron-down"></i> Strategies
+                            </button>
                             <div class="recommendation-checkbox">
                                 <input type="checkbox" id="client2ProductRecsCheckbox" name="client2ProductRecsCheckbox">
                                 <label for="client2ProductRecsCheckbox">Product Recommendations?</label>
@@ -2128,6 +2168,7 @@
                         </div>
                         <textarea id="partnerRecommendations" name="partnerRecommendations" 
                             placeholder="Enter recommendations for ${partnerName}"></textarea>
+                        <div id="client2StrategyDropdown" class="strategy-dropdown" style="display: none;"></div>
                     </div>
                     <div class="risk-profile-inline">
                         <div class="form-group">
@@ -2161,6 +2202,12 @@
                     <div class="recommendation-textarea">
                         <div class="recommendation-header">
                             <label for="jointRecommendations">Joint Recommendations/Scope:</label>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeRecommendationSection('joint')" style="margin-left: 10px;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm strategy-dropdown-btn" id="jointStrategyBtn" style="margin-left: 10px; display: none;">
+                                <i class="fas fa-chevron-down"></i> Strategies
+                            </button>
                             <div class="recommendation-checkbox">
                                 <input type="checkbox" id="jointProductRecsCheckbox" name="jointProductRecsCheckbox">
                                 <label for="jointProductRecsCheckbox">Product Recommendations?</label>
@@ -2168,6 +2215,7 @@
                         </div>
                         <textarea id="jointRecommendations" name="jointRecommendations" 
                             placeholder="Enter joint recommendations"></textarea>
+                        <div id="jointStrategyDropdown" class="strategy-dropdown" style="display: none;"></div>
                         <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointNA()">
                             N/A
                         </button>
@@ -4955,26 +5003,7 @@ ${textarea.value.replace(/\n/g, '<br>')}
                         }
                     }
                     // Ensure Additional Comments are included
-const additionalCommentsSection = document.getElementById('additionalCommentsSection');
-if (additionalCommentsSection && additionalCommentsSection.style.display !== 'none') {
-    const additionalCommentsTextarea = document.getElementById('additionalComments');
-    if (additionalCommentsTextarea && additionalCommentsTextarea.value && additionalCommentsTextarea.value.trim() !== '' && !processedElements.has('additionalComments')) {
-        wordContent += `
-            <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
-                           border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold;">
-                    Additional Comments/Notes
-                </h2>
-                <div style="margin-bottom: 15px;">
-                    <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-                                border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
-${additionalCommentsTextarea.value.replace(/\n/g, '<br>')}
-</div>
-                </div>
-            </div>
-        `;
-    }
-}
+// Process regular form groups first
                     // Process other inputs
                     group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], select').forEach((input) => {
                         if (input.style.display !== 'none' && 
@@ -5142,6 +5171,29 @@ ${additionalCommentsTextarea.value.replace(/\n/g, '<br>')}
             wordContent += `</div>`;
         }
     });
+    
+    // Process Additional Comments section LAST
+    const additionalCommentsSection = document.getElementById('additionalCommentsSection');
+    if (additionalCommentsSection && additionalCommentsSection.style.display !== 'none') {
+        const additionalCommentsTextarea = document.getElementById('additionalComments');
+        if (additionalCommentsTextarea && additionalCommentsTextarea.value && additionalCommentsTextarea.value.trim() !== '' && !processedElements.has('additionalComments')) {
+            processedElements.add('additionalComments');
+            wordContent += `
+                <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                    <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
+                               border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold;">
+                        Additional Comments/Notes
+                    </h2>
+                    <div style="margin-bottom: 15px;">
+                        <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
+                                    border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
+${additionalCommentsTextarea.value.replace(/\n/g, '<br>')}
+</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
     
     // Create Word document
     const html = `
@@ -5707,8 +5759,315 @@ document.addEventListener('click', function(e) {
         }
     }
 });
-        // Initialize MDA N/A button
-        setupMDANAButton();
+        // Initialize test strategy mode
+        setupTestStrategyMode();
+        
+        // Initialize inaccurate info N/A button
+        setupInaccurateInfoNAButton();
+        
+        // Function to setup test strategy mode
+        function setupTestStrategyMode() {
+            const testModeCheckbox = document.getElementById('testStrategyMode');
+            if (testModeCheckbox) {
+                testModeCheckbox.addEventListener('change', function() {
+                    const strategyButtons = document.querySelectorAll('.strategy-dropdown-btn');
+                    strategyButtons.forEach(btn => {
+                        btn.style.display = this.checked ? 'inline-block' : 'none';
+                    });
+                    
+                    if (this.checked) {
+                        setupStrategyDropdowns();
+                    }
+                });
+            }
+        }
+        
+        // Function to setup strategy dropdowns
+        function setupStrategyDropdowns() {
+            const strategies = [
+                "Aged Care - Commence a home care package (HCP)",
+                "Aged Care - Enter an aged care facility and restructure your finances (RAD/DAP)",
+                "Business Insurance - Apply for Life, TPD and Trauma cover for Business Succession Protection",
+                "Business Insurance - Apply for Life, TPD and Trauma cover for Key Person Revenue Protection",
+                "Business Insurance - Apply for Life, TPD and Trauma cover for Key Person Capital Protection",
+                "Business Insurance - Apply for Business Expense cover",
+                "Business Insurance - Replace your existing cover",
+                "Business Insurance - Apply for business protection insurance to cover business debt",
+                "Business Insurance - Implement key person insurance cover",
+                "Business Insurance - Establish a Business Succession Plan",
+                "Business Insurance - Implement business expense cover",
+                "Business Insurance - Implement buy/sell insurance cover",
+                "Cash - Adjust your cash flow",
+                "Cash - Adjust your cash reserve",
+                "Cash - Allocate your surplus cash flow",
+                "Cash - Cash flow monitoring",
+                "Cash - Commence a salary package arrangement with your employer",
+                "Cash - Establish a cash reserve",
+                "Cash - Establish and maintain a budget",
+                "Cash - Fund your planned expenses from your cash account",
+                "Cash - Maintain a cash reserve",
+                "Cash - Retain your existing strategies",
+                "Cash - Withdraw from your cash reserve",
+                "Cash - Establish / Update your cashflow strategy",
+                "Cash - Deposit into Cash Account",
+                "Cash - Invest excess cash",
+                "Cash - Set up a cash reserve",
+                "Centrelink / Social Security - Advise Centrelink of changes to your circumstances",
+                "Centrelink / Social Security - Apply for a Disability Support Pension",
+                "Centrelink / Social Security - Apply for a DVA Service Pension",
+                "Centrelink / Social Security - Apply for a Low Income Health Care Card (LIHCC)",
+                "Centrelink / Social Security - Apply for the JobSeeker Payment",
+                "Centrelink / Social Security - Apply for Centrelink's Family Tax Benefit (FTB)",
+                "Centrelink / Social Security - Apply for Centrelink's Carers Allowance",
+                "Centrelink / Social Security - Apply for Centrelink's Carers Payment",
+                "Centrelink / Social Security - Apply for the Age Pension",
+                "Centrelink / Social Security - Apply for the Commonwealth Seniors Health Card",
+                "Centrelink / Social Security - Establish a Special Disability Trust (SDT)",
+                "Centrelink / Social Security - Gift assets to increase Age Pension entitlements",
+                "Centrelink / Social Security - Gift your house for life tenancy (granny flat interest)",
+                "Centrelink / Social Security - Improve your Centrelink assessment by transferring super to your spouse",
+                "Centrelink / Social Security - Purchase a funeral bond to increase Age Pension entitlements",
+                "Debt - Consolidate your debts",
+                "Debt - Convert non-deductible debt to deductible debt (debt recycling)",
+                "Debt - Convert your deductible debt to interest-only repayments",
+                "Debt - Establish a mortgage offset account",
+                "Debt - Increase loan repayment frequency and/or repayment amount",
+                "Debt - Make a lump-sum loan repayment",
+                "Debt - Reduce your debt",
+                "Debt - Establish a new loan",
+                "Debt - Pay off Non-deductible Debt",
+                "Debt - Reduce Non-deductible debt",
+                "Debt - Set up loan repayments",
+                "Estate Planning - Establish / Review your Will to incorporate guardianship of your children",
+                "Estate Planning - Establish / Review your death benefit nomination",
+                "Estate Planning - Establish / Review your testamentary trust",
+                "Estate Planning - Establish / Review your Will",
+                "Estate Planning - Implement an advance care directive",
+                "Estate Planning - Purchase a funeral bond",
+                "Estate Planning - Review your estate plan",
+                "Estate Planning - Review / Appoint a power of attorney (POA)",
+                "Insurance - Accept self-insurance",
+                "Insurance - Adjust the waiting and benefit periods of your existing insurance cover",
+                "Insurance - Cancel your existing personal insurance cover",
+                "Insurance - Change the recommended insurance provider",
+                "Insurance - Implement income protection insurance cover",
+                "Insurance - Implement Life and TPD insurance cover",
+                "Insurance - Implement life insurance cover",
+                "Insurance - Implement life, TPD and trauma insurance cover",
+                "Insurance - Implement the following personal insurance cover",
+                "Insurance - Implement TPD insurance cover",
+                "Insurance - Implement trauma insurance cover",
+                "Insurance - Increase your personal insurance cover",
+                "Insurance - Reduce the level of your personal insurance cover",
+                "Insurance - Replace your existing personal insurance cover",
+                "Insurance - Retain your existing personal insurance cover",
+                "Insurance - Review your general and health insurance needs",
+                "Insurance - Transfer insurance cover from existing super fund to recommended super fund",
+                "Investment - Adjust your regular investment strategy",
+                "Investment - Amend the income distribution strategy within your investment portfolio",
+                "Investment - Amend the income drawdown strategy from your investment portfolio",
+                "Investment - Children education funding",
+                "Investment - Commence a regular investment strategy into your managed fund platform",
+                "Investment - Commence a regular savings plan using a dollar-cost averaging strategy",
+                "Investment - Establish a regular drawdown facility",
+                "Investment - Establish a regular savings plan",
+                "Investment - Establish an investment strategy for your portfolio",
+                "Investment - Gearing – Commence a regular investment strategy using your margin loan",
+                "Investment - Gearing – Commence an investment portfolio with a margin lending facility",
+                "Investment - Gearing – Implement a geared investment portfolio",
+                "Investment - Gearing – Use your home equity to invest in direct shares",
+                "Investment - Gearing – Use your home equity to invest via an investment platform",
+                "Investment - Invest in a diversified portfolio via a platform/wrap account",
+                "Investment - Invest in a diversified portfolio of managed investments",
+                "Investment - Invest in a portfolio of direct shares",
+                "Investment - Invest in a portfolio of exchange traded funds",
+                "Retirement - Amend your current pension payments",
+                "Retirement - Change the risk profile of your pension portfolio",
+                "Retirement - Change your pension beneficiary nomination to reversionary",
+                "Retirement - Commence a guaranteed (non-superannuation) annuity",
+                "Retirement - Commence a guaranteed (superannuation) annuity",
+                "Retirement - Commence a transition to retirement (salary swap) strategy",
+                "Retirement - Commence a transition to retirement strategy to increase your cashflow",
+                "Retirement - Commence an account-based pension (ABP)",
+                "Retirement - Commute your account-based pension back into accumulation to maximise Centrelink benefits",
+                "Retirement - Convert a pre-retirement TRIS to a TRIS in the retirement phase",
+                "Retirement - Establish an investment strategy for your pension portfolio",
+                "Retirement - Manage your retirement investments via a platform/wrap account",
+                "Retirement - Reset your transition to retirement (salary swap) strategy",
+                "Retirement - Retain your existing account-based pension (ABP)",
+                "Retirement - Retain your existing strategies within your account-based pension (ABP)",
+                "Retirement - Review your account-based pension",
+                "Retirement - Rollback your excess pension balance to super",
+                "Retirement - Rollover existing account-based pension into a new account-based pension",
+                "Self Managed Super Fund (SMSF) - Amend the trust deed of your SMSF",
+                "Self Managed Super Fund (SMSF) - Appoint an administrator for your SMSF",
+                "Self Managed Super Fund (SMSF) - Appoint an enduring power of attorney (POA) as trustee of your SMSF",
+                "Self Managed Super Fund (SMSF) - Change the trustee of your SMSF",
+                "Self Managed Super Fund (SMSF) - Change the trustee of your SMSF to a corporate trustee",
+                "Self Managed Super Fund (SMSF) - Commence a pension from your SMSF",
+                "Self Managed Super Fund (SMSF) - Commuting pension on death of a member",
+                "Self Managed Super Fund (SMSF) - Establish a cash management account (CMA) in your SMSF",
+                "Self Managed Super Fund (SMSF) - Establish a limited recourse borrowing arrangement in your SMSF",
+                "Self Managed Super Fund (SMSF) - Establish an SMSF investment strategy statement",
+                "Self Managed Super Fund (SMSF) - Establish an SMSF with a corporate trustee",
+                "Self Managed Super Fund (SMSF) - Establish an SMSF with individual trustees",
+                "Self Managed Super Fund (SMSF) - In-specie transfer assets into SMSF as concessional contribution",
+                "Self Managed Super Fund (SMSF) - In-specie transfer assets into SMSF as non-concessional contribution",
+                "Self Managed Super Fund (SMSF) - Invest in a 13.22c Trust",
+                "Self Managed Super Fund (SMSF) - Invest in an in-house asset",
+                "Self Managed Super Fund (SMSF) - Make a contribution using the contribution reserve",
+                "Self Managed Super Fund (SMSF) - Make an allocation from the contribution reserve",
+                "Superannuation - Adjust your salary sacrifice arrangement with your employer",
+                "Superannuation - Apply for early release of your super benefits",
+                "Superannuation - Apply to have your super paid as a Departing Australia Superannuation Payment (DASP)",
+                "Superannuation - Cancel your transition to retirement strategy",
+                "Superannuation - Consolidate your existing super funds",
+                "Superannuation - Contribute to super using your small business CGT cap",
+                "Superannuation - Make a concessional contribution into superannuation",
+                "Superannuation - Make a downsizer contribution to super",
+                "Superannuation - Make a non-concessional contribution into superannuation",
+                "Superannuation - Make a non-concessional contribution to access the government co-contribution",
+                "Superannuation - Make a non-concessional contribution from your personal injury settlement",
+                "Superannuation - Make a spouse contribution",
+                "Superannuation - Make a withdrawal from super",
+                "Superannuation - Nominate a beneficiary for your superannuation",
+                "Superannuation - Re-contribution of superannuation benefits",
+                "Superannuation - Rebalance the investments in your super fund",
+                "Superannuation - Redirect your employer contributions",
+                "Other / Platform Services - Utilise a managed discretionary account (MDA) service",
+                "Other / Platform Services - Retain your managed discretionary account (MDA) service – no changes",
+                "Other / Platform Services - Retain your managed discretionary account (MDA) service – with changes",
+                "Other / Platform Services - Terminate your managed discretionary account (MDA) service",
+                "Other / Platform Services - Terminate your managed discretionary account (MDA) service – Centric One",
+                "Other / Platform Services - Retain your defined benefit pension",
+                "Other / Platform Services - Commonwealth Superannuation Scheme (CSS)",
+                "Other / Platform Services - Public Sector Superannuation Scheme (PSS)",
+                "Other / Platform Services - Utilise the small business CGT exemptions"
+            ];
+            
+            // Setup strategy buttons
+            document.querySelectorAll('.strategy-dropdown-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const clientId = this.id.replace('StrategyBtn', '');
+                    const dropdown = document.getElementById(clientId + 'StrategyDropdown');
+                    
+                    if (dropdown.style.display === 'none' || !dropdown.style.display) {
+                        // Build dropdown content with search
+                        dropdown.innerHTML = `
+                            <div style="margin: 10px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                                <input type="text" id="${clientId}StrategySearch" placeholder="Search strategies..." style="width: 100%; margin-bottom: 10px;">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    ${strategies.map((strategy, index) => `
+                                        <div class="checkbox-item" style="margin-bottom: 5px;">
+                                            <input type="checkbox" id="${clientId}_strategy_${index}" value="${strategy}">
+                                            <label for="${clientId}_strategy_${index}">${strategy}</label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div style="margin-top: 10px;">
+                                    <button type="button" class="btn btn-success btn-sm" onclick="addSelectedStrategies('${clientId}')">Add Selected</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeStrategyDropdown('${clientId}')">Cancel</button>
+                                </div>
+                            </div>
+                        `;
+                        dropdown.style.display = 'block';
+                        
+                        // Setup search functionality
+                        const searchInput = document.getElementById(clientId + 'StrategySearch');
+                        searchInput.addEventListener('input', function() {
+                            const searchTerm = this.value.toLowerCase();
+                            const items = dropdown.querySelectorAll('.checkbox-item');
+                            items.forEach(item => {
+                                const label = item.querySelector('label').textContent.toLowerCase();
+                                item.style.display = label.includes(searchTerm) ? 'block' : 'none';
+                            });
+                        });
+                    } else {
+                        dropdown.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Function to add selected strategies
+        window.addSelectedStrategies = function(clientId) {
+            const dropdown = document.getElementById(clientId + 'StrategyDropdown');
+            const textarea = document.getElementById(clientId === 'client1' ? 'clientRecommendations' : 
+                              clientId === 'client2' ? 'partnerRecommendations' : 
+                              clientId === 'joint' ? 'jointRecommendations' : '');
+            
+            if (textarea) {
+                const selectedStrategies = [];
+                dropdown.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    selectedStrategies.push('• ' + checkbox.value);
+                });
+                
+                if (selectedStrategies.length > 0) {
+                    const currentValue = textarea.value;
+                    const newStrategies = selectedStrategies.join('\n');
+                    textarea.value = currentValue ? currentValue + '\n\n' + newStrategies : newStrategies;
+                    triggerAutoSave();
+                }
+            }
+            
+            dropdown.style.display = 'none';
+        };
+        
+        // Function to close strategy dropdown
+        window.closeStrategyDropdown = function(clientId) {
+            const dropdown = document.getElementById(clientId + 'StrategyDropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        };
+        
+        // Function to remove recommendation section
+        window.removeRecommendationSection = function(clientId) {
+            if (confirm('Are you sure you want to remove this entire recommendation section? This will remove all recommendations, products, and risk profiles for this client.')) {
+                // Find all elements related to this client
+                const elements = document.querySelectorAll(`[id*="${clientId}"]`);
+                elements.forEach(el => {
+                    const parent = el.closest('.recommendation-section, .product-recommendations, .risk-profile-inline');
+                    if (parent) {
+                        parent.remove();
+                    }
+                });
+                
+                // Also remove standalone sections
+                const textarea = document.getElementById(clientId === 'client1' ? 'clientRecommendations' : 
+                                                       clientId === 'client2' ? 'partnerRecommendations' : 
+                                                       clientId === 'joint' ? 'jointRecommendations' : '');
+                if (textarea) {
+                    const formGroup = textarea.closest('.form-group');
+                    if (formGroup) formGroup.remove();
+                }
+                
+                const productSection = document.getElementById(clientId + 'ProductRecommendationsSection');
+                if (productSection) productSection.remove();
+                
+                triggerAutoSave();
+            }
+        };
+        
+        // Function to setup inaccurate info N/A button
+        function setupInaccurateInfoNAButton() {
+            const naButton = document.getElementById('inaccurateInfoNABtn');
+            const textarea = document.getElementById('inaccurateInfo');
+            
+            if (naButton && textarea) {
+                naButton.addEventListener('click', function() {
+                    if (textarea.classList.contains('strikethrough')) {
+                        textarea.value = textarea.value.replace('N/A - All information provided has been verified and is accurate.\n', '').replace('N/A - All information provided has been verified and is accurate.', '');
+                        textarea.classList.remove('strikethrough');
+                    } else {
+                        textarea.value = 'N/A - All information provided has been verified and is accurate.';
+                        textarea.classList.add('strikethrough');
+                    }
+                    triggerAutoSave();
+                });
+            }
+        }
 
         // Setup N/A buttons for static elements
         setupNAButtons();
