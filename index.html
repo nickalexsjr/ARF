@@ -2014,18 +2014,7 @@
           }
         };
 
-        // Function to fill Joint sections with N/A
-        window.fillJointNA = function () {
-          const jointRecommendations = document.getElementById(
-            "jointRecommendations",
-          );
-          if (jointRecommendations) {
-            jointRecommendations.value =
-              "N/A - No joint recommendations required";
-            triggerAutoSave();
-          }
-        };
-
+      
         window.fillJointProductNA = function () {
           // Hide the joint product section and mark as N/A
           const jointProductCheckbox = document.getElementById(
@@ -2128,6 +2117,7 @@
                                 <option value="growth">Growth</option>
                                 <option value="highGrowth">High Growth</option>
                                 <option value="growthPlus">Growth Plus</option>
+                                <option value="na">N/A</option>
                                 <option value="custom">Custom</option>
                             </select>
                         </div>
@@ -2182,6 +2172,7 @@
                                 <option value="growth">Growth</option>
                                 <option value="highGrowth">High Growth</option>
                                 <option value="growthPlus">Growth Plus</option>
+                                <option value="na">N/A</option>
                                 <option value="custom">Custom</option>
                             </select>
                         </div>
@@ -2216,9 +2207,7 @@
                         <textarea id="jointRecommendations" name="jointRecommendations" 
                             placeholder="Enter joint recommendations"></textarea>
                         <div id="jointStrategyDropdown" class="strategy-dropdown" style="display: none;"></div>
-                        <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointNA()">
-                            N/A
-                        </button>
+                        <!-- N/A button removed -->
                     </div>
                     <div class="risk-profile-inline">
                         <div class="form-group">
@@ -2310,6 +2299,7 @@
                                 <option value="growth">Growth</option>
                                 <option value="highGrowth">High Growth</option>
                                 <option value="growthPlus">Growth Plus</option>
+                                <option value="na">N/A</option>
                                 <option value="custom">Custom</option>
                             </select>
                         </div>
@@ -2452,6 +2442,7 @@
                             <option value="growth">Growth</option>
                             <option value="highGrowth">High Growth</option>
                             <option value="growthPlus">Growth Plus</option>
+                            <option value="na">N/A</option>
                             <option value="custom">Custom</option>
                         </select>
                     </div>
@@ -3342,6 +3333,13 @@
           console.log("=== FIXED COMPREHENSIVE SAVE STARTING ===");
 
           const formData = {};
+          
+          // Save removed sections
+          const removedSections = [];
+          if (!document.getElementById('clientRecommendations')) removedSections.push('client1');
+          if (!document.getElementById('partnerRecommendations')) removedSections.push('client2');
+          if (!document.getElementById('jointRecommendations')) removedSections.push('joint');
+          formData._removedSections = removedSections;
 
           // STEP 1: Save ALL form inputs without exception
           const allInputs = document.querySelectorAll("input, textarea, select");
@@ -3539,6 +3537,16 @@
 
           // Trigger form rebuild based on client selections
           updateFormBasedOnSelections();
+          
+          // Handle removed sections
+          if (formData._removedSections && formData._removedSections.length > 0) {
+              setTimeout(() => {
+                  formData._removedSections.forEach(clientId => {
+                      console.log(`Removing saved section: ${clientId}`);
+                      removeRecommendationSection(clientId, true); // true = skip confirm
+                  });
+              }, 1000);
+          }
 
           // PHASE 2: Wait for rebuild, then restore ALL dynamic content
           setTimeout(() => {
@@ -6023,8 +6031,8 @@ document.addEventListener('click', function(e) {
         };
         
         // Function to remove recommendation section
-        window.removeRecommendationSection = function(clientId) {
-            if (confirm('Are you sure you want to remove this entire recommendation section? This will remove all recommendations, products, and risk profiles for this client.')) {
+        window.removeRecommendationSection = function(clientId, skipConfirm = false) {
+            if (skipConfirm || confirm('Are you sure you want to remove this entire recommendation section? This will remove all recommendations, products, and risk profiles for this client.')) {
                 // Find all elements related to this client
                 const elements = document.querySelectorAll(`[id*="${clientId}"]`);
                 elements.forEach(el => {
