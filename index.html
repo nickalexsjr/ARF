@@ -5175,33 +5175,46 @@ ${textarea.value.replace(/\n/g, '<br>')}
                     `;
                 }
                 
-                wordContent += `</div>`;
+              wordContent += `</div>`;
             }
             
             wordContent += `</div>`;
         }
     });
    
-      // Add Additional Comments/Notes section at the end
+    // Add Additional Comments/Notes section at the end
     const additionalCommentsSection = document.getElementById('additionalCommentsSection');
     const additionalComments = document.getElementById('additionalComments');
     
-    if (additionalCommentsSection && additionalComments && additionalComments.value.trim() !== '') {
+    if (additionalCommentsSection && additionalCommentsSection.style.display !== 'none') {
         wordContent += `
             <div style="margin-bottom: 30px; page-break-inside: avoid;">
                 <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
                            border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold;">
                     Additional Comments/Notes
                 </h2>
+        `;
+        
+        if (additionalComments && additionalComments.value.trim() !== '') {
+            wordContent += `
                 <div style="margin-bottom: 15px;">
                     <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
                            border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
                         ${additionalComments.value.replace(/\n/g, '<br>')}
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            wordContent += `
+                <div style="margin-bottom: 15px;">
+                    <em style="color: #7f8c8d;">No additional comments provided.</em>
+                </div>
+            `;
+        }
+        
+        wordContent += `</div>`;
     }
+      
     // Create Word document
     const html = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
