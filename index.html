@@ -4987,25 +4987,26 @@ if (textarea && !processedElements.has(textarea.id) && textarea.value && textare
         return; // Use return instead of continue since we're inside forEach
     }
     processedElements.add(textarea.id);
-                        
-                        const inputLabelEl = group.querySelector('label');
-                        let labelText = inputLabelEl ? inputLabelEl.textContent : '';
-                        
-                        // Clean up label text
-                        labelText = labelText.replace(/Choose from List.*$/i, '').trim();
-                        
-                        if (labelText) {
-                            wordContent += `
-                                <div style="margin-bottom: 15px;">
-                                    <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
-                                    <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-            border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
+    
+    const inputLabelEl = group.querySelector('label');
+    let labelText = inputLabelEl ? inputLabelEl.textContent : '';
+    
+    // Clean up label text
+    labelText = labelText.replace(/Choose from List.*$/i, '').trim();
+    
+    if (labelText) {
+        wordContent += `
+            <div style="margin-bottom: 15px;">
+                <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
+                <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
+                       border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
 ${textarea.value.replace(/\n/g, '<br>')}
 </div>
-                                </div>
-                            `;
-                        }
-                    }
+            </div>
+        `;
+    }
+}
+
                     // Ensure Additional Comments are included
 // Process regular form groups first
                     // Process other inputs
