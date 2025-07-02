@@ -2031,14 +2031,7 @@
           }
         };
 
-        window.fillJointRiskNA = function () {
-          const jointRiskProfile = document.getElementById("riskProfileJoint");
-          if (jointRiskProfile) {
-            jointRiskProfile.value = "na";
-            triggerAutoSave();
-          }
-        };
-
+    
         // Function to add product - FIXED to save properly
         window.addProduct = function (clientId, clientName) {
           console.log(`=== ADDING PRODUCT FOR ${clientId} ===`);
@@ -2224,9 +2217,7 @@
                                 <option value="na">N/A</option>
                                 <option value="custom">Custom</option>
                             </select>
-                            <button type="button" class="btn btn-secondary btn-sm na-button" onclick="fillJointRiskNA()">
-                                N/A
-                            </button>
+                            <!-- N/A button removed - using dropdown instead -->
                         </div>
                     </div>
                 </div>
