@@ -5934,7 +5934,10 @@ document.addEventListener('click', function(e) {
             ];
             
             // Setup strategy buttons
-            document.querySelectorAll('.strategy-dropdown-btn').forEach(btn => {
+            // Setup strategy buttons - only for client1, client2, and joint
+['client1StrategyBtn', 'client2StrategyBtn', 'jointStrategyBtn'].forEach(btnId => {
+    const btn = document.getElementById(btnId);
+    if (btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     const clientId = this.id.replace('StrategyBtn', '');
@@ -5974,8 +5977,9 @@ document.addEventListener('click', function(e) {
                     } else {
                         dropdown.style.display = 'none';
                     }
-                });
-            });
+               });
+    }
+});
         }
         
         // Function to add selected strategies
