@@ -4792,13 +4792,13 @@ exportWordBtn.addEventListener('click', function() {
     const processedElements = new Set();
     
     // Process each visible section
-    document.querySelectorAll('.section').forEach((section) => {
-        if (section.style.display !== 'none') {
-          // Skip the additional comments section here - it will be processed at the end
-if (section.id === 'additionalCommentsSection') {
-    return;
-}
-            const h2 = section.querySelector('h2');
+document.querySelectorAll('.section').forEach((section) => {
+    if (section.style.display !== 'none') {
+        // Skip the additional comments section here - it will be processed at the end
+        if (section.id === 'additionalCommentsSection') {
+            return;
+        }
+        const h2 = section.querySelector('h2');
             if (h2) {
                 const sectionTitle = h2.textContent.replace(/^\s*[^\w\s]\s*/, '').trim();
                 wordContent += `
