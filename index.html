@@ -4978,12 +4978,13 @@ ${textarea.value.replace(/\n/g, '<br>')}
                         }
                     }
                     
-                    // Process textareas and inputs
+                   
+// Process textareas and inputs
 const textarea = group.querySelector('textarea');
 if (textarea && !processedElements.has(textarea.id) && textarea.value && textarea.value.trim() !== '') {
     // Skip additionalComments here - it will be processed separately at the end
     if (textarea.id === 'additionalComments') {
-        continue;
+        return; // Use return instead of continue since we're inside forEach
     }
     processedElements.add(textarea.id);
                         
