@@ -4982,12 +4982,7 @@ ${textarea.value.replace(/\n/g, '<br>')}
 // Process textareas and inputs
 const textarea = group.querySelector('textarea');
 if (textarea && !processedElements.has(textarea.id) && textarea.value && textarea.value.trim() !== '') {
-   
     processedElements.add(textarea.id);
-// Special handling to prevent Additional Comments from being processed twice
-if (textarea.id === 'additionalComments') {
-    return; // Skip it here, it will be processed at the end
-}
     
     const inputLabelEl = group.querySelector('label');
     let labelText = inputLabelEl ? inputLabelEl.textContent : '';
@@ -5006,7 +5001,7 @@ ${textarea.value.replace(/\n/g, '<br>')}
             </div>
         `;
     }
-} 
+}
                     
                     // Process other inputs
                     group.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], select').forEach((input) => {
