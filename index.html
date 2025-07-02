@@ -4981,6 +4981,10 @@ ${textarea.value.replace(/\n/g, '<br>')}
                    
 // Process textareas and inputs
 const textarea = group.querySelector('textarea');
+// Debug logging for Additional Comments
+if (textarea && textarea.id === 'additionalComments') {
+    console.log('Found Additional Comments textarea with value:', textarea.value);
+}
 if (textarea && !processedElements.has(textarea.id) && textarea.value && textarea.value.trim() !== '') {
     processedElements.add(textarea.id);
     
@@ -4989,8 +4993,10 @@ if (textarea && !processedElements.has(textarea.id) && textarea.value && textare
     
     // Clean up label text
     labelText = labelText.replace(/Choose from List.*$/i, '').trim();
+    labelText = labelText.replace(/N\/A.*$/i, '').trim(); // Also remove N/A button text
     
     if (labelText) {
+        console.log('Adding textarea to Word doc:', textarea.id, 'Label:', labelText);
         wordContent += `
             <div style="margin-bottom: 15px;">
                 <strong style="color: #2c3e50; font-size: 12pt;">${labelText}</strong><br>
