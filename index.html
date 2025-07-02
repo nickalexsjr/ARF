@@ -4982,11 +4982,12 @@ ${textarea.value.replace(/\n/g, '<br>')}
 // Process textareas and inputs
 const textarea = group.querySelector('textarea');
 if (textarea && !processedElements.has(textarea.id) && textarea.value && textarea.value.trim() !== '') {
-    // Skip additionalComments here - it will be processed separately at the end
-    if (textarea.id === 'additionalComments') {
-        return; // Use return instead of continue since we're inside forEach
-    }
+   
     processedElements.add(textarea.id);
+// Special handling to prevent Additional Comments from being processed twice
+if (textarea.id === 'additionalComments') {
+    return; // Skip it here, it will be processed at the end
+}
     
     const inputLabelEl = group.querySelector('label');
     let labelText = inputLabelEl ? inputLabelEl.textContent : '';
@@ -5174,38 +5175,7 @@ ${textarea.value.replace(/\n/g, '<br>')}
             wordContent += `</div>`;
         }
     });
-
-    // Process Additional Comments section LAST - FIXED VERSION
-const additionalCommentsSection = document.getElementById('additionalCommentsSection');
-const additionalCommentsTextarea = document.getElementById('additionalComments');
-
-// Debug logging
-console.log('Additional Comments Section visible:', additionalCommentsSection && additionalCommentsSection.style.display !== 'none');
-console.log('Additional Comments value:', additionalCommentsTextarea ? additionalCommentsTextarea.value : 'No textarea found');
-console.log('Already processed:', processedElements.has('additionalComments'));
-
-if (additionalCommentsTextarea && additionalCommentsTextarea.value && additionalCommentsTextarea.value.trim() !== '') {
-    // Remove from processedElements if it was accidentally added earlier
-    processedElements.delete('additionalComments');
-    
-    wordContent += `
-        <div style="margin-bottom: 30px; page-break-inside: avoid;">
-            <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
-                       border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold;">
-                Additional Comments/Notes
-            </h2>
-            <div style="margin-bottom: 15px;">
-                <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-                            border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
-${additionalCommentsTextarea.value.replace(/\n/g, '<br>')}
-</div>
-            </div>
-        </div>
-    `;
-    
-    console.log('Additional Comments added to Word document');
-}
-    
+   
     // Create Word document
     const html = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
