@@ -5178,25 +5178,7 @@ ${textarea.value.replace(/\n/g, '<br>')}
         }
     });
    
-   // Process Additional Comments separately to ensure it's included
-    const additionalCommentsTextarea = document.getElementById('additionalComments');
-    if (additionalCommentsTextarea && additionalCommentsTextarea.value && additionalCommentsTextarea.value.trim() !== '') {
-        wordContent += `
-            <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                <h2 style="color: #2c3e50; font-size: 20pt; margin-top: 30px; margin-bottom: 20px; 
-                           border-bottom: 3px solid #3498db; padding-bottom: 8px; font-weight: bold;">
-                    Additional Comments/Notes
-                </h2>
-                <div style="margin-bottom: 15px;">
-                    <div style="border: 1px solid #bdc3c7; padding: 12px; background-color: #f8f9fa; 
-                                border-radius: 5px; margin-top: 8px; font-family: Calibri, Arial, sans-serif;">
-${additionalCommentsTextarea.value.replace(/\n/g, '<br>')}
-</div>
-                </div>
-            </div>
-        `;
-    }
-    
+      
     // Create Word document
     const html = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
