@@ -4981,11 +4981,12 @@ ${textarea.value.replace(/\n/g, '<br>')}
                    
 // Process textareas and inputs
 const textarea = group.querySelector('textarea');
-// Debug logging for Additional Comments
-if (textarea && textarea.id === 'additionalComments') {
-    console.log('Found Additional Comments textarea with value:', textarea.value);
-}
 if (textarea && !processedElements.has(textarea.id) && textarea.value && textarea.value.trim() !== '') {
+    // Skip additionalComments here - it will be processed at the end
+    if (textarea.id === 'additionalComments') {
+        processedElements.add(textarea.id); // Mark as processed to prevent duplicates
+        return; // Skip processing here
+    }
     processedElements.add(textarea.id);
     
     const inputLabelEl = group.querySelector('label');
